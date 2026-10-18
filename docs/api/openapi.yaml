@@ -1,0 +1,395 @@
+openapi: 3.0.3
+info:
+  title: CustardFin Cloud API
+  description: Central coordination and discovery catalog API for CustardFin. Video binaries remain on home edge nodes.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/v1
+    description: Local dev environment
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/login:
+    post:
+      summary: Authenticate user and obtain JWT tokens
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /nodes:
+    post:
+      summary: Register or claim a new home edge node
+      operationId: registerNode
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Node registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeRegistrationResponse'
+
+  /nodes/{id}/heartbeat:
+    post:
+      summary: Report node status heartbeat (sent every 15s)
+      operationId: sendHeartbeat
+      security:
+        - NodeTokenAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeartbeatPayload'
+      responses:
+        '200':
+          description: Heartbeat accepted
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /nodes/{id}/media/{mid}/manifest:
+    put:
+      summary: Publish or update media manifest in the public catalog
+      operationId: upsertManifest
+      security:
+        - NodeTokenAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaManifest'
+      responses:
+        '200':
+          description: Manifest synced
+        '400':
+          description: Manifest invalid or exceeds 3 KB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Unpublish / remove media manifest from public catalog
+      operationId: deleteManifest
+      security:
+        - NodeTokenAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Manifest removed
+
+  /catalog:
+    get:
+      summary: Search and browse the community media catalog
+      operationId: getCatalog
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Catalog items list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+                  total:
+                    type: integer
+
+  /media/{id}/playback:
+    get:
+      summary: Stream router decision for media playback
+      operationId: getPlaybackInfo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Playback stream URL and routing details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaybackResponse'
+        '429':
+          description: Node busy - exceeded 10 concurrent streams cap
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Home node offline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    NodeTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Node-Token
+
+  responses:
+    ErrorResponse:
+      description: General error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+
+    NodeRegistrationResponse:
+      type: object
+      required: [node_id, node_token, frp_auth_token]
+      properties:
+        node_id:
+          type: string
+          format: uuid
+        node_token:
+          type: string
+        frp_auth_token:
+          type: string
+
+    HeartbeatPayload:
+      type: object
+      required: [node_id, sent_at, version, active_streams]
+      properties:
+        node_id:
+          type: string
+          format: uuid
+        sent_at:
+          type: string
+          format: date-time
+        version:
+          type: string
+        gpu_caps:
+          type: object
+          properties:
+            nvenc: { type: boolean }
+            qsv: { type: boolean }
+            vaapi: { type: boolean }
+        active_streams:
+          type: integer
+          minimum: 0
+          maximum: 10
+
+    MediaManifest:
+      type: object
+      required: [schema_version, media_id, node_id, title, duration_s, content_hash, renditions, is_public, updated_at]
+      properties:
+        schema_version:
+          type: string
+          example: "1.0"
+        media_id:
+          type: string
+          format: uuid
+        node_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        duration_s:
+          type: integer
+        content_hash:
+          type: string
+        renditions:
+          type: array
+          items:
+            type: object
+            required: [resolution, bitrate_bps, playlist_path, chunk_duration_s]
+            properties:
+              resolution:
+                type: string
+                enum: [1080p, 720p, 480p]
+              bitrate_bps:
+                type: integer
+              playlist_path:
+                type: string
+              chunk_duration_s:
+                type: integer
+                example: 4
+        is_public:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+
+    CatalogItem:
+      type: object
+      required: [media_id, title, duration_s, node_id, is_node_online]
+      properties:
+        media_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        duration_s:
+          type: integer
+        node_id:
+          type: string
+          format: uuid
+        is_node_online:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+
+    PlaybackResponse:
+      type: object
+      required: [stream_url, route_type, expires_at]
+      properties:
+        stream_url:
+          type: string
+          description: Direct LAN URL, signed cache/CDN URL, or tunnel pull URL
+        route_type:
+          type: string
+          enum: [direct_lan, origin_cache, tunnel_origin]
+        expires_at:
+          type: string
+          format: date-time

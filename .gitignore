@@ -1,0 +1,42 @@
+# Binaries and build artifacts
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test and coverage artifacts
+*.test
+*.out
+
+# Node dependencies and build
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# SQLite databases and temp files
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+
+# Transcoding and temp media storage
+media_cache/
+temp_segments/
+scratch/
+
+# Environment files and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

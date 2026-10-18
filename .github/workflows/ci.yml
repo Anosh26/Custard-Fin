@@ -1,0 +1,50 @@
+name: CI Quality Gates
+
+on:
+  push:
+    branches: [main, master, "feat/*", "fix/*"]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend-checks:
+    name: Go Backend & Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Verify Formatting (gofmt)
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "Go code is not formatted. Run gofmt -s -w ."
+            gofmt -d .
+            exit 1
+          fi
+
+      - name: Go Vet
+        run: go vet ./...
+
+      - name: Run Tests with Race Detector
+        run: go test -race -v ./...
+
+  contracts-check:
+    name: Contracts & OpenAPI Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Lint OpenAPI Spec
+        run: npx @redocly/cli lint docs/api/openapi.yaml

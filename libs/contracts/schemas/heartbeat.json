@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NodeHeartbeat",
+  "description": "Node periodic status ping sent to cloud API every 15s",
+  "type": "object",
+  "required": [
+    "node_id",
+    "sent_at",
+    "version",
+    "active_streams"
+  ],
+  "properties": {
+    "node_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "string"
+    },
+    "gpu_caps": {
+      "type": "object",
+      "properties": {
+        "nvenc": { "type": "boolean" },
+        "qsv": { "type": "boolean" },
+        "vaapi": { "type": "boolean" }
+      }
+    },
+    "active_streams": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    }
+  }
+}

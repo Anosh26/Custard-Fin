@@ -1,0 +1,9 @@
+bindPort = 7000
+vhostHTTPPort = 8000
+auth.method = "token"
+auth.token = "custardfin_demo_frp_token"
+
+webServer.addr = "0.0.0.0"
+webServer.port = 7500
+webServer.user = "admin"
+webServer.password = "admin"

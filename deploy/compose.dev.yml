@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: custardfin-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-custard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-custard_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-custardfin}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: custardfin-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  s3-cache:
+    image: minio/minio:latest
+    container_name: custardfin-cache
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - s3data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  frps:
+    image: snowdreamtech/frps:latest
+    container_name: custardfin-frps
+    restart: unless-stopped
+    ports:
+      - "7000:7000"
+      - "7500:7500"
+      - "8000-8020:8000-8020"
+    volumes:
+      - ./frps.toml:/etc/frp/frps.toml
+
+volumes:
+  pgdata:
+  s3data:
