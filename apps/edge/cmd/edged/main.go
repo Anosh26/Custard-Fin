@@ -5,10 +5,13 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/ffprobe"
+	"github.com/anosh26/custardfin/apps/edge/internal/adapters/frp"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/fs"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/httpapi"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/sqlite"
@@ -93,12 +96,59 @@ func main() {
 		slog.Warn("media directory does not exist, skipping scan", "path", mediaDir)
 	}
 
-	// 6. Wait for shutdown signal
+	// 6. Initialize Outbound FRP Reverse Tunnel Client (if configured)
+	frpEnabled := getEnv("EDGE_FRP_ENABLED", "false") == "true"
+	frpServerAddr := getEnv("EDGE_FRP_SERVER_ADDR", "localhost")
+	frpServerPortStr := getEnv("EDGE_FRP_SERVER_PORT", "7000")
+	frpAuthToken := getEnv("EDGE_FRP_AUTH_TOKEN", "")
+	frpBinPath := getEnv("EDGE_FRP_BIN", "frpc")
+
+	var tunnelClient ports.TunnelClient
+	if frpEnabled && nodeID != "" && frpAuthToken != "" {
+		frpPort, _ := strconv.Atoi(frpServerPortStr)
+		if frpPort <= 0 {
+			frpPort = 7000
+		}
+
+		localPort := 8090
+		parts := strings.Split(listenAddr, ":")
+		if len(parts) > 1 {
+			if p, err := strconv.Atoi(parts[len(parts)-1]); err == nil && p > 0 {
+				localPort = p
+			}
+		}
+
+		tunnelClient = frp.NewManagedFRPClient(frp.Config{
+			ServerAddr: frpServerAddr,
+			ServerPort: frpPort,
+			AuthToken:  frpAuthToken,
+			NodeID:     nodeID,
+			LocalPort:  localPort,
+			BinaryPath: frpBinPath,
+			UseTLS:     true,
+		}, logger)
+
+		if err := tunnelClient.Start(ctx); err != nil {
+			slog.Warn("failed starting frp reverse tunnel client", "err", err)
+		} else {
+			slog.Info("outbound frp reverse tunnel client active", "relay", frpServerAddr, "node_id", nodeID)
+		}
+	} else if frpEnabled {
+		slog.Warn("EDGE_FRP_ENABLED is true but EDGE_NODE_ID or EDGE_FRP_AUTH_TOKEN is missing")
+	}
+
+	// 7. Wait for shutdown signal
 	<-ctx.Done()
 	slog.Info("shutdown signal received, commencing graceful shutdown")
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
+
+	if tunnelClient != nil {
+		if err := tunnelClient.Stop(); err != nil {
+			slog.Error("error during frp tunnel client shutdown", "err", err)
+		}
+	}
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		slog.Error("error during http server shutdown", "err", err)

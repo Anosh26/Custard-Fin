@@ -1,7 +1,7 @@
 # CustardFin Project State
 
 ## Current Milestone
-- **Milestone 5**: FRP Tunnel — Remote Playback End-to-End (Outbound-only home edge tunnel to relay server).
+- **Milestone 6**: Redis Heartbeat and Offline Logic (Node liveness tracking via Redis TTL keys, stream router offline detection).
 
 ## Done
 - **Milestone 1**: Contracts and repo skeleton, CI, docs scaffolding, memory files.
@@ -40,20 +40,28 @@
     - Glassmorphism dark aesthetic design system (`globals.css`) with responsive video cards, online status indicators, and duration badges.
     - Community discovery catalog (`/`) with search filter `?q=`, and watch player route (`/watch/[id]`).
     - 100% build and lint passing: `next build`, `tsc --noEmit`, `eslint`.
+- **Milestone 5**: FRP Tunnel (Remote Playback End-to-End).
+  - Outbound-only TLS reverse tunnel bypassing ISP CGNAT (Invariant 2).
+  - Defined `ports.TunnelClient` interface port (`Start`, `Stop`, `IsConnected`).
+  - Implemented `apps/edge/internal/adapters/frp`:
+    - `Config` with strict validation and official FRP v0.52+ client TOML generator (`GenerateTOML`).
+    - Secure `0600` temporary config file creation (`WriteConfigFile`).
+    - `ManagedFRPClient` supervising `frpc` child process with stdout/stderr line streaming, auto-reconnect exponential backoff (1s up to 30s max), and cleanup.
+  - Wired into `apps/edge/cmd/edged/main.go` with 12-factor configuration (`EDGE_FRP_ENABLED`, `EDGE_FRP_SERVER_ADDR`, `EDGE_FRP_SERVER_PORT`, `EDGE_FRP_AUTH_TOKEN`, `EDGE_FRP_BIN`) and graceful SIGTERM shutdown.
+  - 100% granular unit tests passing with mock subprocess simulation.
 
 ## In Progress
-- Milestone 5 Architecture Design & Setup (FRP tunnel: outbound TLS connection from edge to cloud relay).
+- Milestone 6 Architecture Design & Setup (Redis heartbeats: edge reporter routine, cloud receiver endpoint, TTL liveness tracking).
 
 ## Blocked
 - None.
 
 ## Next 3 Tasks
-1. Design Milestone 5 FRP tunnel architecture (outbound-only TLS connection, CGNAT bypass, managed subprocess vs embedded client).
-2. Create `deploy/frps.toml` configuration and relay test container setup.
-3. Implement `apps/edge/internal/adapters/frp` managed client adapter with auto-reconnect backoff.
+1. Design Milestone 6 Redis heartbeat reporter & liveness checker (15s interval, configurable TTL).
+2. Implement edge background heartbeat worker (`apps/edge/internal/adapters/heartbeat`) dispatching to `POST /v1/nodes/{id}/heartbeat`.
+3. Implement cloud Redis heartbeat adapter (`apps/api/internal/adapters/redis`) managing `heartbeat:{node_id}` TTL keys.
 
 ## Open Questions (Requires Human Decision)
 - **Heartbeat timing:** BRD target "offline within 15 s" vs grace window. (Currently will make TTL configurable, defaulting to 15s).
 - **Floci emulator:** Exact Floci emulator (AWS vs GCP) and services to prioritize for demo.
 - **Cache store:** MinIO status check vs Garage/SeaweedFS for S3-compatible cache.
-- **FRP deployment:** Running FRP client/server as managed child process vs embedded.

@@ -15,5 +15,5 @@ Record all pinned dependency versions, verification dates, and official document
 | Next.js | 15.1.0 | https://nextjs.org/docs | App router, React Server Components (React 19.0.0) |
 | Video Player | `hls.js` v1.5.17 | https://github.com/video-dev/hls.js/ | Client-side HLS playback with rendition switching |
 | Reverse Proxy | Caddy 2.x | https://caddyserver.com/docs/ | Automated TLS for demo profile |
-| Tunnel | FRP | https://github.com/fatedier/frp | Outbound TLS tunnel |
+| Tunnel | FRP v0.52+ (TOML config) | https://github.com/fatedier/frp | Managed subprocess frpc client adapter, outbound TLS, CGNAT bypass |
 | Transcoder | FFmpeg 8.0.1 | https://ffmpeg.org/documentation.html | Verified locally: `h264_nvenc`, `hevc_nvenc`, `av1_nvenc` active on RTX |

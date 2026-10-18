@@ -1,3 +1,16 @@
+## 2026-10-18 - Milestone 5: FRP Reverse Tunnel Client Adapter & Deployment
+- **Author/Agents:** CustardFin Pair Programming Agent
+- **Milestone:** Milestone 5 (FRP tunnel: remote playback end to end)
+- **Summary:** Implemented outbound-only reverse tunnel adapter `apps/edge/internal/adapters/frp` bypassing ISP CGNAT (Invariant 2). Defined `ports.TunnelClient` port. Implemented `frp.Config` with input validation, official FRP v0.52+ client TOML generator (`GenerateTOML`), and secure `0600` temp file creation. Built `ManagedFRPClient` supervising `frpc` child process with stdout/stderr line streaming, supervisory auto-reconnect backoff (1s doubling up to 30s), and clean shutdown. Wired into `apps/edge/cmd/edged/main.go` with 12-factor configuration (`EDGE_FRP_ENABLED`, `EDGE_FRP_SERVER_ADDR`, `EDGE_FRP_SERVER_PORT`, `EDGE_FRP_AUTH_TOKEN`, `EDGE_FRP_BIN`) and graceful SIGTERM shutdown. All unit tests passing with mock subprocess simulation.
+- **Files Touched:**
+  - `apps/edge/internal/ports/tunnel.go`
+  - `apps/edge/internal/adapters/frp/{config.go, config_test.go, client.go, client_test.go, README.md}`
+  - `apps/edge/cmd/edged/main.go`
+  - `deploy/env.example`
+  - `docs/context/{STATE.md, STACK_VERSIONS.md, SESSION_LOG.md}`
+- **Follow-ups:**
+  - Milestone 6: Redis Heartbeat and Offline Logic.
+
 ## 2026-10-18 - Milestone 4: Public Toggle, Manifest Sync Worker, and Next.js Web UI
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 4 (Public toggle -> manifest sync worker -> Next.js community catalog UI)
