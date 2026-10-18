@@ -12,6 +12,7 @@ import (
 
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/ffprobe"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/fs"
+	"github.com/anosh26/custardfin/apps/edge/internal/adapters/sqlite"
 )
 
 // TestScanner_EndToEndIntegration performs full integration of Scanner, Hasher, Subprocess Prober, and Repository
@@ -140,5 +141,72 @@ func TestScanner_EndToEndIntegration(t *testing.T) {
 	}
 	if summary3.Updated != 1 || summary3.Unchanged != 1 {
 		t.Errorf("expected 1 updated and 1 unchanged, got %d updated and %d unchanged", summary3.Updated, summary3.Unchanged)
+	}
+}
+
+func TestScanner_IntegrationWithRealSQLite(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg not found, skipping real sqlite integration test")
+	}
+
+	tempDir := t.TempDir()
+	mediaDir := filepath.Join(tempDir, "media")
+	dbPath := filepath.Join(tempDir, "db", "edge.db")
+
+	if err := os.MkdirAll(mediaDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	videoPath := filepath.Join(mediaDir, "sample.mp4")
+	cmd := exec.Command("ffmpeg", "-y",
+		"-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=30",
+		"-f", "lavfi", "-i", "sine=frequency=1000:duration=1",
+		"-c:v", "libx264", "-c:a", "aac",
+		videoPath,
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("failed generating test clip: %v (%s)", err, string(out))
+	}
+
+	ctx := context.Background()
+	db, err := sqlite.Open(ctx, dbPath)
+	if err != nil {
+		t.Fatalf("failed opening real sqlite db: %v", err)
+	}
+	defer db.Close()
+
+	repo := sqlite.NewMediaRepository(db)
+	scanner := fs.NewFileScanner()
+	hasher := fs.NewHasher()
+	prober := ffprobe.NewSubprocessProber("")
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	service := NewScanService(scanner, prober, hasher, repo, logger)
+
+	// Scan with real SQLite persistence
+	summary, err := service.ScanDirectory(ctx, mediaDir)
+	if err != nil {
+		t.Fatalf("scan directory failed with real sqlite: %v", err)
+	}
+	if summary.Added != 1 {
+		t.Fatalf("expected 1 added media, got %d", summary.Added)
+	}
+
+	// Verify persistence in SQLite
+	persisted, err := repo.FindByPath(ctx, videoPath)
+	if err != nil || persisted == nil {
+		t.Fatalf("expected media in SQLite DB, got: %v", err)
+	}
+	if persisted.Title != "sample" || persisted.DurationS != 1 {
+		t.Errorf("unexpected media properties in DB: %+v", persisted)
+	}
+
+	// Second scan: verify fast-path skip against real SQLite
+	summary2, err := service.ScanDirectory(ctx, mediaDir)
+	if err != nil {
+		t.Fatalf("second scan failed: %v", err)
+	}
+	if summary2.Added != 0 || summary2.Unchanged != 1 {
+		t.Errorf("expected 0 added and 1 unchanged against real SQLite, got %d added and %d unchanged", summary2.Added, summary2.Unchanged)
 	}
 }

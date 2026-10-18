@@ -1,7 +1,7 @@
-go 1.23
+go 1.26.0
 
 use (
-	./libs/contracts
-	./apps/edge
 	./apps/api
+	./apps/edge
+	./libs/contracts
 )

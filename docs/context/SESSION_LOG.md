@@ -1,3 +1,23 @@
+## 2026-10-18 - Milestone 2: Edge SQLite Store & Schema Migrations
+- **Author/Agents:** CustardFin Pair Programming Agent
+- **Milestone:** Milestone 2 (Edge scan, transcode, SQLite, local stream)
+- **Summary:** Implemented pure-Go SQLite store (`modernc.org/sqlite` v1.60.1) adhering to Invariant 8 (private data stays home). Delivered versioned schema migrations for `media` and `watch_progress` tables, WAL journal mode with `busy_timeout=5000`, single-writer connection pooling, `MediaRepository`, and `WatchProgressRepository` with cascading deletes. Wired scanner with SQLite repository in `edged/main.go`. Added comprehensive unit tests and verified with full integration test `TestScanner_IntegrationWithRealSQLite`.
+- **Files Touched:**
+  - `apps/edge/internal/adapters/sqlite/db.go`
+  - `apps/edge/internal/adapters/sqlite/db_test.go`
+  - `apps/edge/internal/adapters/sqlite/migrations.go`
+  - `apps/edge/internal/adapters/sqlite/media_repo.go`
+  - `apps/edge/internal/adapters/sqlite/media_repo_test.go`
+  - `apps/edge/internal/adapters/sqlite/watch_repo.go`
+  - `apps/edge/internal/adapters/sqlite/watch_repo_test.go`
+  - `apps/edge/internal/adapters/sqlite/README.md`
+  - `apps/edge/internal/domain/watch.go`
+  - `apps/edge/internal/domain/watch_test.go`
+  - `apps/edge/internal/ports/scanner.go`
+  - `apps/edge/internal/app/scanner_integration_test.go`
+  - `apps/edge/cmd/edged/main.go`
+  - `docs/context/STATE.md`
+
 ## 2026-10-18 - Milestone 2: Mandatory Testing Policy & Comprehensive Test Suite
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 2 (Edge scan, transcode, SQLite, local stream)

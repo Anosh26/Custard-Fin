@@ -42,3 +42,10 @@ type MediaRepository interface {
 	List(ctx context.Context) ([]*domain.Media, error)
 	Delete(ctx context.Context, id string) error
 }
+
+// WatchProgressRepository defines the persistence contract for local watch history.
+type WatchProgressRepository interface {
+	GetWatchProgress(ctx context.Context, mediaID string) (*domain.WatchProgress, error)
+	SaveWatchProgress(ctx context.Context, wp *domain.WatchProgress) error
+	DeleteWatchProgress(ctx context.Context, mediaID string) error
+}
