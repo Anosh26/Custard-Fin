@@ -1,3 +1,14 @@
+## 2026-10-18 - Milestone 2: Managed Subprocess FFmpeg 4s HLS Transcoder
+- **Author/Agents:** CustardFin Pair Programming Agent
+- **Milestone:** Milestone 2 (Edge scan, transcode, SQLite, local stream)
+- **Summary:** Implemented `apps/edge/internal/adapters/ffmpeg` subprocess transcoder adhering to Invariant 6 (strict 4-second HLS segments). Added GPU probe utilizing NVIDIA NVENC (`h264_nvenc`) with verified minimum dimension constraints, automatic CPU fallback to `libx264`, forced keyframe multiples (`expr:gte(t,n_forced*4)`), multi-rendition quality ladder calculation without upscaling, and master playlist generation (`master.m3u8`). Verified with granular unit tests and real GPU encode integration test on RTX card (0.96s encode).
+- **Files Touched:**
+  - `apps/edge/internal/ports/transcoder.go`
+  - `apps/edge/internal/adapters/ffmpeg/transcoder.go`
+  - `apps/edge/internal/adapters/ffmpeg/transcoder_test.go`
+  - `apps/edge/internal/adapters/ffmpeg/README.md`
+  - `docs/context/STATE.md`
+
 ## 2026-10-18 - Milestone 2: Edge SQLite Store & Schema Migrations
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 2 (Edge scan, transcode, SQLite, local stream)

@@ -16,16 +16,22 @@
   - `MediaRepository` and `WatchProgressRepository` implementations.
   - Wired into `apps/edge/cmd/edged/main.go` with startup directory scan.
   - Comprehensive unit tests and real SQLite integration test (`TestScanner_IntegrationWithRealSQLite`).
+- Implemented managed subprocess FFmpeg 4s HLS transcoder (`apps/edge/internal/adapters/ffmpeg`):
+  - Invariant 6: Strictly chunked into 4-second HLS segments (`.ts`) with keyframe forcing (`expr:gte(t,n_forced*4)`).
+  - Hardware acceleration: Probes and uses NVIDIA NVENC (`h264_nvenc`) with automatic fallback to CPU (`libx264`).
+  - Multi-rendition quality ladder (1080p, 720p, 480p) without upscaling.
+  - Automated master playlist generation (`master.m3u8`).
+  - Granular unit tests and real-world NVENC + CPU integration tests verified.
 
 ## In Progress
-- Milestone 2: Managed subprocess FFmpeg 4-second HLS transcoder (`apps/edge/internal/adapters/ffmpeg`) with NVENC acceleration and automatic CPU fallback.
+- Milestone 2: Edge local HTTP streaming server (`apps/edge/internal/adapters/httpapi`) for LAN direct playback.
 
 ## Blocked
 - None.
 
 ## Next 3 Tasks
-1. Implement managed subprocess FFmpeg HLS transcoder (NVENC probe, 4s chunks, 1080p/720p/480p ladders, CPU fallback).
-2. Implement Edge local HTTP streaming server (`apps/edge/internal/adapters/httpapi`) for direct LAN streaming.
+1. Implement Edge local HTTP streaming server (`apps/edge/internal/adapters/httpapi`) for LAN direct playback with CORS and byte ranges.
+2. Complete Milestone 2 local streaming test (standalone mini-Jellyfin verification).
 3. Transition to Milestone 3: Cloud API (`apps/api`) auth, PostgreSQL catalog, and manifest sync.
 
 ## Open Questions (Requires Human Decision)
