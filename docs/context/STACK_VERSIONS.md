@@ -4,7 +4,7 @@ Record all pinned dependency versions, verification dates, and official document
 
 | Component | Target Version | Documentation URL | Notes / Verification Date |
 |---|---|---|---|
-| Go | 1.23+ / latest stable | https://go.dev/doc/ | Standard library (`net/http`, `log/slog`) |
+| Go | 1.27.2 | https://go.dev/doc/ | Installed at `C:\Program Files\Go\bin\go.exe`; tests verified |
 | SQLite Driver | `modernc.org/sqlite` | https://pkg.go.dev/modernc.org/sqlite | Pure-Go, cgo-free |
 | PostgreSQL Driver | `pgx/v5` | https://pkg.go.dev/github.com/jackc/pgx/v5 | High-performance Go PostgreSQL driver |
 | Redis Client | `go-redis/v9` | https://redis.uptrace.dev/ | Used for node heartbeats only |
