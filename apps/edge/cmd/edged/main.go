@@ -12,7 +12,9 @@ import (
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/fs"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/httpapi"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/sqlite"
+	syncAdapter "github.com/anosh26/custardfin/apps/edge/internal/adapters/sync"
 	"github.com/anosh26/custardfin/apps/edge/internal/app"
+	"github.com/anosh26/custardfin/apps/edge/internal/ports"
 )
 
 func main() {
@@ -51,11 +53,29 @@ func main() {
 
 	scanService := app.NewScanService(fileScanner, prober, hasher, mediaRepo, logger)
 
-	// 4. Initialize and Start Local HTTP Streaming Server
+	// 4. Initialize Cloud Manifest Syncer (if configured)
+	cloudURL := getEnv("EDGE_CLOUD_URL", "http://localhost:8080")
+	nodeID := getEnv("EDGE_NODE_ID", "")
+	nodeToken := getEnv("EDGE_NODE_TOKEN", "")
+
+	var syncer ports.ManifestSyncer
+	if nodeID != "" && nodeToken != "" {
+		var err error
+		syncer, err = syncAdapter.NewHTTPManifestSyncer(cloudURL, nodeID, nodeToken, nil)
+		if err != nil {
+			slog.Warn("failed to initialize manifest syncer", "err", err)
+		} else {
+			slog.Info("cloud manifest syncer active", "cloud_url", cloudURL, "node_id", nodeID)
+		}
+	} else {
+		slog.Warn("EDGE_NODE_ID or EDGE_NODE_TOKEN not set; running in standalone mode")
+	}
+
+	// 5. Initialize and Start Local HTTP Streaming Server
 	httpServer := httpapi.NewServer(httpapi.Config{
 		Addr:         listenAddr,
 		TranscodeDir: transcodeDir,
-	}, mediaRepo, watchRepo, logger)
+	}, mediaRepo, watchRepo, syncer, logger)
 
 	if err := httpServer.Start(); err != nil {
 		slog.Error("failed starting edge local http server", "err", err)

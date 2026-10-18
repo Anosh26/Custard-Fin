@@ -19,6 +19,7 @@ import (
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/ffmpeg"
 	"github.com/anosh26/custardfin/apps/edge/internal/domain"
 	"github.com/anosh26/custardfin/apps/edge/internal/ports"
+	"github.com/anosh26/custardfin/libs/contracts"
 )
 
 // FakeMediaRepository for HTTP handler testing
@@ -73,6 +74,38 @@ func (r *FakeMediaRepo) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+func (r *FakeMediaRepo) SetPublic(ctx context.Context, id string, isPublic bool) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	m, exists := r.items[id]
+	if !exists {
+		return fmt.Errorf("media not found")
+	}
+	m.IsPublic = isPublic
+	return nil
+}
+
+type FakeSyncer struct {
+	synced   map[string]bool
+	unsynced map[string]bool
+	failSync bool
+}
+
+func (s *FakeSyncer) SyncManifest(ctx context.Context, media *domain.Media, renditions []contracts.Rendition) error {
+	if s.failSync {
+		return fmt.Errorf("simulated cloud sync failure")
+	}
+	s.synced[media.ID] = true
+	delete(s.unsynced, media.ID)
+	return nil
+}
+
+func (s *FakeSyncer) UnsyncManifest(ctx context.Context, mediaID string) error {
+	s.unsynced[mediaID] = true
+	delete(s.synced, mediaID)
+	return nil
+}
+
 // FakeWatchRepo for HTTP handler testing
 type FakeWatchRepo struct {
 	mu    sync.RWMutex
@@ -99,25 +132,26 @@ func (r *FakeWatchRepo) DeleteWatchProgress(ctx context.Context, mediaID string)
 	return nil
 }
 
-func setupTestServer(t *testing.T) (*Server, *FakeMediaRepo, *FakeWatchRepo, string) {
+func setupTestServer(t *testing.T) (*Server, *FakeMediaRepo, *FakeWatchRepo, *FakeSyncer, string) {
 	tempDir := t.TempDir()
 	transcodeDir := filepath.Join(tempDir, "transcoded")
 	_ = os.MkdirAll(transcodeDir, 0755)
 
 	mediaRepo := &FakeMediaRepo{items: make(map[string]*domain.Media)}
 	watchRepo := &FakeWatchRepo{items: make(map[string]*domain.WatchProgress)}
+	syncer := &FakeSyncer{synced: make(map[string]bool), unsynced: make(map[string]bool)}
 
 	cfg := Config{
 		Addr:         ":0",
 		TranscodeDir: transcodeDir,
 	}
 
-	server := NewServer(cfg, mediaRepo, watchRepo, nil)
-	return server, mediaRepo, watchRepo, transcodeDir
+	server := NewServer(cfg, mediaRepo, watchRepo, syncer, nil)
+	return server, mediaRepo, watchRepo, syncer, transcodeDir
 }
 
 func TestServer_Healthz(t *testing.T) {
-	server, _, _, _ := setupTestServer(t)
+	server, _, _, _, _ := setupTestServer(t)
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	w := httptest.NewRecorder()
 
@@ -132,7 +166,7 @@ func TestServer_Healthz(t *testing.T) {
 }
 
 func TestServer_CORS_Middleware(t *testing.T) {
-	server, _, _, _ := setupTestServer(t)
+	server, _, _, _, _ := setupTestServer(t)
 
 	// Test OPTIONS preflight
 	req := httptest.NewRequest(http.MethodOptions, "/api/media", nil)
@@ -152,7 +186,7 @@ func TestServer_CORS_Middleware(t *testing.T) {
 }
 
 func TestServer_MediaEndpoints(t *testing.T) {
-	server, mediaRepo, _, _ := setupTestServer(t)
+	server, mediaRepo, _, _, _ := setupTestServer(t)
 	ctx := context.Background()
 
 	m1, _ := domain.NewMedia("/v/movie1.mp4", 1000, time.Now(), "hash1", 120, 1920, 1080, "h264", "aac")
@@ -194,7 +228,7 @@ func TestServer_MediaEndpoints(t *testing.T) {
 }
 
 func TestServer_Streaming_HeadersAndByteRanges(t *testing.T) {
-	server, mediaRepo, _, transcodeDir := setupTestServer(t)
+	server, mediaRepo, _, _, transcodeDir := setupTestServer(t)
 	ctx := context.Background()
 
 	m, _ := domain.NewMedia("/v/movie.mp4", 5000, time.Now(), "hash", 60, 1920, 1080, "h264", "aac")
@@ -280,7 +314,7 @@ func TestServer_Streaming_HeadersAndByteRanges(t *testing.T) {
 }
 
 func TestServer_WatchProgress_Endpoints(t *testing.T) {
-	server, _, _, _ := setupTestServer(t)
+	server, _, _, _, _ := setupTestServer(t)
 
 	// 1. Initial GET on unwatched media returns default 0s
 	reqGet := httptest.NewRequest(http.MethodGet, "/api/watch/media-xyz", nil)
@@ -338,7 +372,7 @@ func TestServer_WatchProgress_Endpoints(t *testing.T) {
 }
 
 func TestServer_StartAndShutdown(t *testing.T) {
-	server, _, _, _ := setupTestServer(t)
+	server, _, _, _, _ := setupTestServer(t)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("server start failed: %v", err)
@@ -410,7 +444,7 @@ func TestServer_FullLocalStreamingIntegration(t *testing.T) {
 	mediaRepo := &FakeMediaRepo{items: map[string]*domain.Media{m.ID: m}}
 	watchRepo := &FakeWatchRepo{items: make(map[string]*domain.WatchProgress)}
 
-	server := NewServer(Config{Addr: ":0", TranscodeDir: transcodeDir}, mediaRepo, watchRepo, nil)
+	server := NewServer(Config{Addr: ":0", TranscodeDir: transcodeDir}, mediaRepo, watchRepo, nil, nil)
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -463,3 +497,54 @@ func TestServer_FullLocalStreamingIntegration(t *testing.T) {
 		t.Errorf("expected video/mp2t, got %s", respChunk.Header.Get("Content-Type"))
 	}
 }
+
+func TestServer_TogglePublic_Endpoint(t *testing.T) {
+	server, mediaRepo, _, syncer, _ := setupTestServer(t)
+	ctx := context.Background()
+
+	m, _ := domain.NewMedia("/media/open_movie.mp4", 1000, time.Now(), "hash_toggle", 120, 1920, 1080, "h264", "aac")
+	_ = mediaRepo.Save(ctx, m)
+
+	// 1. Toggle Public = true
+	bodyTrue := bytes.NewBufferString(`{"is_public": true}`)
+	reqTrue := httptest.NewRequest(http.MethodPut, "/api/media/"+m.ID+"/public", bodyTrue)
+	wTrue := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(wTrue, reqTrue)
+
+	if wTrue.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for toggle public true, got %d: %s", wTrue.Code, wTrue.Body.String())
+	}
+	if !syncer.synced[m.ID] {
+		t.Errorf("expected syncer.SyncManifest to be called for media %s", m.ID)
+	}
+
+	// 2. Toggle Public = false (Unpublish)
+	bodyFalse := bytes.NewBufferString(`{"is_public": false}`)
+	reqFalse := httptest.NewRequest(http.MethodPut, "/api/media/"+m.ID+"/public", bodyFalse)
+	wFalse := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(wFalse, reqFalse)
+
+	if wFalse.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for toggle public false, got %d: %s", wFalse.Code, wFalse.Body.String())
+	}
+	if !syncer.unsynced[m.ID] {
+		t.Errorf("expected syncer.UnsyncManifest to be called for media %s", m.ID)
+	}
+
+	// 3. Non-existent media -> 404
+	req404 := httptest.NewRequest(http.MethodPut, "/api/media/non-existent-id/public", bytes.NewBufferString(`{"is_public": true}`))
+	w404 := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(w404, req404)
+	if w404.Code != http.StatusNotFound {
+		t.Errorf("expected 404 for non-existent media, got %d", w404.Code)
+	}
+
+	// 4. Invalid JSON -> 400
+	req400 := httptest.NewRequest(http.MethodPut, "/api/media/"+m.ID+"/public", bytes.NewBufferString(`invalid json`))
+	w400 := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(w400, req400)
+	if w400.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for bad json, got %d", w400.Code)
+	}
+}
+

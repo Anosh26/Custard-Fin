@@ -15,6 +15,7 @@ import (
 
 	"github.com/anosh26/custardfin/apps/edge/internal/domain"
 	"github.com/anosh26/custardfin/apps/edge/internal/ports"
+	"github.com/anosh26/custardfin/libs/contracts"
 )
 
 var (
@@ -32,13 +33,14 @@ type Server struct {
 	httpServer   *http.Server
 	mediaRepo    ports.MediaRepository
 	watchRepo    ports.WatchProgressRepository
+	syncer       ports.ManifestSyncer
 	transcodeDir string
 	logger       *slog.Logger
 	listener     net.Listener
 }
 
 // NewServer constructs and wires the edge HTTP server.
-func NewServer(cfg Config, mediaRepo ports.MediaRepository, watchRepo ports.WatchProgressRepository, logger *slog.Logger) *Server {
+func NewServer(cfg Config, mediaRepo ports.MediaRepository, watchRepo ports.WatchProgressRepository, syncer ports.ManifestSyncer, logger *slog.Logger) *Server {
 	if cfg.Addr == "" {
 		cfg.Addr = ":8090"
 	}
@@ -52,6 +54,7 @@ func NewServer(cfg Config, mediaRepo ports.MediaRepository, watchRepo ports.Watc
 	s := &Server{
 		mediaRepo:    mediaRepo,
 		watchRepo:    watchRepo,
+		syncer:       syncer,
 		transcodeDir: filepath.Clean(cfg.TranscodeDir),
 		logger:       logger,
 	}
@@ -60,6 +63,7 @@ func NewServer(cfg Config, mediaRepo ports.MediaRepository, watchRepo ports.Watc
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
 	mux.HandleFunc("GET /api/media", s.handleListMedia)
 	mux.HandleFunc("GET /api/media/{id}", s.handleGetMedia)
+	mux.HandleFunc("PUT /api/media/{id}/public", s.handleTogglePublic)
 	mux.HandleFunc("GET /stream/{id}/{path...}", s.handleStream)
 	mux.HandleFunc("GET /api/watch/{id}", s.handleGetWatchProgress)
 	mux.HandleFunc("POST /api/watch/{id}", s.handleSaveWatchProgress)
@@ -296,3 +300,65 @@ func (s *Server) withRecovery(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+type togglePublicRequest struct {
+	IsPublic bool `json:"is_public"`
+}
+
+func (s *Server) handleTogglePublic(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing media id"})
+		return
+	}
+
+	var req togglePublicRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON payload"})
+		return
+	}
+
+	media, err := s.mediaRepo.FindByID(r.Context(), id)
+	if err != nil || media == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Media not found"})
+		return
+	}
+
+	// Update SQLite
+	if err := s.mediaRepo.SetPublic(r.Context(), id, req.IsPublic); err != nil {
+		s.logger.Error("failed updating is_public", "id", id, "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to update media status"})
+		return
+	}
+	media.IsPublic = req.IsPublic
+
+	// If syncer is configured, sync to Cloud API
+	if s.syncer != nil {
+		if req.IsPublic {
+			// Provide renditions (1080p, 720p, 480p) conforming to Invariant 6
+			renditions := []contracts.Rendition{
+				{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
+				{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},
+				{Resolution: "480p", BitrateBps: 1200000, PlaylistPath: "480p.m3u8", ChunkDurationS: 4},
+			}
+			if err := s.syncer.SyncManifest(r.Context(), media, renditions); err != nil {
+				s.logger.Error("cloud manifest sync error", "id", id, "err", err)
+				writeJSON(w, http.StatusBadGateway, map[string]string{"error": fmt.Sprintf("Saved locally, but cloud sync failed: %v", err)})
+				return
+			}
+		} else {
+			if err := s.syncer.UnsyncManifest(r.Context(), id); err != nil {
+				s.logger.Error("cloud manifest unsync error", "id", id, "err", err)
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"media_id":  id,
+		"is_public": req.IsPublic,
+		"status":    "updated",
+	})
+}
+

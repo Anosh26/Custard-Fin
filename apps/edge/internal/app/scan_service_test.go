@@ -93,6 +93,18 @@ func (r *FakeMediaRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+func (r *FakeMediaRepository) SetPublic(ctx context.Context, id string, isPublic bool) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, m := range r.items {
+		if m.ID == id {
+			m.IsPublic = isPublic
+			return nil
+		}
+	}
+	return errors.New("media not found")
+}
+
 // FakeProber simulates ffprobe responses with failure injection.
 type FakeProber struct {
 	probeCalls int

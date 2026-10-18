@@ -122,3 +122,73 @@ func TestMediaRepository_CRUD(t *testing.T) {
 		t.Errorf("expected nil after deletion, got: %v, %v", deletedCheck, err)
 	}
 }
+
+func TestMediaRepository_SetPublic(t *testing.T) {
+	ctx := context.Background()
+	db, err := Open(ctx, ":memory:")
+	if err != nil {
+		t.Fatalf("failed to open in-memory db: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewMediaRepository(db)
+
+	m, err := domain.NewMedia(
+		"/media/spring.mp4",
+		50000000,
+		time.Now().UTC(),
+		"hash_spring_123",
+		600,
+		1920,
+		1080,
+		"h264",
+		"aac",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := repo.Save(ctx, m); err != nil {
+		t.Fatalf("failed to save media: %v", err)
+	}
+
+	// Default is_public should be false
+	saved, err := repo.FindByID(ctx, m.ID)
+	if err != nil || saved == nil {
+		t.Fatalf("FindByID failed: %v", err)
+	}
+	if saved.IsPublic {
+		t.Errorf("expected default IsPublic=false, got true")
+	}
+
+	// Toggle public to true
+	if err := repo.SetPublic(ctx, m.ID, true); err != nil {
+		t.Fatalf("SetPublic(true) failed: %v", err)
+	}
+
+	saved, err = repo.FindByID(ctx, m.ID)
+	if err != nil || saved == nil {
+		t.Fatalf("FindByID failed: %v", err)
+	}
+	if !saved.IsPublic {
+		t.Errorf("expected IsPublic=true after update")
+	}
+
+	// Toggle public back to false
+	if err := repo.SetPublic(ctx, m.ID, false); err != nil {
+		t.Fatalf("SetPublic(false) failed: %v", err)
+	}
+
+	saved, err = repo.FindByID(ctx, m.ID)
+	if err != nil || saved == nil {
+		t.Fatalf("FindByID failed: %v", err)
+	}
+	if saved.IsPublic {
+		t.Errorf("expected IsPublic=false after second update")
+	}
+
+	// Non-existent ID returns error
+	if err := repo.SetPublic(ctx, "non-existent-id", true); err == nil {
+		t.Errorf("expected error for non-existent ID")
+	}
+}

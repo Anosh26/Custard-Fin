@@ -39,6 +39,7 @@ type MediaRepository interface {
 	FindByID(ctx context.Context, id string) (*domain.Media, error)
 	FindByHash(ctx context.Context, hash string) (*domain.Media, error)
 	Save(ctx context.Context, media *domain.Media) error
+	SetPublic(ctx context.Context, id string, isPublic bool) error
 	List(ctx context.Context) ([]*domain.Media, error)
 	Delete(ctx context.Context, id string) error
 }

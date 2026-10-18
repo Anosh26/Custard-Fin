@@ -60,7 +60,7 @@ func (r *MediaRepository) Save(ctx context.Context, m *domain.Media) error {
 		m.Height,
 		m.VideoCodec,
 		m.AudioCodec,
-		false,
+		m.IsPublic,
 		m.CreatedAt.Format(time.RFC3339Nano),
 		m.UpdatedAt.Format(time.RFC3339Nano),
 	)
@@ -70,12 +70,29 @@ func (r *MediaRepository) Save(ctx context.Context, m *domain.Media) error {
 	return nil
 }
 
+// SetPublic toggles the public visibility state of a media item.
+func (r *MediaRepository) SetPublic(ctx context.Context, id string, isPublic bool) error {
+	query := `UPDATE media SET is_public = ?, updated_at = ? WHERE id = ?;`
+	res, err := r.db.ExecContext(ctx, query, isPublic, time.Now().UTC().Format(time.RFC3339Nano), id)
+	if err != nil {
+		return fmt.Errorf("failed setting media %s public=%v: %w", id, isPublic, err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 // FindByPath retrieves a media entity by its local absolute filesystem path.
 func (r *MediaRepository) FindByPath(ctx context.Context, path string) (*domain.Media, error) {
 	cleanPath := filepath.Clean(path)
 	query := `
 	SELECT id, path, file_size, mod_time, content_hash, title, duration_s,
-	       width, height, video_codec, audio_codec, created_at, updated_at
+	       width, height, video_codec, audio_codec, is_public, created_at, updated_at
 	FROM media
 	WHERE path = ?;
 	`
@@ -86,7 +103,7 @@ func (r *MediaRepository) FindByPath(ctx context.Context, path string) (*domain.
 func (r *MediaRepository) FindByID(ctx context.Context, id string) (*domain.Media, error) {
 	query := `
 	SELECT id, path, file_size, mod_time, content_hash, title, duration_s,
-	       width, height, video_codec, audio_codec, created_at, updated_at
+	       width, height, video_codec, audio_codec, is_public, created_at, updated_at
 	FROM media
 	WHERE id = ?;
 	`
@@ -97,7 +114,7 @@ func (r *MediaRepository) FindByID(ctx context.Context, id string) (*domain.Medi
 func (r *MediaRepository) FindByHash(ctx context.Context, hash string) (*domain.Media, error) {
 	query := `
 	SELECT id, path, file_size, mod_time, content_hash, title, duration_s,
-	       width, height, video_codec, audio_codec, created_at, updated_at
+	       width, height, video_codec, audio_codec, is_public, created_at, updated_at
 	FROM media
 	WHERE content_hash = ?;
 	`
@@ -108,7 +125,7 @@ func (r *MediaRepository) FindByHash(ctx context.Context, hash string) (*domain.
 func (r *MediaRepository) List(ctx context.Context) ([]*domain.Media, error) {
 	query := `
 	SELECT id, path, file_size, mod_time, content_hash, title, duration_s,
-	       width, height, video_codec, audio_codec, created_at, updated_at
+	       width, height, video_codec, audio_codec, is_public, created_at, updated_at
 	FROM media
 	ORDER BY updated_at DESC;
 	`
@@ -179,6 +196,7 @@ func scanMedia(s rowScanner) (*domain.Media, error) {
 		&m.Height,
 		&m.VideoCodec,
 		&m.AudioCodec,
+		&m.IsPublic,
 		&createStr,
 		&updateStr,
 	)

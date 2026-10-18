@@ -28,6 +28,7 @@ type Media struct {
 	Height       int       `json:"height"`
 	VideoCodec   string    `json:"video_codec"`
 	AudioCodec   string    `json:"audio_codec"`
+	IsPublic     bool      `json:"is_public"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
