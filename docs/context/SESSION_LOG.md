@@ -1,4 +1,22 @@
-# CustardFin Session Log
+## 2026-10-18 - Milestone 2: Local Media Scanner Implementation
+- **Author/Agents:** CustardFin Pair Programming Agent
+- **Milestone:** Milestone 2 (Edge scan, transcode, SQLite, local stream)
+- **Summary:** Implemented `apps/edge` media scanner adhering to hexagonal architecture and Invariants 1 & 8. Delivered streaming SHA-256 hasher with constant memory, recursive filesystem scanner with path traversal guards, managed subprocess `ffprobe` metadata extractor, and incremental change detection in `ScanService`. Verified with full unit tests and a genuine real-world video probe test using host `ffmpeg` and `ffprobe`.
+- **Files Touched:**
+  - `apps/edge/internal/domain/media.go`
+  - `apps/edge/internal/domain/media_test.go`
+  - `apps/edge/internal/ports/scanner.go`
+  - `apps/edge/internal/adapters/fs/hasher.go`
+  - `apps/edge/internal/adapters/fs/hasher_test.go`
+  - `apps/edge/internal/adapters/fs/scanner.go`
+  - `apps/edge/internal/adapters/fs/scanner_test.go`
+  - `apps/edge/internal/adapters/ffprobe/prober.go`
+  - `apps/edge/internal/adapters/ffprobe/prober_test.go`
+  - `apps/edge/internal/app/scan_service.go`
+  - `apps/edge/internal/app/scan_service_test.go`
+  - `docs/context/STATE.md`
+- **Follow-ups:**
+  - Implement edge SQLite store (`modernc.org/sqlite`) for local metadata and watch progress.
 
 ## 2026-10-18 - Session Start & Milestone 1 Initialization
 - **Author/Agents:** CustardFin Pair Programming Agent
