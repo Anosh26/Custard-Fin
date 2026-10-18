@@ -99,6 +99,9 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 
 	// Catalog Search (Public)
 	mux.HandleFunc("GET /v1/catalog", s.handleGetCatalog)
+
+	// Playback Route Resolution (Public)
+	mux.HandleFunc("GET /v1/media/{id}/playback", s.handleGetPlayback)
 }
 
 // Start begins listening on the configured address.
@@ -433,3 +436,41 @@ func (s *Server) handleGetCatalog(w http.ResponseWriter, r *http.Request) {
 		Total: total,
 	})
 }
+
+type playbackResponse struct {
+	StreamURL string `json:"stream_url"`
+	RouteType string `json:"route_type"`
+	ExpiresAt string `json:"expires_at"`
+}
+
+func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Media ID is required")
+		return
+	}
+
+	item, err := s.catalogRepo.FindByMediaID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "NOT_FOUND", "Media not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to resolve playback")
+		return
+	}
+
+	// For direct LAN / edge playback in milestone 4:
+	// Route directly to edge streaming port (default :8088)
+	streamURL := fmt.Sprintf("http://localhost:8088/stream/%s/master.m3u8", item.MediaID)
+	expiresAt := time.Now().Add(1 * time.Hour).UTC().Format(time.RFC3339)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(playbackResponse{
+		StreamURL: streamURL,
+		RouteType: "direct_lan",
+		ExpiresAt: expiresAt,
+	})
+}
+

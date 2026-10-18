@@ -11,9 +11,9 @@ Record all pinned dependency versions, verification dates, and official document
 | JWT Tokens | `github.com/golang-jwt/jwt/v5` v5.3.1 | https://pkg.go.dev/github.com/golang-jwt/jwt/v5 | HMAC-SHA256 bearer tokens |
 | Redis Client | `go-redis/v9` | https://redis.uptrace.dev/ | Used for node heartbeats only |
 | SQL Generator | `sqlc` | https://docs.sqlc.dev/ | Type-safe SQL code generation |
-| Node.js | LTS (20.x or 22.x) | https://nodejs.org/docs/latest/ | Node runtime only (no Bun) |
-| Next.js | 15.x / latest LTS App Router | https://nextjs.org/docs | App router, React Server Components |
-| Video Player | `hls.js` | https://github.com/video-dev/hls.js/ | Client-side HLS playback |
+| Node.js | v24.14.0 (npm 11.9.0) | https://nodejs.org/docs/latest/ | Node runtime only (no Bun) |
+| Next.js | 15.1.0 | https://nextjs.org/docs | App router, React Server Components (React 19.0.0) |
+| Video Player | `hls.js` v1.5.17 | https://github.com/video-dev/hls.js/ | Client-side HLS playback with rendition switching |
 | Reverse Proxy | Caddy 2.x | https://caddyserver.com/docs/ | Automated TLS for demo profile |
 | Tunnel | FRP | https://github.com/fatedier/frp | Outbound TLS tunnel |
 | Transcoder | FFmpeg 8.0.1 | https://ffmpeg.org/documentation.html | Verified locally: `h264_nvenc`, `hevc_nvenc`, `av1_nvenc` active on RTX |

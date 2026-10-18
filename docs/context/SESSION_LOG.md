@@ -1,3 +1,22 @@
+## 2026-10-18 - Milestone 4: Public Toggle, Manifest Sync Worker, and Next.js Web UI
+- **Author/Agents:** CustardFin Pair Programming Agent
+- **Milestone:** Milestone 4 (Public toggle -> manifest sync worker -> Next.js community catalog UI)
+- **Summary:** Completed both Edge manifest synchronization and Next.js Web UI tiers for Milestone 4. In `apps/edge`, implemented `HTTPManifestSyncer` enforcing strict <= 3 KB JSON manifest cap and 4s segment durations, wired `PUT /api/media/{id}/public` toggle and SQLite persistence. In `apps/api`, registered `GET /v1/media/{id}/playback` route resolving stream routing decisions. In `apps/web`, built Next.js 15.1.0 App Router UI with HLS player client component (`hls.js` quality rendition switcher and Safari fallback), rich dark theme glassmorphism aesthetic (`globals.css`), community catalog discovery grid (`/`), search filtering (`?q=`), and watch route (`/watch/[id]`). Passing 100% of quality gates: `go test -v ./...` on edge and api, `npm run build`, `tsc --noEmit`, and `eslint`.
+- **Files Touched:**
+  - `apps/edge/internal/ports/syncer.go`
+  - `apps/edge/internal/adapters/sync/{syncer.go, syncer_test.go}`
+  - `apps/edge/internal/adapters/sqlite/media_repo.go`
+  - `apps/edge/internal/adapters/httpapi/{server.go, server_test.go}`
+  - `apps/edge/cmd/edged/main.go`
+  - `apps/api/internal/adapters/httpapi/{server.go, server_test.go}`
+  - `apps/web/{package.json, tsconfig.json, next.config.js, .eslintrc.json}`
+  - `apps/web/src/components/{Player.tsx, SearchBar.tsx}`
+  - `apps/web/src/app/{globals.css, layout.tsx, page.tsx, watch/[id]/page.tsx}`
+  - `apps/web/src/lib/api-client.ts`
+  - `docs/context/{STATE.md, STACK_VERSIONS.md, SESSION_LOG.md}`
+- **Follow-ups:**
+  - Milestone 5: FRP Tunnel — Remote Playback End-to-End.
+
 ## 2026-10-18 - Milestone 3: Cloud Control API (Auth, PostgreSQL Catalog, Node Pairing & Manifest Sync)
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 3 (Cloud API: Auth, Postgres, manifest and catalog endpoints)

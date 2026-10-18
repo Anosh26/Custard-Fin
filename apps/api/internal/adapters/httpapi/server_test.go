@@ -14,6 +14,7 @@ import (
 	"github.com/anosh26/custardfin/apps/api/internal/adapters/auth"
 	"github.com/anosh26/custardfin/apps/api/internal/adapters/httpapi"
 	"github.com/anosh26/custardfin/apps/api/internal/adapters/memory"
+	"github.com/anosh26/custardfin/apps/api/internal/domain"
 	"github.com/anosh26/custardfin/libs/contracts"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -317,3 +318,72 @@ func TestServer_StartAndShutdown(t *testing.T) {
 		t.Errorf("expected clean shutdown, got %v", err)
 	}
 }
+
+func TestServer_Playback(t *testing.T) {
+	server, _, _, catalogRepo := setupTestServer(t)
+
+	// 1. Not Found
+	req := httptest.NewRequest(http.MethodGet, "/v1/media/non-existent-id/playback", nil)
+	w := httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 for missing media, got %d", w.Code)
+	}
+
+	// 2. Existing Media
+	mediaID := "77777777-7777-7777-7777-777777777777"
+	nodeID := "11111111-1111-1111-1111-111111111111"
+
+	err := catalogRepo.UpsertManifest(context.Background(), &domain.CatalogItem{
+		MediaID:     mediaID,
+		NodeID:      nodeID,
+		Title:       "Test Movie",
+		Description: "A great movie",
+		DurationS:   120,
+		ContentHash: "hash-12345",
+		IsPublic:    true,
+		UpdatedAt:   time.Now().UTC(),
+	})
+	if err != nil {
+		t.Fatalf("failed to insert test catalog item: %v", err)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/v1/media/"+mediaID+"/playback", nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var pbRes struct {
+		StreamURL string `json:"stream_url"`
+		RouteType string `json:"route_type"`
+		ExpiresAt string `json:"expires_at"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &pbRes); err != nil {
+		t.Fatalf("failed to parse playback response: %v", err)
+	}
+
+	if !strings.Contains(pbRes.StreamURL, mediaID) {
+		t.Errorf("expected stream url to contain media ID, got %s", pbRes.StreamURL)
+	}
+	if pbRes.RouteType != "direct_lan" {
+		t.Errorf("expected direct_lan route type, got %s", pbRes.RouteType)
+	}
+	if pbRes.ExpiresAt == "" {
+		t.Errorf("expected non-empty expires_at")
+	}
+
+	// 3. Simulated Repo Error
+	catalogRepo.SimulateErr = fmt.Errorf("database query failure")
+	req = httptest.NewRequest(http.MethodGet, "/v1/media/"+mediaID+"/playback", nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 Internal Server Error, got %d", w.Code)
+	}
+}
+

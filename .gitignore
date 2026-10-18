@@ -16,6 +16,7 @@ node_modules/
 out/
 build/
 dist/
+*.tsbuildinfo
 
 # SQLite databases and temp files
 *.db

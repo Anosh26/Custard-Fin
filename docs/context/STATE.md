@@ -1,7 +1,7 @@
 # CustardFin Project State
 
 ## Current Milestone
-- **Milestone 4**: Public toggle -> manifest sync worker -> Next.js community catalog UI.
+- **Milestone 5**: FRP Tunnel — Remote Playback End-to-End (Outbound-only home edge tunnel to relay server).
 
 ## Done
 - **Milestone 1**: Contracts and repo skeleton, CI, docs scaffolding, memory files.
@@ -30,17 +30,27 @@
   - Invariant 1 enforced: manifest payloads strictly capped at <= 3 KB.
   - Main daemon `cmd/apid/main.go` wired with 12-factor config and graceful shutdown.
   - 100% test coverage across all modules and full HTTP integration suite passing.
+- **Milestone 4**: Public Toggle -> Manifest Sync Worker -> Next.js Community Catalog UI.
+  - Edge manifest syncer (`apps/edge/internal/adapters/sync`): enforces <= 3 KB manifest cap, 4s segment constraint, dispatches to `PUT /v1/nodes/{id}/media/{mid}/manifest` and `DELETE ...`.
+  - Edge public toggle: `PUT /api/media/{id}/public` triggers automatic manifest sync/unsync and persists `is_public` in SQLite.
+  - Cloud API stream routing: `GET /v1/media/{id}/playback` endpoint with direct LAN stream resolution.
+  - Next.js Web UI (`apps/web`):
+    - Next.js 15.1.0 App Router with TypeScript strict mode, React Server Components.
+    - HLS player client component (`apps/web/src/components/Player.tsx`) using `hls.js` with quality rendition switcher and native Safari fallback.
+    - Glassmorphism dark aesthetic design system (`globals.css`) with responsive video cards, online status indicators, and duration badges.
+    - Community discovery catalog (`/`) with search filter `?q=`, and watch player route (`/watch/[id]`).
+    - 100% build and lint passing: `next build`, `tsc --noEmit`, `eslint`.
 
 ## In Progress
-- Milestone 4: Edge public toggle -> manifest sync worker -> Next.js community catalog UI.
+- Milestone 5 Architecture Design & Setup (FRP tunnel: outbound TLS connection from edge to cloud relay).
 
 ## Blocked
 - None.
 
 ## Next 3 Tasks
-1. Explain Milestone 4 implementation design to user (Edge manifest sync worker on public toggle, Next.js App Router catalog UI).
-2. Implement Edge sync worker in `apps/edge` (`PUT /v1/nodes/{id}/media/{mid}/manifest` when marked public).
-3. Scaffold and build Next.js App Router UI (`apps/web`) with server components and community catalog discovery.
+1. Design Milestone 5 FRP tunnel architecture (outbound-only TLS connection, CGNAT bypass, managed subprocess vs embedded client).
+2. Create `deploy/frps.toml` configuration and relay test container setup.
+3. Implement `apps/edge/internal/adapters/frp` managed client adapter with auto-reconnect backoff.
 
 ## Open Questions (Requires Human Decision)
 - **Heartbeat timing:** BRD target "offline within 15 s" vs grace window. (Currently will make TTL configurable, defaulting to 15s).
