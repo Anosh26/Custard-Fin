@@ -1,13 +1,14 @@
 package contracts
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
 )
 
-func TestManifestValidation(t *testing.T) {
-	valid := &Manifest{
+func validTestManifest() *Manifest {
+	return &Manifest{
 		SchemaVersion: "1.0",
 		MediaID:       "550e8400-e29b-41d4-a716-446655440000",
 		NodeID:        "550e8400-e29b-41d4-a716-446655440001",
@@ -31,48 +32,63 @@ func TestManifestValidation(t *testing.T) {
 		IsPublic:  true,
 		UpdatedAt: time.Now().UTC(),
 	}
+}
 
-	if err := valid.Validate(); err != nil {
-		t.Fatalf("expected valid manifest, got: %v", err)
-	}
-
-	// Test non-4s chunk duration violation
-	invalidChunk := *valid
-	invalidChunk.Renditions = []Rendition{
-		{
-			Resolution:     "1080p",
-			BitrateBps:     5000000,
-			PlaylistPath:   "1080p/index.m3u8",
-			ChunkDurationS: 6, // violation
-		},
-	}
-	if err := invalidChunk.Validate(); err == nil {
-		t.Fatalf("expected error for non-4s chunk duration")
-	}
-
-	// Test size constraint (> 3KB)
-	oversized := *valid
-	oversized.Description = strings.Repeat("A", 3500)
-	if err := oversized.Validate(); err == nil {
-		t.Fatalf("expected error for manifest exceeding 3KB")
+func TestManifestValidation_HappyPath(t *testing.T) {
+	manifest := validTestManifest()
+	if err := manifest.Validate(); err != nil {
+		t.Fatalf("expected valid manifest to pass, got: %v", err)
 	}
 }
 
-func TestHeartbeatValidation(t *testing.T) {
-	hb := &Heartbeat{
-		NodeID:        "550e8400-e29b-41d4-a716-446655440001",
-		SentAt:        time.Now().UTC(),
-		Version:       "0.1.0",
-		ActiveStreams: 5,
+func TestManifestValidation_SchemaVersion(t *testing.T) {
+	manifest := validTestManifest()
+	manifest.SchemaVersion = "2.0"
+	if err := manifest.Validate(); !errors.Is(err, ErrMissingRequiredField) {
+		t.Errorf("expected ErrMissingRequiredField for invalid schema version, got: %v", err)
+	}
+}
+
+func TestManifestValidation_RequiredFields(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(m *Manifest)
+	}{
+		{"empty MediaID", func(m *Manifest) { m.MediaID = "" }},
+		{"empty NodeID", func(m *Manifest) { m.NodeID = "" }},
+		{"empty Title", func(m *Manifest) { m.Title = "" }},
+		{"empty ContentHash", func(m *Manifest) { m.ContentHash = "" }},
+		{"zero duration", func(m *Manifest) { m.DurationS = 0 }},
+		{"negative duration", func(m *Manifest) { m.DurationS = -10 }},
+		{"empty renditions", func(m *Manifest) { m.Renditions = nil }},
+		{"empty playlist path", func(m *Manifest) { m.Renditions[0].PlaylistPath = "" }},
+		{"zero bitrate", func(m *Manifest) { m.Renditions[0].BitrateBps = 0 }},
+		{"negative bitrate", func(m *Manifest) { m.Renditions[0].BitrateBps = -500 }},
 	}
 
-	if err := hb.Validate(); err != nil {
-		t.Fatalf("expected valid heartbeat, got: %v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := validTestManifest()
+			tt.mutate(m)
+			if err := m.Validate(); err == nil {
+				t.Errorf("expected validation error for %s, got nil", tt.name)
+			}
+		})
 	}
+}
 
-	// Exceeding per-node cap of 10
-	hb.ActiveStreams = 11
-	if err := hb.Validate(); err == nil {
-		t.Fatalf("expected error for active streams > 10")
+func TestManifestValidation_ChunkDurationInvariant(t *testing.T) {
+	manifest := validTestManifest()
+	manifest.Renditions[0].ChunkDurationS = 6 // must be exactly 4s
+	if err := manifest.Validate(); !errors.Is(err, ErrInvalidChunkDuration) {
+		t.Errorf("expected ErrInvalidChunkDuration, got: %v", err)
+	}
+}
+
+func TestManifestValidation_SizeCap(t *testing.T) {
+	manifest := validTestManifest()
+	manifest.Description = strings.Repeat("X", 3500)
+	if err := manifest.Validate(); !errors.Is(err, ErrManifestTooLarge) {
+		t.Errorf("expected ErrManifestTooLarge, got: %v", err)
 	}
 }

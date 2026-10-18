@@ -4,18 +4,19 @@
 - **Milestone 1**: Contracts and repo skeleton, CI, docs scaffolding, memory files.
 
 ## Done
-- Initialized `AGENTS.md` and `CLAUDE.md`.
+- Initialized `AGENTS.md` and `CLAUDE.md` with updated **Mandatory Granular Testing Policy** (unit tests for every module/function, edge cases, error paths, and subsystem integration tests).
 - Initialized Tier 0 and Tier 1 memory files (`INVARIANTS.md`, `STATE.md`, `PROJECT_BRIEF.md`, `GLOSSARY.md`, `STACK_VERSIONS.md`, `SESSION_LOG.md`).
-- Established `libs/contracts` (Manifest & Heartbeat Go types + JSON Schemas, HMAC signed URL utils, unit tests).
+- Established `libs/contracts` with comprehensive unit tests for `Manifest`, `Heartbeat`, and `Signing`.
 - Scaffolded repository skeleton (`apps/edge`, `apps/api`, `apps/web`, `deploy`, `scripts`, `tests`, `docs/adr/0001`, `docs/api/openapi.yaml`, CI workflow).
 - Verified local FFmpeg 8.0.1 and FFprobe with NVENC hardware acceleration.
 - Implemented `apps/edge` media scanner:
-  - `domain.Media` entity with UUID generation.
+  - `domain.Media` entity with UUID generation and validation tests.
   - `ports.Scanner`, `ports.Prober`, `ports.MediaRepository` interfaces.
-  - `adapters/fs.Hasher`: streaming O(1) memory SHA-256 calculation.
-  - `adapters/fs.FileScanner`: recursive traversal with extension filtering and path traversal safeguards.
-  - `adapters/ffprobe.SubprocessProber`: managed `ffprobe` execution with JSON stream parsing.
-  - `app.ScanService`: incremental scanning with fast-path skip for unchanged files.
+  - `adapters/fs.Hasher`: streaming O(1) memory SHA-256 calculation (empty files, multi-block files, error paths).
+  - `adapters/fs.FileScanner`: recursive traversal with extension filtering, casing checks, empty/whitespace validation, and path traversal safeguards.
+  - `adapters/ffprobe.SubprocessProber`: managed `ffprobe` execution with real video, audio-only error detection, and corrupted file handling.
+  - `app.ScanService`: incremental scanning with fast-path skip for unchanged files and fault tolerance.
+  - Full end-to-end integration test (`scanner_integration_test.go`) verifying entire pipeline with genuine ffmpeg fixtures.
 
 ## In Progress
 - Milestone 2: Pure-Go SQLite persistence store (`modernc.org/sqlite`) for edge media and watch progress.

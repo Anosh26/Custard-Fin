@@ -1,8 +1,20 @@
-## 2026-10-18 - Milestone 2: Local Media Scanner Implementation
+## 2026-10-18 - Milestone 2: Mandatory Testing Policy & Comprehensive Test Suite
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 2 (Edge scan, transcode, SQLite, local stream)
-- **Summary:** Implemented `apps/edge` media scanner adhering to hexagonal architecture and Invariants 1 & 8. Delivered streaming SHA-256 hasher with constant memory, recursive filesystem scanner with path traversal guards, managed subprocess `ffprobe` metadata extractor, and incremental change detection in `ScanService`. Verified with full unit tests and a genuine real-world video probe test using host `ffmpeg` and `ffprobe`.
+- **Summary:** Updated `AGENTS.md` with the Mandatory Granular Testing Policy requiring comprehensive unit tests for every package, module, and function, plus integration tests. Built and ran exhaustive test suites across `libs/contracts`, `domain`, `adapters/fs`, `adapters/ffprobe`, and `app`, including real-world integration testing with generated ffmpeg clips and subprocess ffprobe. Caught and resolved edge cases in empty/whitespace root directory handling and test variable declarations. All quality gates and tests are green.
 - **Files Touched:**
+  - `AGENTS.md`
+  - `libs/contracts/manifest_test.go`
+  - `libs/contracts/heartbeat_test.go`
+  - `libs/contracts/signing_test.go`
+  - `apps/edge/internal/domain/media_test.go`
+  - `apps/edge/internal/adapters/fs/hasher_test.go`
+  - `apps/edge/internal/adapters/fs/scanner.go`
+  - `apps/edge/internal/adapters/fs/scanner_test.go`
+  - `apps/edge/internal/adapters/ffprobe/prober_test.go`
+  - `apps/edge/internal/app/scan_service_test.go`
+  - `apps/edge/internal/app/scanner_integration_test.go`
+  - `docs/context/STATE.md`
   - `apps/edge/internal/domain/media.go`
   - `apps/edge/internal/domain/media_test.go`
   - `apps/edge/internal/ports/scanner.go`

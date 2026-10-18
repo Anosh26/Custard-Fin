@@ -196,6 +196,17 @@ Goal: the whole **cloud tier** runs on infrastructure we control and can explain
 
 ## 9. Testing and workflow
 
+- **Mandatory Granular Testing Policy:**
+  - **Every package, small module, and individual function** must have dedicated unit tests covering:
+    - Happy path execution.
+    - All error handling branches and validation checks.
+    - Edge cases, zero/empty values, boundary constraints, and cancellation signals (`context.Context`).
+  - **Integration testing:**
+    - Edge subsystem: integration tests with real temporary files, filesystem boundaries, and actual subprocesses (`ffmpeg`, `ffprobe`).
+    - Cloud subsystem: integration tests with PostgreSQL, Redis, and S3-compatible cache containers.
+    - Router & networking: end-to-end tests for playback decision tree, tunnel transport, and admission limiters.
+  - **Contract testing:** Contract tests must validate compliance against `libs/contracts` JSON Schemas and Go interfaces for every adapter.
+  - **Verification rule:** After writing or modifying any function, run unit and integration tests with verbose output, check that actual outputs match desired invariants, and fix discrepancies immediately.
 - Test pyramid: unit (domain/use cases with fakes), contract tests for every adapter, integration (Postgres/Redis/S3-compatible via containers), e2e (play a video through each path), load (`10 same title`, `10 different titles`).
 - Every bug fix gets a regression test.
 - Git: short-lived branches, **Conventional Commits** (`feat(edge): …`), PRs small and linked to an FR-ID, CI must be green.

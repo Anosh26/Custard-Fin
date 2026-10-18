@@ -46,14 +46,13 @@ func (s *FileScanner) Scan(ctx context.Context, rootDir string) (<-chan ports.Fi
 		defer close(entryChan)
 		defer close(errChan)
 
-		cleanRoot := filepath.Clean(rootDir)
-		if cleanRoot == "" || cleanRoot == "." {
-			// check if rootDir was really empty
-			if strings.TrimSpace(rootDir) == "" {
-				errChan <- ErrInvalidRootDir
-				return
-			}
+		trimmed := strings.TrimSpace(rootDir)
+		if trimmed == "" {
+			errChan <- ErrInvalidRootDir
+			return
 		}
+
+		cleanRoot := filepath.Clean(rootDir)
 
 		walkErr := filepath.WalkDir(cleanRoot, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
