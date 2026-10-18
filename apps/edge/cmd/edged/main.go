@@ -6,9 +6,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/ffprobe"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/fs"
+	"github.com/anosh26/custardfin/apps/edge/internal/adapters/httpapi"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/sqlite"
 	"github.com/anosh26/custardfin/apps/edge/internal/app"
 )
@@ -26,7 +28,9 @@ func main() {
 
 	// 1. Resolve configuration from environment
 	mediaDir := getEnv("EDGE_MEDIA_DIR", "./media")
+	transcodeDir := getEnv("EDGE_TRANSCODE_DIR", "./transcoded")
 	dbPath := getEnv("EDGE_DB_PATH", "./data/edge.db")
+	listenAddr := getEnv("EDGE_ADDR", ":8090")
 
 	// 2. Initialize Edge SQLite Database
 	db, err := sqlite.Open(ctx, dbPath)
@@ -37,15 +41,28 @@ func main() {
 	defer db.Close()
 	slog.Info("edge sqlite store initialized", "path", dbPath)
 
-	// 3. Initialize Adapters and Services
+	// 3. Initialize Repositories and Services
 	mediaRepo := sqlite.NewMediaRepository(db)
+	watchRepo := sqlite.NewWatchProgressRepository(db)
+
 	fileScanner := fs.NewFileScanner()
 	hasher := fs.NewHasher()
 	prober := ffprobe.NewSubprocessProber("")
 
 	scanService := app.NewScanService(fileScanner, prober, hasher, mediaRepo, logger)
 
-	// 4. Run initial media library scan
+	// 4. Initialize and Start Local HTTP Streaming Server
+	httpServer := httpapi.NewServer(httpapi.Config{
+		Addr:         listenAddr,
+		TranscodeDir: transcodeDir,
+	}, mediaRepo, watchRepo, logger)
+
+	if err := httpServer.Start(); err != nil {
+		slog.Error("failed starting edge local http server", "err", err)
+		os.Exit(1)
+	}
+
+	// 5. Run initial media library scan in background
 	if _, err := os.Stat(mediaDir); err == nil {
 		go func() {
 			if _, err := scanService.ScanDirectory(ctx, mediaDir); err != nil {
@@ -56,9 +73,18 @@ func main() {
 		slog.Warn("media directory does not exist, skipping scan", "path", mediaDir)
 	}
 
-	// 5. Wait for shutdown signal
+	// 6. Wait for shutdown signal
 	<-ctx.Done()
-	slog.Info("edged shutting down gracefully")
+	slog.Info("shutdown signal received, commencing graceful shutdown")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		slog.Error("error during http server shutdown", "err", err)
+	}
+
+	slog.Info("edged stopped cleanly")
 }
 
 func getEnv(key, defaultVal string) string {
