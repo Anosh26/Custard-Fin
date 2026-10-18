@@ -1,3 +1,16 @@
+## 2026-10-18 - Milestone 2: Edge Local HTTP Streaming Server (Standalone Mini-Jellyfin)
+- **Author/Agents:** CustardFin Pair Programming Agent
+- **Milestone:** Milestone 2 (Edge scan, transcode, SQLite, local stream)
+- **Summary:** Implemented `apps/edge/internal/adapters/httpapi` standard library `net/http` streaming server for direct LAN playback. Delivered CORS headers, structured logging, panic recovery, static HLS file serving with byte ranges (`Accept-Ranges: bytes`), media catalog endpoints (`GET /api/media`, `GET /api/media/{id}`), local watch progress tracking (`GET /api/watch/{id}`, `POST /api/watch/{id}`), and path traversal prevention. Wired HTTP server into `apps/edge/cmd/edged/main.go` with graceful context shutdown. Comprehensive unit and integration test suite passing. Milestone 2 is fully complete.
+- **Files Touched:**
+  - `apps/edge/internal/adapters/httpapi/server.go`
+  - `apps/edge/internal/adapters/httpapi/server_test.go`
+  - `apps/edge/internal/adapters/httpapi/README.md`
+  - `apps/edge/cmd/edged/main.go`
+  - `docs/context/STATE.md`
+- **Follow-ups:**
+  - Milestone 3: Cloud Control API (`apps/api`) setup (PostgreSQL schemas, `pgx`, `sqlc`, JWT auth, manifest sync, and catalog discovery).
+
 ## 2026-10-18 - Milestone 2: Managed Subprocess FFmpeg 4s HLS Transcoder
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 2 (Edge scan, transcode, SQLite, local stream)
