@@ -1,3 +1,20 @@
+## 2026-10-18 - Milestone 3: Cloud Control API (Auth, PostgreSQL Catalog, Node Pairing & Manifest Sync)
+- **Author/Agents:** CustardFin Pair Programming Agent
+- **Milestone:** Milestone 3 (Cloud API: Auth, Postgres, manifest and catalog endpoints)
+- **Summary:** Built `apps/api` following Hexagonal Architecture and the Mandatory Granular Testing Policy. Implemented bcrypt password hashing, HMAC-SHA256 JWT bearer token issuance/validation, versioned PostgreSQL schema migrations (`users`, `nodes`, `catalog_items`, `catalog_renditions`), parameterized pgx query repositories, in-memory repositories for rapid isolated testing, and full OpenAPI-compliant HTTP endpoints (`/v1/auth/register`, `/v1/auth/login`, `/v1/nodes`, `/v1/nodes/{id}/media/{mid}/manifest`, `/v1/catalog`, `/healthz`). Enforced strict 3 KB manifest cap (Invariant 1) and node stream security. Wired `cmd/apid/main.go` daemon with graceful shutdown. All granular unit and integration tests passing.
+- **Files Touched:**
+  - `apps/api/cmd/apid/main.go`
+  - `apps/api/internal/domain/{user.go, user_test.go, node.go, node_test.go, catalog.go, catalog_test.go, errors.go}`
+  - `apps/api/internal/ports/{user_repository.go, node_repository.go, catalog_repository.go, auth.go}`
+  - `apps/api/internal/adapters/auth/{bcrypt_hasher.go, bcrypt_hasher_test.go, jwt_service.go, jwt_service_test.go}`
+  - `apps/api/internal/adapters/postgres/{db.go, migrations.go, user_repo.go, node_repo.go, catalog_repo.go, migrations/001_initial_schema.sql}`
+  - `apps/api/internal/adapters/memory/{user_repo.go, node_repo.go, catalog_repo.go, memory_test.go}`
+  - `apps/api/internal/adapters/httpapi/{server.go, server_test.go, middleware.go, README.md}`
+  - `docs/context/STACK_VERSIONS.md`
+  - `docs/context/STATE.md`
+- **Follow-ups:**
+  - Milestone 4: Edge public toggle -> manifest sync worker -> Next.js catalog UI.
+
 ## 2026-10-18 - Milestone 2: Edge Local HTTP Streaming Server (Standalone Mini-Jellyfin)
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 2 (Edge scan, transcode, SQLite, local stream)
