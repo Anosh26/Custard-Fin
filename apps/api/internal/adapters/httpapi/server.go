@@ -18,19 +18,21 @@ import (
 )
 
 type Config struct {
-	Addr string
+	Addr         string
+	HeartbeatTTL time.Duration
 }
 
 type Server struct {
-	cfg          Config
-	userRepo     ports.UserRepository
-	nodeRepo     ports.NodeRepository
-	catalogRepo  ports.CatalogRepository
-	hasher       ports.PasswordHasher
-	tokenService ports.TokenService
-	logger       *slog.Logger
-	server       *http.Server
-	listener     net.Listener
+	cfg            Config
+	userRepo       ports.UserRepository
+	nodeRepo       ports.NodeRepository
+	catalogRepo    ports.CatalogRepository
+	heartbeatStore ports.HeartbeatStore
+	hasher         ports.PasswordHasher
+	tokenService   ports.TokenService
+	logger         *slog.Logger
+	server         *http.Server
+	listener       net.Listener
 }
 
 func NewServer(
@@ -38,6 +40,7 @@ func NewServer(
 	userRepo ports.UserRepository,
 	nodeRepo ports.NodeRepository,
 	catalogRepo ports.CatalogRepository,
+	heartbeatStore ports.HeartbeatStore,
 	hasher ports.PasswordHasher,
 	tokenService ports.TokenService,
 	logger *slog.Logger,
@@ -45,18 +48,22 @@ func NewServer(
 	if cfg.Addr == "" {
 		cfg.Addr = ":8080"
 	}
+	if cfg.HeartbeatTTL <= 0 {
+		cfg.HeartbeatTTL = 20 * time.Second
+	}
 	if logger == nil {
 		logger = slog.Default()
 	}
 
 	s := &Server{
-		cfg:          cfg,
-		userRepo:     userRepo,
-		nodeRepo:     nodeRepo,
-		catalogRepo:  catalogRepo,
-		hasher:       hasher,
-		tokenService: tokenService,
-		logger:       logger,
+		cfg:            cfg,
+		userRepo:       userRepo,
+		nodeRepo:       nodeRepo,
+		catalogRepo:    catalogRepo,
+		heartbeatStore: heartbeatStore,
+		hasher:         hasher,
+		tokenService:   tokenService,
+		logger:         logger,
 	}
 
 	mux := http.NewServeMux()
@@ -92,8 +99,9 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	// Nodes (Requires JWT Bearer Auth)
 	mux.Handle("POST /v1/nodes", RequireUserAuth(s.tokenService)(http.HandlerFunc(s.handleRegisterNode)))
 
-	// Manifest Sync (Requires X-Node-Token Auth)
+	// Node Heartbeat & Manifest Sync (Requires X-Node-Token Auth)
 	nodeAuth := RequireNodeAuth(s.nodeRepo)
+	mux.Handle("POST /v1/nodes/{id}/heartbeat", nodeAuth(http.HandlerFunc(s.handleNodeHeartbeat)))
 	mux.Handle("PUT /v1/nodes/{id}/media/{mid}/manifest", nodeAuth(http.HandlerFunc(s.handleUpsertManifest)))
 	mux.Handle("DELETE /v1/nodes/{id}/media/{mid}/manifest", nodeAuth(http.HandlerFunc(s.handleDeleteManifest)))
 
@@ -416,6 +424,18 @@ func (s *Server) handleGetCatalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	nodeIDs := make([]string, 0, len(items))
+	for _, it := range items {
+		nodeIDs = append(nodeIDs, it.NodeID)
+	}
+
+	onlineMap := make(map[string]bool)
+	if s.heartbeatStore != nil && len(nodeIDs) > 0 {
+		if om, err := s.heartbeatStore.BatchIsNodeOnline(r.Context(), nodeIDs); err == nil {
+			onlineMap = om
+		}
+	}
+
 	resItems := make([]catalogItemResponse, 0, len(items))
 	for _, it := range items {
 		resItems = append(resItems, catalogItemResponse{
@@ -424,7 +444,7 @@ func (s *Server) handleGetCatalog(w http.ResponseWriter, r *http.Request) {
 			Description:  it.Description,
 			DurationS:    it.DurationS,
 			NodeID:       it.NodeID,
-			IsNodeOnline: false, // Default false until Redis heartbeat router milestone
+			IsNodeOnline: onlineMap[it.NodeID],
 			UpdatedAt:    it.UpdatedAt.Format(time.RFC3339),
 		})
 	}
@@ -435,6 +455,43 @@ func (s *Server) handleGetCatalog(w http.ResponseWriter, r *http.Request) {
 		Items: resItems,
 		Total: total,
 	})
+}
+
+func (s *Server) handleNodeHeartbeat(w http.ResponseWriter, r *http.Request) {
+	nodeID := r.PathValue("id")
+	if nodeID == "" {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Node ID is required")
+		return
+	}
+
+	var hb contracts.Heartbeat
+	if err := json.NewDecoder(r.Body).Decode(&hb); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Malformed heartbeat payload")
+		return
+	}
+
+	if hb.NodeID != "" && hb.NodeID != nodeID {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Node ID in path does not match payload")
+		return
+	}
+	hb.NodeID = nodeID
+
+	if err := hb.Validate(); err != nil {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
+
+	if s.heartbeatStore != nil {
+		if err := s.heartbeatStore.RecordHeartbeat(r.Context(), &hb, s.cfg.HeartbeatTTL); err != nil {
+			s.logger.Error("failed to record heartbeat", "node_id", nodeID, "err", err)
+			writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to record heartbeat")
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 type playbackResponse struct {
@@ -460,7 +517,27 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For direct LAN / edge playback in milestone 4:
+	// Play Decision Tree:
+	// Check node liveness and active stream capacity from Redis HeartbeatStore
+	if s.heartbeatStore != nil {
+		hb, online, err := s.heartbeatStore.GetHeartbeat(r.Context(), item.NodeID)
+		if err != nil {
+			s.logger.Error("failed checking node liveness", "node_id", item.NodeID, "err", err)
+			writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to check node status")
+			return
+		}
+		if !online {
+			writeError(w, http.StatusServiceUnavailable, "NODE_OFFLINE", "Home edge node is currently offline")
+			return
+		}
+		if hb != nil && hb.ActiveStreams >= contracts.MaxConcurrentStreamsPerNode {
+			w.Header().Set("Retry-After", "30")
+			writeError(w, http.StatusTooManyRequests, "NODE_BUSY", "Node capacity limit exceeded (10 active streams)")
+			return
+		}
+	}
+
+	// For direct LAN / edge playback in milestone 4/6:
 	// Route directly to edge streaming port (default :8088)
 	streamURL := fmt.Sprintf("http://localhost:8088/stream/%s/master.m3u8", item.MediaID)
 	expiresAt := time.Now().Add(1 * time.Hour).UTC().Format(time.RFC3339)

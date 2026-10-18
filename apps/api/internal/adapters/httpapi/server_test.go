@@ -19,12 +19,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func setupTestServer(t *testing.T) (*httpapi.Server, *memory.InMemoryUserRepository, *memory.InMemoryNodeRepository, *memory.InMemoryCatalogRepository) {
+func setupTestServer(t *testing.T) (*httpapi.Server, *memory.InMemoryUserRepository, *memory.InMemoryNodeRepository, *memory.InMemoryCatalogRepository, *memory.InMemoryHeartbeatStore) {
 	t.Helper()
 
 	userRepo := memory.NewInMemoryUserRepository()
 	nodeRepo := memory.NewInMemoryNodeRepository()
 	catalogRepo := memory.NewInMemoryCatalogRepository()
+	heartbeatStore := memory.NewInMemoryHeartbeatStore()
 
 	hasher := auth.NewBcryptHasher(bcrypt.MinCost)
 	tokenService, err := auth.NewJWTService([]byte("test-secret-key-at-least-32-bytes-long!"))
@@ -33,20 +34,24 @@ func setupTestServer(t *testing.T) (*httpapi.Server, *memory.InMemoryUserReposit
 	}
 
 	server := httpapi.NewServer(
-		httpapi.Config{Addr: "127.0.0.1:0"},
+		httpapi.Config{
+			Addr:         "127.0.0.1:0",
+			HeartbeatTTL: 20 * time.Second,
+		},
 		userRepo,
 		nodeRepo,
 		catalogRepo,
+		heartbeatStore,
 		hasher,
 		tokenService,
 		nil,
 	)
 
-	return server, userRepo, nodeRepo, catalogRepo
+	return server, userRepo, nodeRepo, catalogRepo, heartbeatStore
 }
 
 func TestServer_Healthz(t *testing.T) {
-	server, _, _, _ := setupTestServer(t)
+	server, _, _, _, _ := setupTestServer(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	w := httptest.NewRecorder()
@@ -67,7 +72,7 @@ func TestServer_Healthz(t *testing.T) {
 }
 
 func TestServer_CORS_Middleware(t *testing.T) {
-	server, _, _, _ := setupTestServer(t)
+	server, _, _, _, _ := setupTestServer(t)
 
 	req := httptest.NewRequest(http.MethodOptions, "/v1/auth/login", nil)
 	w := httptest.NewRecorder()
@@ -87,7 +92,7 @@ func TestServer_CORS_Middleware(t *testing.T) {
 }
 
 func TestServer_Auth_RegisterAndLogin(t *testing.T) {
-	server, _, _, _ := setupTestServer(t)
+	server, _, _, _, _ := setupTestServer(t)
 
 	// 1. Weak password registration (< 8 chars)
 	weakPayload := `{"username":"alice","password":"123"}`
@@ -147,7 +152,7 @@ func TestServer_Auth_RegisterAndLogin(t *testing.T) {
 }
 
 func TestServer_Nodes_PairingAndManifestSync(t *testing.T) {
-	server, _, _, _ := setupTestServer(t)
+	server, _, _, _, _ := setupTestServer(t)
 
 	// Step 1: Register User & Obtain JWT
 	regPayload := `{"username":"bob_node_owner","password":"secure_password_123"}`
@@ -288,7 +293,7 @@ func TestServer_Nodes_PairingAndManifestSync(t *testing.T) {
 }
 
 func TestServer_StartAndShutdown(t *testing.T) {
-	server, _, _, _ := setupTestServer(t)
+	server, _, _, _, _ := setupTestServer(t)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -320,7 +325,7 @@ func TestServer_StartAndShutdown(t *testing.T) {
 }
 
 func TestServer_Playback(t *testing.T) {
-	server, _, _, catalogRepo := setupTestServer(t)
+	server, _, _, catalogRepo, heartbeatStore := setupTestServer(t)
 
 	// 1. Not Found
 	req := httptest.NewRequest(http.MethodGet, "/v1/media/non-existent-id/playback", nil)
@@ -331,7 +336,7 @@ func TestServer_Playback(t *testing.T) {
 		t.Fatalf("expected 404 for missing media, got %d", w.Code)
 	}
 
-	// 2. Existing Media
+	// 2. Existing Media - Node is Offline (no heartbeat recorded)
 	mediaID := "77777777-7777-7777-7777-777777777777"
 	nodeID := "11111111-1111-1111-1111-111111111111"
 
@@ -353,8 +358,27 @@ func TestServer_Playback(t *testing.T) {
 	w = httptest.NewRecorder()
 	server.ServeHTTP(w, req)
 
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503 Service Unavailable when node is offline, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// 3. Existing Media - Node is Online with healthy capacity
+	hb := contracts.Heartbeat{
+		NodeID:        nodeID,
+		SentAt:        time.Now().UTC(),
+		Version:       "1.0.0",
+		ActiveStreams: 2,
+	}
+	if err := heartbeatStore.RecordHeartbeat(context.Background(), &hb, 30*time.Second); err != nil {
+		t.Fatalf("failed to record test heartbeat: %v", err)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/v1/media/"+mediaID+"/playback", nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200 OK, got %d: %s", w.Code, w.Body.String())
+		t.Fatalf("expected 200 OK when node is online, got %d: %s", w.Code, w.Body.String())
 	}
 
 	var pbRes struct {
@@ -376,7 +400,40 @@ func TestServer_Playback(t *testing.T) {
 		t.Errorf("expected non-empty expires_at")
 	}
 
-	// 3. Simulated Repo Error
+	// 4. Invariant 10: Node Busy (ActiveStreams >= 10)
+	busyHb := contracts.Heartbeat{
+		NodeID:        nodeID,
+		SentAt:        time.Now().UTC(),
+		Version:       "1.0.0",
+		ActiveStreams: 10,
+	}
+	if err := heartbeatStore.RecordHeartbeat(context.Background(), &busyHb, 30*time.Second); err != nil {
+		t.Fatalf("failed to record busy heartbeat: %v", err)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/v1/media/"+mediaID+"/playback", nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429 Too Many Requests when node reaches 10-stream cap, got %d: %s", w.Code, w.Body.String())
+	}
+	if retryAfter := w.Header().Get("Retry-After"); retryAfter != "30" {
+		t.Errorf("expected Retry-After: 30 header, got %s", retryAfter)
+	}
+
+	// 5. Simulated HeartbeatStore Error
+	heartbeatStore.SimulateErr = fmt.Errorf("redis connection dropped")
+	req = httptest.NewRequest(http.MethodGet, "/v1/media/"+mediaID+"/playback", nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 when heartbeat store fails, got %d", w.Code)
+	}
+	heartbeatStore.SimulateErr = nil
+
+	// 6. Simulated Repo Error
 	catalogRepo.SimulateErr = fmt.Errorf("database query failure")
 	req = httptest.NewRequest(http.MethodGet, "/v1/media/"+mediaID+"/playback", nil)
 	w = httptest.NewRecorder()
@@ -384,6 +441,169 @@ func TestServer_Playback(t *testing.T) {
 
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("expected 500 Internal Server Error, got %d", w.Code)
+	}
+}
+
+func TestServer_Node_Heartbeat(t *testing.T) {
+	server, _, _, catalogRepo, heartbeatStore := setupTestServer(t)
+
+	// Step 1: Register User & Obtain JWT
+	regPayload := `{"username":"carol_node_owner","password":"secure_password_123"}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/auth/register", bytes.NewBufferString(regPayload))
+	w := httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+
+	var authRes struct {
+		AccessToken string `json:"access_token"`
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &authRes)
+
+	// Step 2: Register Edge Node
+	nodePayload := `{"name":"Carol Node RTX"}`
+	req = httptest.NewRequest(http.MethodPost, "/v1/nodes", bytes.NewBufferString(nodePayload))
+	req.Header.Set("Authorization", "Bearer "+authRes.AccessToken)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+
+	var nodeRes struct {
+		NodeID    string `json:"node_id"`
+		NodeToken string `json:"node_token"`
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &nodeRes)
+
+	hbURL := fmt.Sprintf("/v1/nodes/%s/heartbeat", nodeRes.NodeID)
+
+	validPayload := fmt.Sprintf(`{
+		"node_id": %q,
+		"sent_at": %q,
+		"version": "1.0.0",
+		"gpu_caps": {"nvenc": true, "qsv": false},
+		"active_streams": 3
+	}`, nodeRes.NodeID, time.Now().UTC().Format(time.RFC3339))
+
+	// Subtest 1: Missing X-Node-Token -> 401
+	req = httptest.NewRequest(http.MethodPost, hbURL, bytes.NewBufferString(validPayload))
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 without X-Node-Token, got %d", w.Code)
+	}
+
+	// Subtest 2: Invalid X-Node-Token -> 401
+	req = httptest.NewRequest(http.MethodPost, hbURL, bytes.NewBufferString(validPayload))
+	req.Header.Set("X-Node-Token", "invalid-token")
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 with invalid X-Node-Token, got %d", w.Code)
+	}
+
+	// Subtest 3a: Path node_id does not match authenticated token node -> 403 Forbidden
+	mismatchPathURL := "/v1/nodes/00000000-0000-0000-0000-000000000999/heartbeat"
+	req = httptest.NewRequest(http.MethodPost, mismatchPathURL, bytes.NewBufferString(validPayload))
+	req.Header.Set("X-Node-Token", nodeRes.NodeToken)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403 for path node mismatch with token, got %d", w.Code)
+	}
+
+	// Subtest 3b: Body node_id does not match path node_id -> 400 Bad Request
+	mismatchBodyPayload := fmt.Sprintf(`{
+		"node_id": "00000000-0000-0000-0000-000000000999",
+		"sent_at": %q,
+		"version": "1.0.0",
+		"active_streams": 3
+	}`, time.Now().UTC().Format(time.RFC3339))
+	req = httptest.NewRequest(http.MethodPost, hbURL, bytes.NewBufferString(mismatchBodyPayload))
+	req.Header.Set("X-Node-Token", nodeRes.NodeToken)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for path/body node mismatch, got %d", w.Code)
+	}
+
+	// Subtest 4: Malformed JSON payload -> 400
+	req = httptest.NewRequest(http.MethodPost, hbURL, bytes.NewBufferString("{invalid-json"))
+	req.Header.Set("X-Node-Token", nodeRes.NodeToken)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for malformed json, got %d", w.Code)
+	}
+
+	// Subtest 5: Exceeding 10 active streams in payload -> 400 Validation Error
+	overCapPayload := fmt.Sprintf(`{
+		"node_id": %q,
+		"sent_at": %q,
+		"version": "1.0.0",
+		"active_streams": 15
+	}`, nodeRes.NodeID, time.Now().UTC().Format(time.RFC3339))
+	req = httptest.NewRequest(http.MethodPost, hbURL, bytes.NewBufferString(overCapPayload))
+	req.Header.Set("X-Node-Token", nodeRes.NodeToken)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for active_streams > 10, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// Subtest 6: Valid Heartbeat -> 200 OK
+	req = httptest.NewRequest(http.MethodPost, hbURL, bytes.NewBufferString(validPayload))
+	req.Header.Set("X-Node-Token", nodeRes.NodeToken)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for valid heartbeat, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// Subtest 7: Verify catalog online indicator reflects heartbeat
+	_ = catalogRepo.UpsertManifest(context.Background(), &domain.CatalogItem{
+		MediaID:     "88888888-8888-8888-8888-888888888888",
+		NodeID:      nodeRes.NodeID,
+		Title:       "Carol Video",
+		Description: "Video from online node",
+		DurationS:   60,
+		ContentHash: "hash-888",
+		IsPublic:    true,
+		UpdatedAt:   time.Now().UTC(),
+	})
+
+	req = httptest.NewRequest(http.MethodGet, "/v1/catalog", nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for catalog, got %d", w.Code)
+	}
+
+	var catRes struct {
+		Items []struct {
+			MediaID      string `json:"media_id"`
+			IsNodeOnline bool   `json:"is_node_online"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &catRes); err != nil {
+		t.Fatalf("failed to decode catalog response: %v", err)
+	}
+
+	var foundOnline bool
+	for _, it := range catRes.Items {
+		if it.MediaID == "88888888-8888-8888-8888-888888888888" && it.IsNodeOnline {
+			foundOnline = true
+			break
+		}
+	}
+	if !foundOnline {
+		t.Errorf("expected catalog item to report is_node_online = true")
+	}
+
+	// Subtest 8: Simulated HeartbeatStore error -> 500
+	heartbeatStore.SimulateErr = fmt.Errorf("storage failure")
+	req = httptest.NewRequest(http.MethodPost, hbURL, bytes.NewBufferString(validPayload))
+	req.Header.Set("X-Node-Token", nodeRes.NodeToken)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 for storage error, got %d", w.Code)
 	}
 }
 

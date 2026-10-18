@@ -12,7 +12,9 @@ import (
 	"github.com/anosh26/custardfin/apps/api/internal/adapters/httpapi"
 	"github.com/anosh26/custardfin/apps/api/internal/adapters/memory"
 	"github.com/anosh26/custardfin/apps/api/internal/adapters/postgres"
+	redisAdapter "github.com/anosh26/custardfin/apps/api/internal/adapters/redis"
 	"github.com/anosh26/custardfin/apps/api/internal/ports"
+	redisClient "github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -30,6 +32,7 @@ func main() {
 	// 1. Resolve configuration from environment
 	apiAddr := getEnv("API_ADDR", ":8080")
 	dbURL := getEnv("DATABASE_URL", "postgres://custard:custard_secret@localhost:5432/custardfin?sslmode=disable")
+	redisAddr := getEnv("REDIS_ADDR", "localhost:6379")
 	jwtSecret := getEnv("JWT_SECRET", "custardfin_development_jwt_secret_key_32_bytes!!")
 
 	// 2. Initialize Auth Services
@@ -69,12 +72,27 @@ func main() {
 		catalogRepo = postgres.NewCatalogRepository(pgPool)
 	}
 
-	// 4. Initialize and start HTTP API server
+	// 4. Initialize Redis Heartbeat Store (Invariant 5) with In-Memory fallback
+	var heartbeatStore ports.HeartbeatStore
+	rdb := redisClient.NewClient(&redisClient.Options{
+		Addr: redisAddr,
+	})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		slog.Warn("redis unavailable, falling back to in-memory heartbeat store for local development", "err", err)
+		heartbeatStore = memory.NewInMemoryHeartbeatStore()
+	} else {
+		defer rdb.Close()
+		slog.Info("connected to redis for node heartbeats", "addr", redisAddr)
+		heartbeatStore = redisAdapter.NewHeartbeatStore(rdb)
+	}
+
+	// 5. Initialize and start HTTP API server
 	server := httpapi.NewServer(
 		httpapi.Config{Addr: apiAddr},
 		userRepo,
 		nodeRepo,
 		catalogRepo,
+		heartbeatStore,
 		hasher,
 		tokenService,
 		logger,

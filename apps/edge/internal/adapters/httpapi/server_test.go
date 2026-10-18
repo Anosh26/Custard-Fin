@@ -548,3 +548,57 @@ func TestServer_TogglePublic_Endpoint(t *testing.T) {
 	}
 }
 
+func TestServer_ActiveStreamsTracker(t *testing.T) {
+	tmpDir := t.TempDir()
+	mediaRepo := &FakeMediaRepo{items: make(map[string]*domain.Media)}
+	watchRepo := &FakeWatchRepo{items: make(map[string]*domain.WatchProgress)}
+	server := NewServer(Config{Addr: "127.0.0.1:0", TranscodeDir: tmpDir}, mediaRepo, watchRepo, nil, nil)
+
+	// Check initial active streams
+	if n := server.ActiveStreams(); n != 0 {
+		t.Fatalf("expected 0 active streams initially, got %d", n)
+	}
+
+	// Create test file in transcode dir
+	m := &domain.Media{
+		ID:        "stream-test-media-1",
+		Title:     "Stream Test",
+		DurationS: 60,
+	}
+	_ = mediaRepo.Save(context.Background(), m)
+	mediaDir := filepath.Join(tmpDir, m.ID)
+	_ = os.MkdirAll(mediaDir, 0755)
+	_ = os.WriteFile(filepath.Join(mediaDir, "chunk_000.ts"), []byte("ts-content"), 0644)
+
+	// Stream from client 1
+	req1 := httptest.NewRequest(http.MethodGet, "/stream/"+m.ID+"/chunk_000.ts", nil)
+	req1.RemoteAddr = "192.168.1.10:54321"
+	w1 := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(w1, req1)
+	if w1.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w1.Code)
+	}
+
+	if n := server.ActiveStreams(); n != 1 {
+		t.Fatalf("expected 1 active stream after client 1, got %d", n)
+	}
+
+	// Stream from client 2
+	req2 := httptest.NewRequest(http.MethodGet, "/stream/"+m.ID+"/chunk_000.ts", nil)
+	req2.RemoteAddr = "192.168.1.20:54322"
+	w2 := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(w2, req2)
+
+	if n := server.ActiveStreams(); n != 2 {
+		t.Fatalf("expected 2 active streams after client 2, got %d", n)
+	}
+
+	// Repeated stream from client 1 does not inflate count
+	w1Again := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(w1Again, req1)
+	if n := server.ActiveStreams(); n != 2 {
+		t.Fatalf("expected still 2 active streams for repeated requests, got %d", n)
+	}
+}
+
+

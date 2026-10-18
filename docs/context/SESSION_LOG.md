@@ -1,3 +1,23 @@
+## 2026-10-18 - Milestone 6: Redis Heartbeat and Offline Logic
+- **Author/Agents:** CustardFin Pair Programming Agent
+- **Milestone:** Milestone 6 (Redis heartbeat and offline logic)
+- **Summary:** Delivered complete end-to-end node liveness tracking, capacity admission enforcement, and offline detection adhering to Invariant 5 (Redis strictly used for `heartbeat:{node_id}` TTL keys) and Invariant 10 (10-stream concurrency limit). In `apps/api`, defined `ports.HeartbeatStore`, implemented Redis adapter (`apps/api/internal/adapters/redis`) with `go-redis/v9 v9.23.0` and fallback in-memory store (`apps/api/internal/adapters/memory`). Registered authenticated `POST /v1/nodes/{id}/heartbeat`, enriched `GET /v1/catalog` with batch node liveness (`is_node_online`), and updated `GET /v1/media/{id}/playback` router to return HTTP 503 `NODE_OFFLINE` when node key is absent/expired, and HTTP 429 `NODE_BUSY` with `Retry-After: 30` when streams reach 10-cap. In `apps/edge`, defined `ports.HeartbeatReporter` and `ports.StreamTracker`, implemented `apps/edge/internal/adapters/heartbeat/worker.go` with 15s ticker, GPU capabilities reporting (NVENC), and dynamic stream tracking. Wired both `cmd/apid` and `cmd/edged` with 12-factor configuration and graceful shutdown. All unit tests and live cross-subsystem E2E test suite passing 100%.
+- **Files Touched:**
+  - `apps/api/go.mod`, `apps/api/go.sum`
+  - `apps/api/internal/ports/heartbeat_store.go`
+  - `apps/api/internal/adapters/redis/{heartbeat_store.go, heartbeat_store_test.go, README.md}`
+  - `apps/api/internal/adapters/memory/{heartbeat_store.go, heartbeat_store_test.go}`
+  - `apps/api/internal/adapters/httpapi/{server.go, server_test.go}`
+  - `apps/api/cmd/apid/main.go`
+  - `apps/edge/internal/ports/heartbeat.go`
+  - `apps/edge/internal/adapters/heartbeat/{worker.go, worker_test.go, README.md}`
+  - `apps/edge/internal/adapters/httpapi/{server.go, server_test.go}`
+  - `apps/edge/cmd/edged/main.go`
+  - `tests/e2e/e2e_test.go`
+  - `docs/context/{STACK_VERSIONS.md, STATE.md, SESSION_LOG.md}`
+- **Follow-ups:**
+  - Milestone 7: Origin Shield cache + signed URLs + stream router.
+
 ## 2026-10-18 - Milestone 5: FRP Reverse Tunnel Client Adapter & Deployment
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 5 (FRP tunnel: remote playback end to end)

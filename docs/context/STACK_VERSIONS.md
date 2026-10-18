@@ -9,7 +9,7 @@ Record all pinned dependency versions, verification dates, and official document
 | PostgreSQL Driver | `github.com/jackc/pgx/v5` v5.11.0 | https://pkg.go.dev/github.com/jackc/pgx/v5 | High-performance Go PostgreSQL driver |
 | Password Hashing | `golang.org/x/crypto/bcrypt` v0.58.0 | https://pkg.go.dev/golang.org/x/crypto/bcrypt | Secure password hashing |
 | JWT Tokens | `github.com/golang-jwt/jwt/v5` v5.3.1 | https://pkg.go.dev/github.com/golang-jwt/jwt/v5 | HMAC-SHA256 bearer tokens |
-| Redis Client | `go-redis/v9` | https://redis.uptrace.dev/ | Used for node heartbeats only |
+| Redis Client | `github.com/redis/go-redis/v9` v9.23.0 | https://redis.uptrace.dev/ | Used for node heartbeats only (Invariant 5) |
 | SQL Generator | `sqlc` | https://docs.sqlc.dev/ | Type-safe SQL code generation |
 | Node.js | v24.14.0 (npm 11.9.0) | https://nodejs.org/docs/latest/ | Node runtime only (no Bun) |
 | Next.js | 15.1.0 | https://nextjs.org/docs | App router, React Server Components (React 19.0.0) |

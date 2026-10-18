@@ -10,14 +10,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/anosh26/custardfin/apps/edge/internal/adapters/ffmpeg"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/ffprobe"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/frp"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/fs"
+	"github.com/anosh26/custardfin/apps/edge/internal/adapters/heartbeat"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/httpapi"
 	"github.com/anosh26/custardfin/apps/edge/internal/adapters/sqlite"
 	syncAdapter "github.com/anosh26/custardfin/apps/edge/internal/adapters/sync"
 	"github.com/anosh26/custardfin/apps/edge/internal/app"
 	"github.com/anosh26/custardfin/apps/edge/internal/ports"
+	"github.com/anosh26/custardfin/libs/contracts"
 )
 
 func main() {
@@ -137,12 +140,62 @@ func main() {
 		slog.Warn("EDGE_FRP_ENABLED is true but EDGE_NODE_ID or EDGE_FRP_AUTH_TOKEN is missing")
 	}
 
-	// 7. Wait for shutdown signal
+	// 7. Initialize Outbound Periodic Heartbeat Worker (if node credentials configured)
+	var hbWorker ports.HeartbeatReporter
+	if nodeID != "" && nodeToken != "" {
+		heartbeatIntervalStr := getEnv("EDGE_HEARTBEAT_INTERVAL_SEC", "15")
+		heartbeatIntervalSec, _ := strconv.Atoi(heartbeatIntervalStr)
+		if heartbeatIntervalSec <= 0 {
+			heartbeatIntervalSec = 15
+		}
+
+		// Probe GPU encoding capabilities (NVENC)
+		ffmpegBin := getEnv("EDGE_FFMPEG_BIN", "ffmpeg")
+		transcoder := ffmpeg.NewSubprocessTranscoder(ffmpegBin, logger)
+		encoder, _ := transcoder.ProbeEncoder(ctx)
+		var gpuCaps *contracts.GPUCapabilities
+		if encoder == "h264_nvenc" {
+			gpuCaps = &contracts.GPUCapabilities{NVENC: true}
+		}
+
+		worker, err := heartbeat.NewWorker(heartbeat.Config{
+			CloudBaseURL:  cloudURL,
+			NodeID:        nodeID,
+			NodeToken:     nodeToken,
+			Version:       "0.1.0",
+			Interval:      time.Duration(heartbeatIntervalSec) * time.Second,
+			GPUCaps:       gpuCaps,
+			StreamTracker: httpServer,
+			Logger:        logger,
+		})
+		if err != nil {
+			slog.Warn("failed initializing edge heartbeat worker", "err", err)
+		} else {
+			if err := worker.Start(ctx); err != nil {
+				slog.Warn("failed starting edge heartbeat worker", "err", err)
+			} else {
+				hbWorker = worker
+				slog.Info("outbound heartbeat worker active",
+					"interval_s", heartbeatIntervalSec,
+					"cloud_url", cloudURL,
+					"nvenc", gpuCaps != nil && gpuCaps.NVENC,
+				)
+			}
+		}
+	}
+
+	// 8. Wait for shutdown signal
 	<-ctx.Done()
 	slog.Info("shutdown signal received, commencing graceful shutdown")
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
+
+	if hbWorker != nil {
+		if err := hbWorker.Stop(); err != nil {
+			slog.Error("error during heartbeat worker shutdown", "err", err)
+		}
+	}
 
 	if tunnelClient != nil {
 		if err := tunnelClient.Stop(); err != nil {

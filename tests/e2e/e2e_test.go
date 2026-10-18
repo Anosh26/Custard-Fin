@@ -329,9 +329,10 @@ func TestCustardFin_E2E_FullLifecycle(t *testing.T) {
 
 	var pubCatRes struct {
 		Items []struct {
-			MediaID string `json:"media_id"`
-			Title   string `json:"title"`
-			NodeID  string `json:"node_id"`
+			MediaID      string `json:"media_id"`
+			Title        string `json:"title"`
+			NodeID       string `json:"node_id"`
+			IsNodeOnline bool   `json:"is_node_online"`
 		} `json:"items"`
 		Total int `json:"total"`
 	}
@@ -350,7 +351,10 @@ func TestCustardFin_E2E_FullLifecycle(t *testing.T) {
 	if item.NodeID != nodeRes.NodeID {
 		t.Errorf("expected node ID %s, got %s", nodeRes.NodeID, item.NodeID)
 	}
-	t.Logf("[E2E] Verified item in Cloud Catalog: MediaID=%s, NodeID=%s", item.MediaID, item.NodeID)
+	if !item.IsNodeOnline {
+		t.Errorf("expected node %s to be reported online in catalog via heartbeat", nodeRes.NodeID)
+	}
+	t.Logf("[E2E] Verified item in Cloud Catalog: MediaID=%s, NodeID=%s, IsOnline=%v", item.MediaID, item.NodeID, item.IsNodeOnline)
 
 	// -------------------------------------------------------------
 	// 9. Resolve Playback Route from Cloud API

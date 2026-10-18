@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/anosh26/custardfin/apps/edge/internal/domain"
@@ -21,6 +22,8 @@ import (
 var (
 	ErrInvalidPath = errors.New("invalid or escaped file path")
 )
+
+var _ ports.StreamTracker = (*Server)(nil)
 
 // Config holds configuration parameters for the edge HTTP server.
 type Config struct {
@@ -37,6 +40,8 @@ type Server struct {
 	transcodeDir string
 	logger       *slog.Logger
 	listener     net.Listener
+	streamMu     sync.Mutex
+	sessions     map[string]time.Time
 }
 
 // NewServer constructs and wires the edge HTTP server.
@@ -57,6 +62,7 @@ func NewServer(cfg Config, mediaRepo ports.MediaRepository, watchRepo ports.Watc
 		syncer:       syncer,
 		transcodeDir: filepath.Clean(cfg.TranscodeDir),
 		logger:       logger,
+		sessions:     make(map[string]time.Time),
 	}
 
 	mux := http.NewServeMux()
@@ -200,6 +206,13 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Accept-Ranges", "bytes")
+
+	// Track active stream session per remote client and media ID
+	remoteHost, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		remoteHost = r.RemoteAddr
+	}
+	s.recordStreamActivity(remoteHost + ":" + mediaID)
 
 	http.ServeFile(w, r, targetFile)
 	_ = info
@@ -361,4 +374,26 @@ func (s *Server) handleTogglePublic(w http.ResponseWriter, r *http.Request) {
 		"status":    "updated",
 	})
 }
+
+func (s *Server) recordStreamActivity(sessionKey string) {
+	s.streamMu.Lock()
+	defer s.streamMu.Unlock()
+	s.sessions[sessionKey] = time.Now()
+}
+
+// ActiveStreams returns the number of active distinct stream sessions within the last 15 seconds.
+func (s *Server) ActiveStreams() int {
+	s.streamMu.Lock()
+	defer s.streamMu.Unlock()
+
+	now := time.Now()
+	activeThreshold := 15 * time.Second
+	for key, lastSeen := range s.sessions {
+		if now.Sub(lastSeen) > activeThreshold {
+			delete(s.sessions, key)
+		}
+	}
+	return len(s.sessions)
+}
+
 
