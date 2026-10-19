@@ -22,10 +22,10 @@ export default async function WatchPage({ params }: WatchPageProps) {
     switch (type) {
       case "direct_lan":
         return "Direct LAN (Local Subnet - 0 ms Overhead)";
-      case "origin_cache":
-        return "Origin Shield (Cloud Cached - 0 Home Upload)";
-      case "tunnel_origin":
-        return "Tunnel Origin (Outbound FRP Stream)";
+      case "origin_shield":
+        return "Origin Shield (S3 Pull-Through Cache - 0 Home Upload)";
+      case "cache_only":
+        return "Offline Cache (Node Offline - Serving Cached Media)";
       default:
         return type;
     }

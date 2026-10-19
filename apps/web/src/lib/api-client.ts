@@ -15,7 +15,7 @@ export interface CatalogResponse {
 
 export interface PlaybackResponse {
   stream_url: string;
-  route_type: "direct_lan" | "origin_cache" | "tunnel_origin";
+  route_type: "direct_lan" | "origin_shield" | "cache_only";
   expires_at: string;
 }
 
