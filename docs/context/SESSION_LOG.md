@@ -1,3 +1,23 @@
+## 2026-10-19 - Milestone 7: Origin Shield Cache, Signed URLs & Stream Router
+- **Author/Agents:** CustardFin Pair Programming Agent
+- **Milestone:** Milestone 7 (Origin Shield cache + signed URLs + stream router)
+- **Summary:** Delivered the complete Origin Shield pull-through cache, HMAC-SHA256 signed URL stream enforcement, and Play Decision Tree stream router adhering strictly to Invariant 1 (temporary cache only, 24h retention tagging), Invariant 7 (hot chunks stored once to shield home node upload), Invariant 9 (ephemeral HMAC signed URLs), and Invariant 10 (10-stream concurrency limit). In `apps/api`, defined `ports.ChunkCache` and `ports.TunnelPuller`, implemented `S3ChunkCache` (`apps/api/internal/adapters/s3`) using AWS SDK for Go v2 with path-style support (MinIO/Garage/Floci) and 24h retention tagging, built `MemoryChunkCache` (`apps/api/internal/adapters/memory`) for zero-dependency test isolation, and built `HTTPTunnelPuller` (`apps/api/internal/adapters/tunnel`). In `httpapi.Server`, registered `GET /v1/stream/{node_id}/{media_id}/{chunk_path...}` enforcing HMAC signatures via `contracts.VerifyChunkSignature`, serving cached chunks on cache HIT (`X-Cache: HIT`), and pulling uncached chunks through the reverse tunnel on cache MISS (`X-Cache: MISS`). Implemented dynamic HLS `.m3u8` playlist rewriter signing relative rendition and segment URLs. Upgraded Play Decision Tree in `GET /v1/media/{id}/playback` to route between `direct_lan`, `origin_shield`, and `cache_only` (allowing cached chunk playback when node is offline per FR-7). Updated Next.js web client (`apps/web`) to display routing badges. 100% test pass rate across all unit tests and live cross-subsystem E2E test suite.
+- **Files Touched:**
+  - `apps/api/go.mod`, `apps/api/go.sum`
+  - `apps/api/internal/ports/chunk_cache.go`
+  - `apps/api/internal/adapters/s3/{chunk_cache.go, chunk_cache_test.go, README.md}`
+  - `apps/api/internal/adapters/memory/{chunk_cache.go, chunk_cache_test.go, heartbeat_store.go}`
+  - `apps/api/internal/adapters/tunnel/{puller.go, puller_test.go, README.md}`
+  - `apps/api/internal/adapters/httpapi/{server.go, server_test.go}`
+  - `apps/api/cmd/apid/main.go`
+  - `apps/web/src/lib/api-client.ts`
+  - `apps/web/src/app/watch/[id]/page.tsx`
+  - `docs/api/openapi.yaml`
+  - `tests/e2e/e2e_test.go`
+  - `docs/context/{STATE.md, STACK_VERSIONS.md, SESSION_LOG.md}`
+- **Follow-ups:**
+  - Milestone 8: Admission control, adaptive bitrate, prefetch.
+
 ## 2026-10-18 - Milestone 6: Redis Heartbeat and Offline Logic
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 6 (Redis heartbeat and offline logic)
