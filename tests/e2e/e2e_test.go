@@ -39,20 +39,16 @@ func ensureBinariesBuilt(t *testing.T, root string) (string, string) {
 	apidPath := filepath.Join(root, "bin", "apid.exe")
 	edgedPath := filepath.Join(root, "bin", "edged.exe")
 
-	if _, err := os.Stat(apidPath); os.IsNotExist(err) {
-		cmd := exec.Command("go", "build", "-o", apidPath, "./apps/api/cmd/apid")
-		cmd.Dir = root
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("failed to build apid: %v\nOutput: %s", err, string(out))
-		}
+	cmd := exec.Command("go", "build", "-o", apidPath, "./apps/api/cmd/apid")
+	cmd.Dir = root
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("failed to build apid: %v\nOutput: %s", err, string(out))
 	}
 
-	if _, err := os.Stat(edgedPath); os.IsNotExist(err) {
-		cmd := exec.Command("go", "build", "-o", edgedPath, "./apps/edge/cmd/edged")
-		cmd.Dir = root
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("failed to build edged: %v\nOutput: %s", err, string(out))
-		}
+	cmd = exec.Command("go", "build", "-o", edgedPath, "./apps/edge/cmd/edged")
+	cmd.Dir = root
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("failed to build edged: %v\nOutput: %s", err, string(out))
 	}
 
 	return apidPath, edgedPath
@@ -119,7 +115,11 @@ func TestCustardFin_E2E_FullLifecycle(t *testing.T) {
 	apidCmd := exec.CommandContext(apiCtx, apidBin)
 	apidCmd.Env = append(os.Environ(),
 		"API_ADDR=127.0.0.1:"+apiPort,
-		"DATABASE_URL=postgres://invalid_url_to_force_in_memory:5432/db",
+		"API_BASE_URL="+apiBaseURL,
+		"TUNNEL_BASE_URL="+edgeBaseURL,
+		"SIGNING_SECRET=e2e_testing_chunk_signing_secret_key_32b!!",
+		"DATABASE_URL=memory",
+		"REDIS_ADDR=memory",
 		"JWT_SECRET=e2e_testing_secret_key_at_least_32_bytes_long!!",
 	)
 	apidCmd.Stdout = os.Stdout
@@ -133,7 +133,7 @@ func TestCustardFin_E2E_FullLifecycle(t *testing.T) {
 		_ = apidCmd.Wait()
 	}()
 
-	if err := waitForHealth(apiBaseURL+"/healthz", 5*time.Second); err != nil {
+	if err := waitForHealth(apiBaseURL+"/healthz", 10*time.Second); err != nil {
 		t.Fatalf("apid failed to become healthy: %v", err)
 	}
 	t.Logf("[E2E] Cloud API is healthy on %s", apiBaseURL)
@@ -359,6 +359,7 @@ func TestCustardFin_E2E_FullLifecycle(t *testing.T) {
 	// -------------------------------------------------------------
 	// 9. Resolve Playback Route from Cloud API
 	// -------------------------------------------------------------
+	// 9a. Remote playback resolution -> origin_shield with signed URL
 	pbResp, err := http.Get(fmt.Sprintf("%s/v1/media/%s/playback", apiBaseURL, mediaID))
 	if err != nil {
 		t.Fatalf("playback route resolution failed: %v", err)
@@ -378,10 +379,59 @@ func TestCustardFin_E2E_FullLifecycle(t *testing.T) {
 		t.Fatalf("failed decoding playback response: %v", err)
 	}
 
-	if pbRes.RouteType != "direct_lan" {
-		t.Errorf("expected direct_lan route type, got %s", pbRes.RouteType)
+	if pbRes.RouteType != "origin_shield" {
+		t.Errorf("expected origin_shield route type, got %s", pbRes.RouteType)
+	}
+	if !strings.Contains(pbRes.StreamURL, "sig=") {
+		t.Errorf("expected signed stream URL, got %s", pbRes.StreamURL)
 	}
 	t.Logf("[E2E] Resolved playback: URL=%s (Route: %s)", pbRes.StreamURL, pbRes.RouteType)
+
+	// 9b. Direct LAN playback resolution (?lan=true) -> direct_lan
+	lanResp, err := http.Get(fmt.Sprintf("%s/v1/media/%s/playback?lan=true", apiBaseURL, mediaID))
+	if err != nil {
+		t.Fatalf("lan playback route resolution failed: %v", err)
+	}
+	defer lanResp.Body.Close()
+
+	var lanRes struct {
+		StreamURL string `json:"stream_url"`
+		RouteType string `json:"route_type"`
+	}
+	if err := json.NewDecoder(lanResp.Body).Decode(&lanRes); err != nil {
+		t.Fatalf("failed decoding lan playback response: %v", err)
+	}
+	if lanRes.RouteType != "direct_lan" {
+		t.Errorf("expected direct_lan route type, got %s", lanRes.RouteType)
+	}
+
+	// 9c. Stream via Origin Shield Pull-Through (Cache MISS then Cache HIT)
+	shieldResp1, err := http.Get(pbRes.StreamURL)
+	if err != nil {
+		t.Fatalf("failed fetching stream via origin shield: %v", err)
+	}
+	defer shieldResp1.Body.Close()
+	if shieldResp1.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 OK from origin shield master playlist, got %d", shieldResp1.StatusCode)
+	}
+	if xCache := shieldResp1.Header.Get("X-Cache"); xCache != "MISS" {
+		t.Errorf("expected X-Cache: MISS on initial pull, got %s", xCache)
+	}
+	shieldBytes1, _ := io.ReadAll(shieldResp1.Body)
+	if !bytes.Contains(shieldBytes1, []byte("sig=")) {
+		t.Errorf("expected rewritten playlist with signed URLs from origin shield:\n%s", string(shieldBytes1))
+	}
+
+	// Second request should HIT cache
+	shieldResp2, err := http.Get(pbRes.StreamURL)
+	if err != nil {
+		t.Fatalf("failed fetching cached stream via origin shield: %v", err)
+	}
+	defer shieldResp2.Body.Close()
+	if xCache := shieldResp2.Header.Get("X-Cache"); xCache != "HIT" {
+		t.Errorf("expected X-Cache: HIT on second pull, got %s", xCache)
+	}
+	t.Logf("[E2E] Verified Origin Shield pull-through cache: initial MISS, subsequent HIT")
 
 	// -------------------------------------------------------------
 	// 10. End-to-End Stream Retrieval from Edge Server
