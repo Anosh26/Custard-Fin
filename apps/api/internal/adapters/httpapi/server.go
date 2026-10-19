@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,17 +11,22 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"path"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/anosh26/custardfin/apps/api/internal/adapters/memory"
 	"github.com/anosh26/custardfin/apps/api/internal/domain"
 	"github.com/anosh26/custardfin/apps/api/internal/ports"
 	"github.com/anosh26/custardfin/libs/contracts"
 )
 
 type Config struct {
-	Addr         string
-	HeartbeatTTL time.Duration
+	Addr          string
+	HeartbeatTTL  time.Duration
+	BaseURL       string // Cloud API base URL, e.g. "http://localhost:8080"
+	SigningSecret []byte // Secret key for HMAC-SHA256 chunk signing (Invariant 9)
 }
 
 type Server struct {
@@ -28,6 +35,8 @@ type Server struct {
 	nodeRepo       ports.NodeRepository
 	catalogRepo    ports.CatalogRepository
 	heartbeatStore ports.HeartbeatStore
+	chunkCache     ports.ChunkCache
+	tunnelPuller   ports.TunnelPuller
 	hasher         ports.PasswordHasher
 	tokenService   ports.TokenService
 	logger         *slog.Logger
@@ -41,6 +50,8 @@ func NewServer(
 	nodeRepo ports.NodeRepository,
 	catalogRepo ports.CatalogRepository,
 	heartbeatStore ports.HeartbeatStore,
+	chunkCache ports.ChunkCache,
+	tunnelPuller ports.TunnelPuller,
 	hasher ports.PasswordHasher,
 	tokenService ports.TokenService,
 	logger *slog.Logger,
@@ -51,8 +62,17 @@ func NewServer(
 	if cfg.HeartbeatTTL <= 0 {
 		cfg.HeartbeatTTL = 20 * time.Second
 	}
+	if cfg.BaseURL == "" {
+		cfg.BaseURL = "http://localhost:8080"
+	}
+	if len(cfg.SigningSecret) == 0 {
+		cfg.SigningSecret = []byte("custardfin-default-origin-shield-secret-32b!")
+	}
 	if logger == nil {
 		logger = slog.Default()
+	}
+	if chunkCache == nil {
+		chunkCache = memory.NewMemoryChunkCache(24 * time.Hour)
 	}
 
 	s := &Server{
@@ -61,6 +81,8 @@ func NewServer(
 		nodeRepo:       nodeRepo,
 		catalogRepo:    catalogRepo,
 		heartbeatStore: heartbeatStore,
+		chunkCache:     chunkCache,
+		tunnelPuller:   tunnelPuller,
 		hasher:         hasher,
 		tokenService:   tokenService,
 		logger:         logger,
@@ -110,6 +132,9 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 
 	// Playback Route Resolution (Public)
 	mux.HandleFunc("GET /v1/media/{id}/playback", s.handleGetPlayback)
+
+	// Origin Shield Stream & HLS Chunk Pull-Through (Signed URLs - Invariant 9)
+	mux.HandleFunc("GET /v1/stream/{node_id}/{media_id}/{chunk_path...}", s.handleStreamChunk)
 }
 
 // Start begins listening on the configured address.
@@ -500,6 +525,26 @@ type playbackResponse struct {
 	ExpiresAt string `json:"expires_at"`
 }
 
+func isDirectLAN(r *http.Request) bool {
+	if r.URL.Query().Get("lan") == "true" {
+		return true
+	}
+	if r.Header.Get("X-Playback-Mode") == "direct_lan" {
+		return true
+	}
+	return false
+}
+
+func writePlaybackResponse(w http.ResponseWriter, streamURL, routeType string, expiresAt time.Time) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(playbackResponse{
+		StreamURL: streamURL,
+		RouteType: routeType,
+		ExpiresAt: expiresAt.UTC().Format(time.RFC3339),
+	})
+}
+
 func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
@@ -517,8 +562,16 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Play Decision Tree:
+	// 1. Direct LAN Detection:
+	if isDirectLAN(r) {
+		streamURL := fmt.Sprintf("http://localhost:8088/stream/%s/master.m3u8", item.MediaID)
+		writePlaybackResponse(w, streamURL, "direct_lan", time.Now().Add(1*time.Hour))
+		return
+	}
+
+	// 2. Play Decision Tree: Remote viewer
 	// Check node liveness and active stream capacity from Redis HeartbeatStore
+	var nodeOnline bool = true
 	if s.heartbeatStore != nil {
 		hb, online, err := s.heartbeatStore.GetHeartbeat(r.Context(), item.NodeID)
 		if err != nil {
@@ -526,8 +579,98 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to check node status")
 			return
 		}
+		nodeOnline = online
+		if online && hb != nil && hb.ActiveStreams >= contracts.MaxConcurrentStreamsPerNode {
+			w.Header().Set("Retry-After", "30")
+			writeError(w, http.StatusTooManyRequests, "NODE_BUSY", "Node capacity limit exceeded (10 active streams)")
+			return
+		}
+	}
+
+	// 3. Offline handling: Check if master playlist exists in cache (FR-7)
+	masterKey := fmt.Sprintf("%s/%s/master.m3u8", item.NodeID, item.MediaID)
+	cached := false
+	if s.chunkCache != nil {
+		cached, _ = s.chunkCache.Exists(r.Context(), masterKey)
+	}
+
+	if !nodeOnline {
+		if !cached {
+			writeError(w, http.StatusServiceUnavailable, "NODE_OFFLINE", "Home edge node is currently offline and media is not cached")
+			return
+		}
+		// Serve cached chunks only (FR-7)
+		expiresAt := time.Now().Add(1 * time.Hour)
+		sigQuery := contracts.SignChunkURL(s.cfg.SigningSecret, item.NodeID, item.MediaID, "master.m3u8", expiresAt)
+		streamURL := fmt.Sprintf("%s/v1/stream/%s/%s/master.m3u8?%s", s.cfg.BaseURL, item.NodeID, item.MediaID, sigQuery)
+		writePlaybackResponse(w, streamURL, "cache_only", expiresAt)
+		return
+	}
+
+	// 4. Remote viewer with active node -> Origin Shield signed stream URL
+	expiresAt := time.Now().Add(1 * time.Hour)
+	sigQuery := contracts.SignChunkURL(s.cfg.SigningSecret, item.NodeID, item.MediaID, "master.m3u8", expiresAt)
+	streamURL := fmt.Sprintf("%s/v1/stream/%s/%s/master.m3u8?%s", s.cfg.BaseURL, item.NodeID, item.MediaID, sigQuery)
+	writePlaybackResponse(w, streamURL, "origin_shield", expiresAt)
+}
+
+func (s *Server) handleStreamChunk(w http.ResponseWriter, r *http.Request) {
+	nodeID := r.PathValue("node_id")
+	mediaID := r.PathValue("media_id")
+	chunkPath := r.PathValue("chunk_path")
+
+	if strings.TrimSpace(nodeID) == "" || strings.TrimSpace(mediaID) == "" || strings.TrimSpace(chunkPath) == "" {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Node ID, media ID, and chunk path are required")
+		return
+	}
+
+	// Prevent directory traversal
+	cleanPath := path.Clean(strings.TrimPrefix(chunkPath, "/"))
+	if strings.HasPrefix(cleanPath, "..") || cleanPath == "." {
+		writeError(w, http.StatusBadRequest, "FORBIDDEN_PATH", "Invalid chunk path")
+		return
+	}
+
+	sig := r.URL.Query().Get("sig")
+	exp := r.URL.Query().Get("exp")
+	if sig == "" || exp == "" {
+		writeError(w, http.StatusUnauthorized, "MISSING_SIGNATURE", "URL signature and expiration are required")
+		return
+	}
+
+	// Verify HMAC-SHA256 signature (Invariant 9)
+	if err := contracts.VerifyChunkSignature(s.cfg.SigningSecret, nodeID, mediaID, cleanPath, sig, exp, time.Now()); err != nil {
+		if errors.Is(err, contracts.ErrSignatureExpired) {
+			writeError(w, http.StatusUnauthorized, "SIGNATURE_EXPIRED", "URL signature has expired")
+			return
+		}
+		writeError(w, http.StatusUnauthorized, "INVALID_SIGNATURE", "Invalid chunk signature")
+		return
+	}
+
+	cacheKey := fmt.Sprintf("%s/%s/%s", nodeID, mediaID, cleanPath)
+
+	// Check Origin Shield Cache (Invariant 7)
+	if s.chunkCache != nil {
+		cachedItem, err := s.chunkCache.Get(r.Context(), cacheKey)
+		if err == nil && cachedItem != nil {
+			defer cachedItem.Body.Close()
+			w.Header().Set("X-Cache", "HIT")
+			s.serveChunkContent(w, r, nodeID, mediaID, cleanPath, cachedItem.Body, cachedItem.ContentType)
+			return
+		}
+	}
+
+	// Cache Miss: Check node liveness and active streams limit (FR-7, Invariant 10)
+	if s.heartbeatStore != nil {
+		hb, online, err := s.heartbeatStore.GetHeartbeat(r.Context(), nodeID)
+		if err != nil {
+			s.logger.Error("failed checking node liveness", "node_id", nodeID, "err", err)
+			writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to check node status")
+			return
+		}
 		if !online {
-			writeError(w, http.StatusServiceUnavailable, "NODE_OFFLINE", "Home edge node is currently offline")
+			writeError(w, http.StatusServiceUnavailable, "NODE_OFFLINE", "Home edge node is currently offline and requested chunk is not cached")
 			return
 		}
 		if hb != nil && hb.ActiveStreams >= contracts.MaxConcurrentStreamsPerNode {
@@ -537,17 +680,104 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// For direct LAN / edge playback in milestone 4/6:
-	// Route directly to edge streaming port (default :8088)
-	streamURL := fmt.Sprintf("http://localhost:8088/stream/%s/master.m3u8", item.MediaID)
-	expiresAt := time.Now().Add(1 * time.Hour).UTC().Format(time.RFC3339)
+	// Pull chunk through FRP tunnel relay (Invariant 2, Invariant 7)
+	if s.tunnelPuller == nil {
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Tunnel puller not configured")
+		return
+	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(playbackResponse{
-		StreamURL: streamURL,
-		RouteType: "direct_lan",
-		ExpiresAt: expiresAt,
-	})
+	body, contentType, length, err := s.tunnelPuller.PullChunk(r.Context(), nodeID, mediaID, cleanPath)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "NOT_FOUND", "Chunk not found on edge node")
+			return
+		}
+		s.logger.Error("failed pulling chunk from edge via tunnel", "node_id", nodeID, "media_id", mediaID, "path", cleanPath, "err", err)
+		writeError(w, http.StatusBadGateway, "TUNNEL_ERROR", "Failed to retrieve chunk from home edge node")
+		return
+	}
+	defer body.Close()
+
+	// Read content so we can both store in cache and serve
+	data, err := io.ReadAll(body)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed reading chunk body")
+		return
+	}
+
+	// Save to Origin Shield cache (Invariant 1, Invariant 7)
+	if s.chunkCache != nil {
+		_ = s.chunkCache.Put(r.Context(), cacheKey, bytes.NewReader(data), int64(len(data)), contentType)
+	}
+
+	w.Header().Set("X-Cache", "MISS")
+	s.serveChunkContent(w, r, nodeID, mediaID, cleanPath, bytes.NewReader(data), contentType)
+	_ = length
 }
 
+func (s *Server) serveChunkContent(w http.ResponseWriter, r *http.Request, nodeID, mediaID, chunkPath string, reader io.Reader, contentType string) {
+	ext := strings.ToLower(path.Ext(chunkPath))
+	switch ext {
+	case ".m3u8":
+		w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		// Playlist rewriting: dynamically sign relative child URLs
+		raw, err := io.ReadAll(reader)
+		if err != nil {
+			http.Error(w, "failed reading playlist", http.StatusInternalServerError)
+			return
+		}
+		playlistDir := path.Dir(chunkPath)
+		if playlistDir == "." {
+			playlistDir = ""
+		}
+		expiresAt := time.Now().Add(1 * time.Hour)
+		rewritten := rewritePlaylist(raw, nodeID, mediaID, playlistDir, s.cfg.SigningSecret, expiresAt)
+		w.Header().Set("Content-Length", strconv.Itoa(len(rewritten)))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(rewritten)
+		return
+	case ".ts":
+		w.Header().Set("Content-Type", "video/mp2t")
+		w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
+	default:
+		w.Header().Set("Content-Type", contentType)
+	}
+
+	w.Header().Set("Accept-Ranges", "bytes")
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.Copy(w, reader)
+}
+
+func rewritePlaylist(content []byte, nodeID, mediaID, playlistDir string, secret []byte, expiresAt time.Time) []byte {
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	var out bytes.Buffer
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		trimmed := strings.TrimSpace(line)
+
+		// Pass through empty lines and comments/tags (#EXT...)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			out.WriteString(line)
+			out.WriteString("\n")
+			continue
+		}
+
+		// Line is a URI (relative path to sub-playlist or segment)
+		chunkPath := trimmed
+		if playlistDir != "" && playlistDir != "." {
+			chunkPath = path.Join(playlistDir, trimmed)
+		}
+
+		sigQuery := contracts.SignChunkURL(secret, nodeID, mediaID, chunkPath, expiresAt)
+		sep := "?"
+		if strings.Contains(trimmed, "?") {
+			sep = "&"
+		}
+		out.WriteString(trimmed + sep + sigQuery)
+		out.WriteString("\n")
+	}
+
+	return out.Bytes()
+}

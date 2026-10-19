@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -15,17 +17,37 @@ import (
 	"github.com/anosh26/custardfin/apps/api/internal/adapters/httpapi"
 	"github.com/anosh26/custardfin/apps/api/internal/adapters/memory"
 	"github.com/anosh26/custardfin/apps/api/internal/domain"
+	"github.com/anosh26/custardfin/apps/api/internal/ports"
 	"github.com/anosh26/custardfin/libs/contracts"
 	"golang.org/x/crypto/bcrypt"
 )
 
+var testSigningSecret = []byte("test-signing-secret-at-least-32b!")
+
 func setupTestServer(t *testing.T) (*httpapi.Server, *memory.InMemoryUserRepository, *memory.InMemoryNodeRepository, *memory.InMemoryCatalogRepository, *memory.InMemoryHeartbeatStore) {
+	s, u, n, c, h, _ := setupTestServerFull(t, nil, nil)
+	return s, u, n, c, h
+}
+
+func setupTestServerFull(
+	t *testing.T,
+	cache ports.ChunkCache,
+	puller ports.TunnelPuller,
+) (*httpapi.Server, *memory.InMemoryUserRepository, *memory.InMemoryNodeRepository, *memory.InMemoryCatalogRepository, *memory.InMemoryHeartbeatStore, *memory.ChunkCache) {
 	t.Helper()
 
 	userRepo := memory.NewInMemoryUserRepository()
 	nodeRepo := memory.NewInMemoryNodeRepository()
 	catalogRepo := memory.NewInMemoryCatalogRepository()
 	heartbeatStore := memory.NewInMemoryHeartbeatStore()
+
+	var memCache *memory.ChunkCache
+	if cache == nil {
+		memCache = memory.NewMemoryChunkCache(24 * time.Hour)
+		cache = memCache
+	} else if mc, ok := cache.(*memory.ChunkCache); ok {
+		memCache = mc
+	}
 
 	hasher := auth.NewBcryptHasher(bcrypt.MinCost)
 	tokenService, err := auth.NewJWTService([]byte("test-secret-key-at-least-32-bytes-long!"))
@@ -35,19 +57,23 @@ func setupTestServer(t *testing.T) (*httpapi.Server, *memory.InMemoryUserReposit
 
 	server := httpapi.NewServer(
 		httpapi.Config{
-			Addr:         "127.0.0.1:0",
-			HeartbeatTTL: 20 * time.Second,
+			Addr:          "127.0.0.1:0",
+			HeartbeatTTL:  20 * time.Second,
+			BaseURL:       "http://localhost:8080",
+			SigningSecret: testSigningSecret,
 		},
 		userRepo,
 		nodeRepo,
 		catalogRepo,
 		heartbeatStore,
+		cache,
+		puller,
 		hasher,
 		tokenService,
 		nil,
 	)
 
-	return server, userRepo, nodeRepo, catalogRepo, heartbeatStore
+	return server, userRepo, nodeRepo, catalogRepo, heartbeatStore, memCache
 }
 
 func TestServer_Healthz(t *testing.T) {
@@ -373,6 +399,7 @@ func TestServer_Playback(t *testing.T) {
 		t.Fatalf("failed to record test heartbeat: %v", err)
 	}
 
+	// 3a. Remote request defaults to Origin Shield signed stream URL
 	req = httptest.NewRequest(http.MethodGet, "/v1/media/"+mediaID+"/playback", nil)
 	w = httptest.NewRecorder()
 	server.ServeHTTP(w, req)
@@ -390,14 +417,31 @@ func TestServer_Playback(t *testing.T) {
 		t.Fatalf("failed to parse playback response: %v", err)
 	}
 
-	if !strings.Contains(pbRes.StreamURL, mediaID) {
-		t.Errorf("expected stream url to contain media ID, got %s", pbRes.StreamURL)
+	if !strings.Contains(pbRes.StreamURL, mediaID) || !strings.Contains(pbRes.StreamURL, "sig=") {
+		t.Errorf("expected stream url to contain media ID and signature, got %s", pbRes.StreamURL)
 	}
-	if pbRes.RouteType != "direct_lan" {
-		t.Errorf("expected direct_lan route type, got %s", pbRes.RouteType)
+	if pbRes.RouteType != "origin_shield" {
+		t.Errorf("expected origin_shield route type, got %s", pbRes.RouteType)
 	}
 	if pbRes.ExpiresAt == "" {
 		t.Errorf("expected non-empty expires_at")
+	}
+
+	// 3b. Direct LAN request (?lan=true) routes to direct_lan
+	reqLAN := httptest.NewRequest(http.MethodGet, "/v1/media/"+mediaID+"/playback?lan=true", nil)
+	wLAN := httptest.NewRecorder()
+	server.ServeHTTP(wLAN, reqLAN)
+
+	if wLAN.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on direct lan request, got %d", wLAN.Code)
+	}
+	var pbResLAN struct {
+		StreamURL string `json:"stream_url"`
+		RouteType string `json:"route_type"`
+	}
+	_ = json.Unmarshal(wLAN.Body.Bytes(), &pbResLAN)
+	if pbResLAN.RouteType != "direct_lan" {
+		t.Errorf("expected direct_lan route type, got %s", pbResLAN.RouteType)
 	}
 
 	// 4. Invariant 10: Node Busy (ActiveStreams >= 10)
@@ -441,6 +485,196 @@ func TestServer_Playback(t *testing.T) {
 
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("expected 500 Internal Server Error, got %d", w.Code)
+	}
+}
+
+type mockTunnelPuller struct {
+	pulledPaths []string
+	content     map[string][]byte
+	contentType map[string]string
+	err         error
+}
+
+func (m *mockTunnelPuller) PullChunk(ctx context.Context, nodeID, mediaID, chunkPath string) (io.ReadCloser, string, int64, error) {
+	if m.err != nil {
+		return nil, "", 0, m.err
+	}
+	m.pulledPaths = append(m.pulledPaths, chunkPath)
+	data, ok := m.content[chunkPath]
+	if !ok {
+		return nil, "", 0, domain.ErrNotFound
+	}
+	ct := m.contentType[chunkPath]
+	if ct == "" {
+		ct = "application/octet-stream"
+	}
+	return io.NopCloser(bytes.NewReader(data)), ct, int64(len(data)), nil
+}
+
+func TestServer_OriginShield_Streaming(t *testing.T) {
+	nodeID := "11111111-1111-1111-1111-111111111111"
+	mediaID := "22222222-2222-2222-2222-222222222222"
+
+	rawMaster := "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080\n1080p/index.m3u8\n"
+	rawIndex := "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:4\n#EXTINF:4.000000,\nsegment_0000.ts\n#EXT-X-ENDLIST\n"
+	rawSegment := []byte("binary-ts-segment-payload")
+
+	puller := &mockTunnelPuller{
+		content: map[string][]byte{
+			"master.m3u8":           []byte(rawMaster),
+			"1080p/index.m3u8":      []byte(rawIndex),
+			"1080p/segment_0000.ts": rawSegment,
+		},
+		contentType: map[string]string{
+			"master.m3u8":           "application/vnd.apple.mpegurl",
+			"1080p/index.m3u8":      "application/vnd.apple.mpegurl",
+			"1080p/segment_0000.ts": "video/mp2t",
+		},
+	}
+
+	memCache := memory.NewMemoryChunkCache(24 * time.Hour)
+	server, _, _, catalogRepo, heartbeatStore, _ := setupTestServerFull(t, memCache, puller)
+
+	// Register catalog item
+	_ = catalogRepo.UpsertManifest(context.Background(), &domain.CatalogItem{
+		MediaID:     mediaID,
+		NodeID:      nodeID,
+		Title:       "Sample Film",
+		DurationS:   100,
+		ContentHash: "hash-film",
+		IsPublic:    true,
+		UpdatedAt:   time.Now().UTC(),
+	})
+
+	// Register online heartbeat
+	_ = heartbeatStore.RecordHeartbeat(context.Background(), &contracts.Heartbeat{
+		NodeID:        nodeID,
+		SentAt:        time.Now().UTC(),
+		Version:       "1.0.0",
+		ActiveStreams: 1,
+	}, 30*time.Second)
+
+	now := time.Now()
+	expFuture := now.Add(1 * time.Hour)
+	expPast := now.Add(-10 * time.Minute)
+
+	// 1. Missing Signature -> 401
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/master.m3u8", nodeID, mediaID), nil)
+	w := httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for missing signature, got %d", w.Code)
+	}
+
+	// 2. Invalid / Tampered Signature -> 401
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/master.m3u8?sig=tampered&exp=%d", nodeID, mediaID, expFuture.Unix()), nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for tampered signature, got %d", w.Code)
+	}
+
+	// 3. Expired Signature -> 401
+	expiredSig := contracts.SignChunkURL(testSigningSecret, nodeID, mediaID, "master.m3u8", expPast)
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/master.m3u8?%s", nodeID, mediaID, expiredSig), nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for expired signature, got %d", w.Code)
+	}
+
+	// 4. Directory Traversal Attempt -> 400
+	cleanMalicious := path.Clean("../passwd")
+	travSig := contracts.SignChunkURL(testSigningSecret, nodeID, mediaID, cleanMalicious, expFuture)
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/%%2e%%2e/passwd?%s", nodeID, mediaID, travSig), nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest && w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 400 or 401 for forbidden directory traversal path, got %d", w.Code)
+	}
+
+	// 5. Valid request on Cache MISS -> Pulls through tunnel, caches, returns X-Cache: MISS
+	validSigMaster := contracts.SignChunkURL(testSigningSecret, nodeID, mediaID, "master.m3u8", expFuture)
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/master.m3u8?%s", nodeID, mediaID, validSigMaster), nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on valid stream chunk request, got %d: %s", w.Code, w.Body.String())
+	}
+	if cacheHdr := w.Header().Get("X-Cache"); cacheHdr != "MISS" {
+		t.Errorf("expected X-Cache: MISS on initial fetch, got %s", cacheHdr)
+	}
+
+	// Verify master.m3u8 URLs were rewritten with HMAC signatures
+	masterBody := w.Body.String()
+	if !strings.Contains(masterBody, "1080p/index.m3u8?sig=") {
+		t.Errorf("expected rewritten playlist with signed sub-playlist URL, got:\n%s", masterBody)
+	}
+
+	// 6. Second request on Cache HIT -> Serves from cache without pulling tunnel again, X-Cache: HIT
+	pullCountBefore := len(puller.pulledPaths)
+	w2 := httptest.NewRecorder()
+	server.ServeHTTP(w2, req)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on cached stream request, got %d", w2.Code)
+	}
+	if cacheHdr := w2.Header().Get("X-Cache"); cacheHdr != "HIT" {
+		t.Errorf("expected X-Cache: HIT on second fetch, got %s", cacheHdr)
+	}
+	if len(puller.pulledPaths) != pullCountBefore {
+		t.Errorf("expected no additional tunnel pull on cache hit")
+	}
+
+	// 7. Requesting rendition index playlist (1080p/index.m3u8)
+	validSigIndex := contracts.SignChunkURL(testSigningSecret, nodeID, mediaID, "1080p/index.m3u8", expFuture)
+	reqIndex := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/1080p/index.m3u8?%s", nodeID, mediaID, validSigIndex), nil)
+	wIndex := httptest.NewRecorder()
+	server.ServeHTTP(wIndex, reqIndex)
+
+	if wIndex.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for rendition index, got %d: %s", wIndex.Code, wIndex.Body.String())
+	}
+	indexBody := wIndex.Body.String()
+	if !strings.Contains(indexBody, "segment_0000.ts?sig=") {
+		t.Errorf("expected rewritten segment URL with signature, got:\n%s", indexBody)
+	}
+
+	// 8. Requesting media segment .ts (1080p/segment_0000.ts)
+	validSigSeg := contracts.SignChunkURL(testSigningSecret, nodeID, mediaID, "1080p/segment_0000.ts", expFuture)
+	reqSeg := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/1080p/segment_0000.ts?%s", nodeID, mediaID, validSigSeg), nil)
+	wSeg := httptest.NewRecorder()
+	server.ServeHTTP(wSeg, reqSeg)
+
+	if wSeg.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for .ts segment, got %d: %s", wSeg.Code, wSeg.Body.String())
+	}
+	if ct := wSeg.Header().Get("Content-Type"); ct != "video/mp2t" {
+		t.Errorf("expected Content-Type video/mp2t, got %s", ct)
+	}
+	if !bytes.Equal(wSeg.Body.Bytes(), rawSegment) {
+		t.Errorf("segment bytes mismatch")
+	}
+
+	// 9. Node Offline Handling:
+	// If node goes offline, cached segments (like master.m3u8) still return 200 OK (Cache HIT)
+	heartbeatStore.DeleteHeartbeat(nodeID)
+
+	wOfflineCached := httptest.NewRecorder()
+	server.ServeHTTP(wOfflineCached, req) // master.m3u8 is cached!
+	if wOfflineCached.Code != http.StatusOK {
+		t.Errorf("expected cached chunk to play when node is offline (FR-7), got %d", wOfflineCached.Code)
+	}
+
+	// But an uncached chunk returns 503 NODE_OFFLINE when node is offline
+	uncachedSig := contracts.SignChunkURL(testSigningSecret, nodeID, mediaID, "480p/segment_9999.ts", expFuture)
+	reqUncached := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/480p/segment_9999.ts?%s", nodeID, mediaID, uncachedSig), nil)
+	wUncached := httptest.NewRecorder()
+	server.ServeHTTP(wUncached, reqUncached)
+
+	if wUncached.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected 503 Service Unavailable when node is offline and chunk uncached, got %d", wUncached.Code)
 	}
 }
 
@@ -606,4 +840,3 @@ func TestServer_Node_Heartbeat(t *testing.T) {
 		t.Errorf("expected 500 for storage error, got %d", w.Code)
 	}
 }
-

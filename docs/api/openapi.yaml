@@ -239,6 +239,69 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /stream/{node_id}/{media_id}/{chunk_path}:
+    get:
+      summary: Fetch HLS playlist or media segment through Origin Shield pull-through cache
+      operationId: getStreamChunk
+      parameters:
+        - name: node_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: media_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: chunk_path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Relative path to HLS master playlist, rendition playlist, or segment (.ts)
+        - name: sig
+          in: query
+          required: true
+          schema:
+            type: string
+          description: HMAC-SHA256 signature
+        - name: exp
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Expiry Unix timestamp
+      responses:
+        '200':
+          description: Media chunk or HLS playlist
+          headers:
+            X-Cache:
+              schema:
+                type: string
+                enum: [HIT, MISS]
+          content:
+            application/vnd.apple.mpegurl:
+              schema:
+                type: string
+            video/mp2t:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Invalid or expired signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Node busy - stream cap reached
+        '503':
+          description: Node offline and chunk not cached
+
+
 components:
   securitySchemes:
     BearerAuth:
@@ -389,7 +452,7 @@ components:
           description: Direct LAN URL, signed cache/CDN URL, or tunnel pull URL
         route_type:
           type: string
-          enum: [direct_lan, origin_cache, tunnel_origin]
+          enum: [direct_lan, origin_shield, cache_only]
         expires_at:
           type: string
           format: date-time
