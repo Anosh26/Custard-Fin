@@ -229,9 +229,9 @@ func (s *Server) handleGetWatchProgress(w http.ResponseWriter, r *http.Request) 
 	if wp == nil {
 		// Default zero progress
 		writeJSON(w, http.StatusOK, map[string]any{
-			"media_id":    mediaID,
-			"position_s":  0,
-			"completed":   false,
+			"media_id":   mediaID,
+			"position_s": 0,
+			"completed":  false,
 		})
 		return
 	}
@@ -395,5 +395,3 @@ func (s *Server) ActiveStreams() int {
 	}
 	return len(s.sessions)
 }
-
-

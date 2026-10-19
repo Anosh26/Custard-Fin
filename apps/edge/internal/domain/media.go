@@ -10,27 +10,27 @@ import (
 )
 
 var (
-	ErrEmptyPath         = errors.New("media path cannot be empty")
-	ErrInvalidDuration   = errors.New("media duration must be positive")
-	ErrEmptyContentHash  = errors.New("content hash is required")
+	ErrEmptyPath        = errors.New("media path cannot be empty")
+	ErrInvalidDuration  = errors.New("media duration must be positive")
+	ErrEmptyContentHash = errors.New("content hash is required")
 )
 
 // Media represents a discovered local video file and its metadata.
 type Media struct {
-	ID           string    `json:"id"`
-	Path         string    `json:"path"`
-	FileSize     int64     `json:"file_size"`
-	ModTime      time.Time `json:"mod_time"`
-	ContentHash  string    `json:"content_hash"` // SHA-256
-	Title        string    `json:"title"`
-	DurationS    int       `json:"duration_s"`
-	Width        int       `json:"width"`
-	Height       int       `json:"height"`
-	VideoCodec   string    `json:"video_codec"`
-	AudioCodec   string    `json:"audio_codec"`
-	IsPublic     bool      `json:"is_public"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID          string    `json:"id"`
+	Path        string    `json:"path"`
+	FileSize    int64     `json:"file_size"`
+	ModTime     time.Time `json:"mod_time"`
+	ContentHash string    `json:"content_hash"` // SHA-256
+	Title       string    `json:"title"`
+	DurationS   int       `json:"duration_s"`
+	Width       int       `json:"width"`
+	Height      int       `json:"height"`
+	VideoCodec  string    `json:"video_codec"`
+	AudioCodec  string    `json:"audio_codec"`
+	IsPublic    bool      `json:"is_public"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // NewMedia constructs a new Media entity with a generated UUID.

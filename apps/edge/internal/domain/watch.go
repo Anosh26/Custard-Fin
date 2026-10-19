@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ErrInvalidMediaID  = errors.New("media_id cannot be empty")
+	ErrInvalidMediaID   = errors.New("media_id cannot be empty")
 	ErrNegativePosition = errors.New("watch position cannot be negative")
 )
 

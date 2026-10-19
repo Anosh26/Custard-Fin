@@ -600,5 +600,3 @@ func TestServer_ActiveStreamsTracker(t *testing.T) {
 		t.Fatalf("expected still 2 active streams for repeated requests, got %d", n)
 	}
 }
-
-

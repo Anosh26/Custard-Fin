@@ -12,9 +12,9 @@ const MaxManifestSizeBytes = 3072
 
 // Rendition describes an encoded HLS profile.
 type Rendition struct {
-	Resolution     string `json:"resolution"`      // e.g. "1080p", "720p", "480p"
-	BitrateBps     int64  `json:"bitrate_bps"`     // e.g. 5000000
-	PlaylistPath   string `json:"playlist_path"`   // e.g. "1080p/index.m3u8"
+	Resolution     string `json:"resolution"`       // e.g. "1080p", "720p", "480p"
+	BitrateBps     int64  `json:"bitrate_bps"`      // e.g. 5000000
+	PlaylistPath   string `json:"playlist_path"`    // e.g. "1080p/index.m3u8"
 	ChunkDurationS int    `json:"chunk_duration_s"` // invariant: 4s segments
 }
 

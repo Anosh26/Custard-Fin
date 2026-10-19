@@ -18,8 +18,8 @@ import (
 
 // FakeMediaRepository is an in-memory repository for unit testing with failure injection.
 type FakeMediaRepository struct {
-	mu           sync.RWMutex
-	items        map[string]*domain.Media
+	mu             sync.RWMutex
+	items          map[string]*domain.Media
 	failFindByPath bool
 	failSave       bool
 }

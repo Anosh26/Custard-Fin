@@ -10,9 +10,9 @@ import (
 )
 
 type InMemoryUserRepository struct {
-	mu       sync.RWMutex
-	byID     map[string]*domain.User
-	byName   map[string]*domain.User
+	mu          sync.RWMutex
+	byID        map[string]*domain.User
+	byName      map[string]*domain.User
 	SimulateErr error
 }
 

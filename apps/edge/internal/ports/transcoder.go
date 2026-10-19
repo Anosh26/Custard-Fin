@@ -17,12 +17,12 @@ const (
 
 // TranscodeJob defines the specifications for an HLS encoding task.
 type TranscodeJob struct {
-	MediaID         string
-	InputPath       string
-	OutputDir       string
-	SourceWidth     int
-	SourceHeight    int
-	PreferredMode   EncoderMode
+	MediaID       string
+	InputPath     string
+	OutputDir     string
+	SourceWidth   int
+	SourceHeight  int
+	PreferredMode EncoderMode
 }
 
 // TranscodeResult returns details about the completed HLS renditions.

@@ -26,9 +26,9 @@ type Heartbeat struct {
 }
 
 var (
-	ErrInvalidNodeID        = errors.New("node_id is required")
-	ErrExceededStreamCap    = errors.New("active streams exceeds node capacity")
-	ErrNegativeStreamCount  = errors.New("active streams cannot be negative")
+	ErrInvalidNodeID       = errors.New("node_id is required")
+	ErrExceededStreamCap   = errors.New("active streams exceeds node capacity")
+	ErrNegativeStreamCount = errors.New("active streams cannot be negative")
 )
 
 // Validate checks the heartbeat values for sanity and adherence to invariants.
