@@ -119,3 +119,10 @@ func (s *InMemoryHeartbeatStore) BatchIsNodeOnline(ctx context.Context, nodeIDs 
 	}
 	return res, nil
 }
+
+// DeleteHeartbeat removes a heartbeat entry immediately for test simulation.
+func (s *InMemoryHeartbeatStore) DeleteHeartbeat(nodeID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.entries, nodeID)
+}
