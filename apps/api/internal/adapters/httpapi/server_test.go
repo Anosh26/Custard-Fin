@@ -840,3 +840,175 @@ func TestServer_Node_Heartbeat(t *testing.T) {
 		t.Errorf("expected 500 for storage error, got %d", w.Code)
 	}
 }
+
+func TestServer_AdaptiveRenditionThrottling(t *testing.T) {
+	nodeID := "33333333-3333-3333-3333-333333333333"
+	mediaID := "44444444-4444-4444-4444-444444444444"
+
+	multiMaster := "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080\n1080p/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=2500000,RESOLUTION=1280x720\n720p/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=854x480\n480p/index.m3u8\n"
+
+	puller := &mockTunnelPuller{
+		content: map[string][]byte{
+			"master.m3u8": []byte(multiMaster),
+		},
+		contentType: map[string]string{
+			"master.m3u8": "application/vnd.apple.mpegurl",
+		},
+	}
+
+	server, _, _, _, heartbeatStore, _ := setupTestServerFull(t, nil, puller)
+
+	// Subtest 1: LoadNormal (2 active streams) -> All renditions present
+	_ = heartbeatStore.RecordHeartbeat(context.Background(), &contracts.Heartbeat{
+		NodeID:        nodeID,
+		SentAt:        time.Now(),
+		Version:       "1.0.0",
+		ActiveStreams: 2,
+	}, time.Minute)
+
+	exp := time.Now().Add(time.Hour)
+	sig := contracts.SignChunkURL(testSigningSecret, nodeID, mediaID, "master.m3u8", exp)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/master.m3u8?%s", nodeID, mediaID, sig), nil)
+	w := httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK under LoadNormal, got %d", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "1080p/index.m3u8") || !strings.Contains(body, "720p/index.m3u8") || !strings.Contains(body, "480p/index.m3u8") {
+		t.Errorf("expected all 3 renditions under LoadNormal, got:\n%s", body)
+	}
+
+	// Subtest 2: LoadModerate (5 active streams) -> 1080p pruned, 720p & 480p retained
+	_ = heartbeatStore.RecordHeartbeat(context.Background(), &contracts.Heartbeat{
+		NodeID:        nodeID,
+		SentAt:        time.Now(),
+		Version:       "1.0.0",
+		ActiveStreams: 5,
+	}, time.Minute)
+
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/master.m3u8?%s", nodeID, mediaID, sig), nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK under LoadModerate, got %d", w.Code)
+	}
+	body = w.Body.String()
+	if strings.Contains(body, "1080p/index.m3u8") {
+		t.Errorf("expected 1080p to be throttled out under LoadModerate, got:\n%s", body)
+	}
+	if !strings.Contains(body, "720p/index.m3u8") || !strings.Contains(body, "480p/index.m3u8") {
+		t.Errorf("expected 720p and 480p under LoadModerate, got:\n%s", body)
+	}
+
+	// Subtest 3: LoadSaturated (8 active streams) -> 1080p and 720p pruned, 480p retained
+	_ = heartbeatStore.RecordHeartbeat(context.Background(), &contracts.Heartbeat{
+		NodeID:        nodeID,
+		SentAt:        time.Now(),
+		Version:       "1.0.0",
+		ActiveStreams: 8,
+	}, time.Minute)
+
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/master.m3u8?%s", nodeID, mediaID, sig), nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK under LoadSaturated, got %d", w.Code)
+	}
+	body = w.Body.String()
+	if strings.Contains(body, "1080p/index.m3u8") || strings.Contains(body, "720p/index.m3u8") {
+		t.Errorf("expected 1080p and 720p to be throttled out under LoadSaturated, got:\n%s", body)
+	}
+	if !strings.Contains(body, "480p/index.m3u8") {
+		t.Errorf("expected 480p under LoadSaturated, got:\n%s", body)
+	}
+
+	// Subtest 4: Safety Fallback - Single 1080p rendition under Saturated load is preserved
+	singleMaster := "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080\n1080p/index.m3u8\n"
+	pullerSingle := &mockTunnelPuller{
+		content: map[string][]byte{
+			"master.m3u8": []byte(singleMaster),
+		},
+		contentType: map[string]string{
+			"master.m3u8": "application/vnd.apple.mpegurl",
+		},
+	}
+	serverSingle, _, _, _, heartbeatSingle, _ := setupTestServerFull(t, nil, pullerSingle)
+	_ = heartbeatSingle.RecordHeartbeat(context.Background(), &contracts.Heartbeat{
+		NodeID:        nodeID,
+		SentAt:        time.Now(),
+		Version:       "1.0.0",
+		ActiveStreams: 8,
+	}, time.Minute)
+
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/stream/%s/%s/master.m3u8?%s", nodeID, mediaID, sig), nil)
+	w = httptest.NewRecorder()
+	serverSingle.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for fallback, got %d", w.Code)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, "1080p/index.m3u8") {
+		t.Errorf("expected fallback to preserve 1080p rather than producing empty playlist, got:\n%s", body)
+	}
+}
+
+type mockPrefetcher struct {
+	triggeredNode  string
+	triggeredMedia string
+	triggeredPath  string
+	calledCount    int
+}
+
+func (m *mockPrefetcher) TriggerPrefetch(ctx context.Context, nodeID, mediaID, initialChunkPath string) {
+	m.calledCount++
+	m.triggeredNode = nodeID
+	m.triggeredMedia = mediaID
+	m.triggeredPath = initialChunkPath
+}
+
+func TestServer_FirstChunkPrefetchOnPlayback(t *testing.T) {
+	nodeID := "55555555-5555-5555-5555-555555555555"
+	mediaID := "66666666-6666-6666-6666-666666666666"
+
+	server, _, _, catalogRepo, heartbeatStore, _ := setupTestServerFull(t, nil, nil)
+
+	mockPf := &mockPrefetcher{}
+	server.SetPrefetcher(mockPf)
+
+	// Setup online node
+	_ = heartbeatStore.RecordHeartbeat(context.Background(), &contracts.Heartbeat{
+		NodeID:        nodeID,
+		SentAt:        time.Now(),
+		Version:       "1.0.0",
+		ActiveStreams: 1,
+	}, time.Minute)
+
+	// Setup catalog media
+	_ = catalogRepo.UpsertManifest(context.Background(), &domain.CatalogItem{
+		MediaID:     mediaID,
+		NodeID:      nodeID,
+		Title:       "Prefetch Test Video",
+		DurationS:   120,
+		ContentHash: "hash-prefetch",
+		IsPublic:    true,
+		UpdatedAt:   time.Now().UTC(),
+	})
+
+	// Request remote playback
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/media/%s/playback", mediaID), nil)
+	w := httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for playback, got %d: %s", w.Code, w.Body.String())
+	}
+
+	if mockPf.calledCount != 1 {
+		t.Errorf("expected prefetcher to be triggered once, called %d times", mockPf.calledCount)
+	}
+	if mockPf.triggeredNode != nodeID || mockPf.triggeredMedia != mediaID || mockPf.triggeredPath != "1080p/segment_000.ts" {
+		t.Errorf("unexpected prefetch params: node=%s, media=%s, path=%s", mockPf.triggeredNode, mockPf.triggeredMedia, mockPf.triggeredPath)
+	}
+}
+

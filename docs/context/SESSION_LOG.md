@@ -1,3 +1,19 @@
+## 2026-10-24 - Milestone 8: Admission Control, Adaptive Bitrate & Prefetch
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi & Agent)
+- **Milestone:** Milestone 8 (Admission control, adaptive bitrate, prefetch)
+- **Summary:** Delivered node saturation estimation, adaptive master playlist rendition throttling, and initial chunk prefetch worker adhering strictly to Invariant 7 (Origin Shield pull-through cache), Invariant 9 (ephemeral HMAC signed URLs), and Invariant 10 (10-stream concurrency limit). In `apps/api`, defined `ports.SaturationEstimator` and `ports.Prefetcher` in `apps/api/internal/ports/admission.go`, implemented `domain.LoadLevel` (`LoadNormal`, `LoadModerate`, `LoadSaturated`, `LoadExhausted`) with resolution filtering rules in `apps/api/internal/domain/load.go`. Implemented `admission.DefaultEstimator` (`apps/api/internal/adapters/admission`) mapping heartbeat active stream counts to load tiers. Built `prefetch.BackgroundPrefetcher` (`apps/api/internal/adapters/prefetch`) proactively warming Origin Shield cache with initial `.ts` video chunks ahead of time. Enhanced `httpapi.Server` master playlist rewriting with `rewritePlaylistWithLoad`, dynamically pruning 1080p under moderate load and 1080p+720p under saturated load (with single-rendition safety fallback). Wired asynchronous prefetch into `handleGetPlayback` and saturation estimator into `handleStreamChunk`. Added comprehensive unit test coverage and updated ADR 0002.
+- **Files Touched:**
+  - `apps/api/internal/domain/{load.go, load_test.go}`
+  - `apps/api/internal/ports/admission.go`
+  - `apps/api/internal/adapters/admission/{estimator.go, estimator_test.go, README.md}`
+  - `apps/api/internal/adapters/prefetch/{prefetcher.go, prefetcher_test.go, README.md}`
+  - `apps/api/internal/adapters/httpapi/{server.go, server_test.go}`
+  - `tests/e2e/e2e_test.go`
+  - `docs/adr/0002-admission-control-and-adaptive-bitrate.md`
+  - `docs/context/{STATE.md, SESSION_LOG.md}`
+- **Follow-ups:**
+  - Milestone 9: NVENC path with probe, fallback and benchmark script.
+
 ## 2026-10-19 - Milestone 7: Origin Shield Cache, Signed URLs & Stream Router
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 7 (Origin Shield cache + signed URLs + stream router)

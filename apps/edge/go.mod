@@ -1,6 +1,6 @@
 module github.com/anosh26/custardfin/apps/edge
 
-go 1.26.0
+go 1.23
 
 require github.com/anosh26/custardfin/libs/contracts v0.0.0
 

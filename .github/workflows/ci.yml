@@ -18,7 +18,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-          cache: true
+          cache: false
+
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Verify Formatting (gofmt)
         run: |
@@ -29,10 +32,18 @@ jobs:
           fi
 
       - name: Go Vet
-        run: go vet ./...
+        run: |
+          go vet ./libs/contracts/...
+          go vet ./apps/api/...
+          go vet ./apps/edge/...
+          go vet ./tests/...
 
       - name: Run Tests with Race Detector
-        run: go test -race -v ./...
+        run: |
+          go test -race -v ./libs/contracts/...
+          go test -race -v ./apps/api/...
+          go test -race -v ./apps/edge/...
+          go test -race -v ./tests/...
 
   contracts-check:
     name: Contracts & OpenAPI Lint
@@ -47,4 +58,4 @@ jobs:
           node-version: 20
 
       - name: Lint OpenAPI Spec
-        run: npx @redocly/cli lint docs/api/openapi.yaml
+        run: npx -y @redocly/cli lint docs/api/openapi.yaml

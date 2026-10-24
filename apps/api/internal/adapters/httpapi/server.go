@@ -16,7 +16,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anosh26/custardfin/apps/api/internal/adapters/admission"
 	"github.com/anosh26/custardfin/apps/api/internal/adapters/memory"
+	"github.com/anosh26/custardfin/apps/api/internal/adapters/prefetch"
 	"github.com/anosh26/custardfin/apps/api/internal/domain"
 	"github.com/anosh26/custardfin/apps/api/internal/ports"
 	"github.com/anosh26/custardfin/libs/contracts"
@@ -30,18 +32,20 @@ type Config struct {
 }
 
 type Server struct {
-	cfg            Config
-	userRepo       ports.UserRepository
-	nodeRepo       ports.NodeRepository
-	catalogRepo    ports.CatalogRepository
-	heartbeatStore ports.HeartbeatStore
-	chunkCache     ports.ChunkCache
-	tunnelPuller   ports.TunnelPuller
-	hasher         ports.PasswordHasher
-	tokenService   ports.TokenService
-	logger         *slog.Logger
-	server         *http.Server
-	listener       net.Listener
+	cfg                 Config
+	userRepo            ports.UserRepository
+	nodeRepo            ports.NodeRepository
+	catalogRepo         ports.CatalogRepository
+	heartbeatStore      ports.HeartbeatStore
+	chunkCache          ports.ChunkCache
+	tunnelPuller        ports.TunnelPuller
+	saturationEstimator ports.SaturationEstimator
+	prefetcher          ports.Prefetcher
+	hasher              ports.PasswordHasher
+	tokenService        ports.TokenService
+	logger              *slog.Logger
+	server              *http.Server
+	listener            net.Listener
 }
 
 func NewServer(
@@ -75,17 +79,31 @@ func NewServer(
 		chunkCache = memory.NewMemoryChunkCache(24 * time.Hour)
 	}
 
+	var estimator ports.SaturationEstimator
+	if heartbeatStore != nil {
+		estimator = admission.NewDefaultEstimator(admission.Config{}, heartbeatStore, logger)
+	}
+
+	var prefetcher ports.Prefetcher
+	if chunkCache != nil && tunnelPuller != nil {
+		if pf, err := prefetch.NewBackgroundPrefetcher(prefetch.Config{}, chunkCache, tunnelPuller, logger); err == nil {
+			prefetcher = pf
+		}
+	}
+
 	s := &Server{
-		cfg:            cfg,
-		userRepo:       userRepo,
-		nodeRepo:       nodeRepo,
-		catalogRepo:    catalogRepo,
-		heartbeatStore: heartbeatStore,
-		chunkCache:     chunkCache,
-		tunnelPuller:   tunnelPuller,
-		hasher:         hasher,
-		tokenService:   tokenService,
-		logger:         logger,
+		cfg:                 cfg,
+		userRepo:            userRepo,
+		nodeRepo:            nodeRepo,
+		catalogRepo:         catalogRepo,
+		heartbeatStore:      heartbeatStore,
+		chunkCache:          chunkCache,
+		tunnelPuller:        tunnelPuller,
+		saturationEstimator: estimator,
+		prefetcher:          prefetcher,
+		hasher:              hasher,
+		tokenService:        tokenService,
+		logger:              logger,
 	}
 
 	mux := http.NewServeMux()
@@ -172,6 +190,16 @@ func (s *Server) Shutdown(ctx context.Context) error {
 // ServeHTTP dispatches requests to the internal handler (useful for testing and embedding).
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.server.Handler.ServeHTTP(w, r)
+}
+
+// SetSaturationEstimator configures a custom SaturationEstimator (useful for test mocks).
+func (s *Server) SetSaturationEstimator(est ports.SaturationEstimator) {
+	s.saturationEstimator = est
+}
+
+// SetPrefetcher configures a custom Prefetcher (useful for test mocks).
+func (s *Server) SetPrefetcher(pf ports.Prefetcher) {
+	s.prefetcher = pf
 }
 
 // Handlers
@@ -608,6 +636,11 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 4. Remote viewer with active node -> Origin Shield signed stream URL
+	// Warm initial video chunk ahead of time to eliminate TTFB buffering (Milestone 8, FR-10)
+	if s.prefetcher != nil {
+		s.prefetcher.TriggerPrefetch(r.Context(), item.NodeID, item.MediaID, "1080p/segment_000.ts")
+	}
+
 	expiresAt := time.Now().Add(1 * time.Hour)
 	sigQuery := contracts.SignChunkURL(s.cfg.SigningSecret, item.NodeID, item.MediaID, "master.m3u8", expiresAt)
 	streamURL := fmt.Sprintf("%s/v1/stream/%s/%s/master.m3u8?%s", s.cfg.BaseURL, item.NodeID, item.MediaID, sigQuery)
@@ -648,6 +681,14 @@ func (s *Server) handleStreamChunk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Evaluate edge node saturation level for adaptive rendition throttling (FR-10)
+	loadLevel := domain.LoadNormal
+	if s.saturationEstimator != nil {
+		if lvl, _, err := s.saturationEstimator.EstimateLoad(r.Context(), nodeID); err == nil {
+			loadLevel = lvl
+		}
+	}
+
 	cacheKey := fmt.Sprintf("%s/%s/%s", nodeID, mediaID, cleanPath)
 
 	// Check Origin Shield Cache (Invariant 7)
@@ -656,7 +697,7 @@ func (s *Server) handleStreamChunk(w http.ResponseWriter, r *http.Request) {
 		if err == nil && cachedItem != nil {
 			defer cachedItem.Body.Close()
 			w.Header().Set("X-Cache", "HIT")
-			s.serveChunkContent(w, r, nodeID, mediaID, cleanPath, cachedItem.Body, cachedItem.ContentType)
+			s.serveChunkContent(w, r, nodeID, mediaID, cleanPath, cachedItem.Body, cachedItem.ContentType, loadLevel)
 			return
 		}
 	}
@@ -711,17 +752,17 @@ func (s *Server) handleStreamChunk(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("X-Cache", "MISS")
-	s.serveChunkContent(w, r, nodeID, mediaID, cleanPath, bytes.NewReader(data), contentType)
+	s.serveChunkContent(w, r, nodeID, mediaID, cleanPath, bytes.NewReader(data), contentType, loadLevel)
 	_ = length
 }
 
-func (s *Server) serveChunkContent(w http.ResponseWriter, r *http.Request, nodeID, mediaID, chunkPath string, reader io.Reader, contentType string) {
+func (s *Server) serveChunkContent(w http.ResponseWriter, r *http.Request, nodeID, mediaID, chunkPath string, reader io.Reader, contentType string, load domain.LoadLevel) {
 	ext := strings.ToLower(path.Ext(chunkPath))
 	switch ext {
 	case ".m3u8":
 		w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-		// Playlist rewriting: dynamically sign relative child URLs
+		// Playlist rewriting: dynamically sign relative child URLs and filter by load level
 		raw, err := io.ReadAll(reader)
 		if err != nil {
 			http.Error(w, "failed reading playlist", http.StatusInternalServerError)
@@ -732,7 +773,7 @@ func (s *Server) serveChunkContent(w http.ResponseWriter, r *http.Request, nodeI
 			playlistDir = ""
 		}
 		expiresAt := time.Now().Add(1 * time.Hour)
-		rewritten := rewritePlaylist(raw, nodeID, mediaID, playlistDir, s.cfg.SigningSecret, expiresAt)
+		rewritten := rewritePlaylistWithLoad(raw, nodeID, mediaID, playlistDir, s.cfg.SigningSecret, expiresAt, load)
 		w.Header().Set("Content-Length", strconv.Itoa(len(rewritten)))
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(rewritten)
@@ -750,32 +791,131 @@ func (s *Server) serveChunkContent(w http.ResponseWriter, r *http.Request, nodeI
 }
 
 func rewritePlaylist(content []byte, nodeID, mediaID, playlistDir string, secret []byte, expiresAt time.Time) []byte {
+	return rewritePlaylistWithLoad(content, nodeID, mediaID, playlistDir, secret, expiresAt, domain.LoadNormal)
+}
+
+type variantStream struct {
+	infoLine   string
+	uriLine    string
+	resolution string
+}
+
+func extractResolution(infoLine string) string {
+	idx := strings.Index(infoLine, "RESOLUTION=")
+	if idx == -1 {
+		return ""
+	}
+	sub := infoLine[idx+len("RESOLUTION="):]
+	comma := strings.Index(sub, ",")
+	if comma != -1 {
+		sub = sub[:comma]
+	}
+	return strings.TrimSpace(sub)
+}
+
+func rewritePlaylistWithLoad(content []byte, nodeID, mediaID, playlistDir string, secret []byte, expiresAt time.Time, load domain.LoadLevel) []byte {
+	// If it's not a master playlist, apply regular segment-level URL signing
+	if !bytes.Contains(content, []byte("#EXT-X-STREAM-INF")) {
+		scanner := bufio.NewScanner(bytes.NewReader(content))
+		var out bytes.Buffer
+
+		for scanner.Scan() {
+			line := scanner.Text()
+			trimmed := strings.TrimSpace(line)
+
+			// Pass through empty lines and comments/tags (#EXT...)
+			if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+				out.WriteString(line)
+				out.WriteString("\n")
+				continue
+			}
+
+			// Line is a URI (relative path to sub-playlist or segment)
+			chunkPath := trimmed
+			if playlistDir != "" && playlistDir != "." {
+				chunkPath = path.Join(playlistDir, trimmed)
+			}
+
+			sigQuery := contracts.SignChunkURL(secret, nodeID, mediaID, chunkPath, expiresAt)
+			sep := "?"
+			if strings.Contains(trimmed, "?") {
+				sep = "&"
+			}
+			out.WriteString(trimmed + sep + sigQuery)
+			out.WriteString("\n")
+		}
+
+		return out.Bytes()
+	}
+
+	// Master playlist parsing with adaptive rendition filtering
 	scanner := bufio.NewScanner(bytes.NewReader(content))
-	var out bytes.Buffer
+	var headerLines []string
+	var variants []variantStream
+	var pendingInfo string
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		trimmed := strings.TrimSpace(line)
-
-		// Pass through empty lines and comments/tags (#EXT...)
-		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
-			out.WriteString(line)
-			out.WriteString("\n")
+		if trimmed == "" {
 			continue
 		}
 
-		// Line is a URI (relative path to sub-playlist or segment)
-		chunkPath := trimmed
+		if strings.HasPrefix(trimmed, "#EXT-X-STREAM-INF") {
+			pendingInfo = line
+			continue
+		}
+
+		if pendingInfo != "" {
+			res := extractResolution(pendingInfo)
+			variants = append(variants, variantStream{
+				infoLine:   pendingInfo,
+				uriLine:    line,
+				resolution: res,
+			})
+			pendingInfo = ""
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "#") {
+			headerLines = append(headerLines, line)
+		}
+	}
+
+	// Filter variants according to load level
+	var acceptedVariants []variantStream
+	for _, v := range variants {
+		if load.AllowedResolution(v.resolution) {
+			acceptedVariants = append(acceptedVariants, v)
+		}
+	}
+
+	// Safety fallback: if all variants were pruned, keep the lowest rendition to maintain playback
+	if len(acceptedVariants) == 0 && len(variants) > 0 {
+		acceptedVariants = append(acceptedVariants, variants[len(variants)-1])
+	}
+
+	var out bytes.Buffer
+	for _, h := range headerLines {
+		out.WriteString(h)
+		out.WriteString("\n")
+	}
+
+	for _, v := range acceptedVariants {
+		out.WriteString(v.infoLine)
+		out.WriteString("\n")
+
+		chunkPath := strings.TrimSpace(v.uriLine)
 		if playlistDir != "" && playlistDir != "." {
-			chunkPath = path.Join(playlistDir, trimmed)
+			chunkPath = path.Join(playlistDir, chunkPath)
 		}
 
 		sigQuery := contracts.SignChunkURL(secret, nodeID, mediaID, chunkPath, expiresAt)
 		sep := "?"
-		if strings.Contains(trimmed, "?") {
+		if strings.Contains(v.uriLine, "?") {
 			sep = "&"
 		}
-		out.WriteString(trimmed + sep + sigQuery)
+		out.WriteString(strings.TrimSpace(v.uriLine) + sep + sigQuery)
 		out.WriteString("\n")
 	}
 
