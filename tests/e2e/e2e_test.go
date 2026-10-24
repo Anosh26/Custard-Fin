@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -36,8 +37,12 @@ func findProjectRoot(t *testing.T) string {
 
 func ensureBinariesBuilt(t *testing.T, root string) (string, string) {
 	t.Helper()
-	apidPath := filepath.Join(root, "bin", "apid.exe")
-	edgedPath := filepath.Join(root, "bin", "edged.exe")
+	exeExt := ""
+	if runtime.GOOS == "windows" {
+		exeExt = ".exe"
+	}
+	apidPath := filepath.Join(root, "bin", "apid"+exeExt)
+	edgedPath := filepath.Join(root, "bin", "edged"+exeExt)
 
 	cmd := exec.Command("go", "build", "-o", apidPath, "./apps/api/cmd/apid")
 	cmd.Dir = root
