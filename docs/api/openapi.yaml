@@ -3,6 +3,9 @@ info:
   title: CustardFin Cloud API
   description: Central coordination and discovery catalog API for CustardFin. Video binaries remain on home edge nodes.
   version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 servers:
   - url: http://localhost:8080/v1
     description: Local dev environment
@@ -12,6 +15,7 @@ paths:
     post:
       summary: Register a new user
       operationId: registerUser
+      security: []
       requestBody:
         required: true
         content:
@@ -40,6 +44,7 @@ paths:
     post:
       summary: Authenticate user and obtain JWT tokens
       operationId: loginUser
+      security: []
       requestBody:
         required: true
         content:
@@ -85,6 +90,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NodeRegistrationResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
 
   /nodes/{id}/heartbeat:
     post:
@@ -166,11 +175,14 @@ paths:
       responses:
         '204':
           description: Manifest removed
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
 
   /catalog:
     get:
       summary: Search and browse the community media catalog
       operationId: getCatalog
+      security: []
       parameters:
         - name: q
           in: query
@@ -203,11 +215,14 @@ paths:
                       $ref: '#/components/schemas/CatalogItem'
                   total:
                     type: integer
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
 
   /media/{id}/playback:
     get:
       summary: Stream router decision for media playback
       operationId: getPlaybackInfo
+      security: []
       parameters:
         - name: id
           in: path
@@ -222,6 +237,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaybackResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
         '429':
           description: Node busy - exceeded 10 concurrent streams cap
           headers:
@@ -243,6 +260,7 @@ paths:
     get:
       summary: Fetch HLS playlist or media segment through Origin Shield pull-through cache
       operationId: getStreamChunk
+      security: []
       parameters:
         - name: node_id
           in: path
