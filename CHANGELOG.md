@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dev Settings Console (`apps/web/src/components/DevSettingsModal.tsx`) with dynamic Cloud API and Edge Node endpoint switcher, live latency ping tester, Invariant verification checklist (Invariants 1, 2, 5, 6, 7, 9, 10), and live admission control concurrency simulation button.
   - Player "Stats for Nerds" HUD in `Player.tsx` displaying stream protocol (HLS RFC 8216), 4s segment enforcement, active rendition/bitrate, Origin Shield cache status, and HMAC token validity.
   - Development Demo Auto-Seeding: `apid` automatically pre-seeds demo user and edge node credentials, resolving host PostgreSQL port 5432 conflict by mapping dev container to 5433.
+  - Multi-Terminal Demo Launcher: added `scripts/start-all-terminals.ps1`, `scripts/start-all-terminals.bat`, and individual scripts `scripts/tab1-docker.ps1` through `scripts/tab5-bench.ps1` to launch synchronized terminal tabs in Windows Terminal (or separate PowerShell windows) for the 5-layer presentation stack.
 - **Milestone 10 (Demo Profile, Load Simulation Scripts, GCP Deployment & Viva Runbooks)**:
   - 10-viewer load simulation scripts (`scripts/load-10-viewers.sh` and `scripts/load-10-viewers.ps1`) demonstrating Origin Shield cache hits, adaptive ladder throttling, and 10-stream cap.
   - Multi-stage Dockerfiles (`apps/api/Dockerfile`, `apps/web/Dockerfile`) and unified demo orchestration (`deploy/compose.demo.yml`, `deploy/Caddyfile`).

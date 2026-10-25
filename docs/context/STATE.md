@@ -19,9 +19,10 @@
   - Created multi-stage Dockerfiles (`apps/api/Dockerfile`, `apps/web/Dockerfile`) and unified demo orchestration (`deploy/compose.demo.yml`, `deploy/Caddyfile`).
   - Authored comprehensive GCP deployment guide (`docs/runbooks/deploy.md`), viva presentation script (`docs/runbooks/demo.md`), troubleshooting guide (`docs/runbooks/troubleshooting.md`), and universal running guide (`RUNNING.md`).
   - Created Floci local cloud emulator deployment profile (`deploy/floci/compose.floci.yml`, `deploy/floci/README.md`) with `make floci-up`/`make floci-down`.
-- **Post-Milestone 10**: Interactive Video Management, Dev Console & Demo Hardening.
+- **Post-Milestone 10**: Interactive Video Management, Dev Console & Multi-Terminal Launcher.
   - Edge ingestion API: `POST /api/media/upload`, `POST /api/media/scan`, `POST /api/media/generate-sample`, and `GET /api/status`.
   - Next.js UI Modals: `AddVideoModal` (drag-and-drop / scan / sample generator), `EdgeLibraryModal` (local videos & 1-click Public/Private sync toggle), `DevSettingsModal` (endpoint switcher, latency ping, Invariant checklist, stream limit simulator), and Player "Stats for Nerds" live HUD.
+  - Multi-terminal demo launcher (`scripts/start-all-terminals.ps1`, `scripts/start-all-terminals.bat`, `scripts/tab1`..`tab5`) providing 1-click terminal orchestration across Docker, Cloud API, Edge NVENC Daemon, Web UI, and Simulation.
   - Demo auto-pairing & host PostgreSQL port 5433 conflict resolution for rock-solid heartbeats and playback.
 
 ## In Progress
