@@ -17,12 +17,12 @@
 - **Milestone 10**: Demo Profile, Load Simulation Scripts, GCP Deployment & Viva Runbooks.
   - Built 10-viewer load simulation scripts (`scripts/load-10-viewers.sh` and `scripts/load-10-viewers.ps1`) demonstrating Origin Shield cache hits, adaptive ladder throttling, and 10-stream cap.
   - Created multi-stage Dockerfiles (`apps/api/Dockerfile`, `apps/web/Dockerfile`) and unified demo orchestration (`deploy/compose.demo.yml`, `deploy/Caddyfile`).
-  - Added Makefile targets `make bench`, `make seed`, `make load-test`.
-  - Authored comprehensive GCP deployment guide (`docs/runbooks/deploy.md`) with VPC firewall rules, ports reference, and edge client configuration.
-  - Authored viva presentation script and defense guide (`docs/runbooks/demo.md`).
-  - Authored emergency recovery and troubleshooting guide (`docs/runbooks/troubleshooting.md`).
-  - Authored master running guide (`docs/runbooks/RUNNING_GUIDE.md` & `RUNNING.md`) detailing all 4 execution modes (Pure Local, Dev Containers, Floci Multi-PC Lab, GCP Live Cloud).
+  - Authored comprehensive GCP deployment guide (`docs/runbooks/deploy.md`), viva presentation script (`docs/runbooks/demo.md`), troubleshooting guide (`docs/runbooks/troubleshooting.md`), and universal running guide (`RUNNING.md`).
   - Created Floci local cloud emulator deployment profile (`deploy/floci/compose.floci.yml`, `deploy/floci/README.md`) with `make floci-up`/`make floci-down`.
+- **Post-Milestone 10**: Interactive Video Management, Dev Console & Demo Hardening.
+  - Edge ingestion API: `POST /api/media/upload`, `POST /api/media/scan`, `POST /api/media/generate-sample`, and `GET /api/status`.
+  - Next.js UI Modals: `AddVideoModal` (drag-and-drop / scan / sample generator), `EdgeLibraryModal` (local videos & 1-click Public/Private sync toggle), `DevSettingsModal` (endpoint switcher, latency ping, Invariant checklist, stream limit simulator), and Player "Stats for Nerds" live HUD.
+  - Demo auto-pairing & host PostgreSQL port 5433 conflict resolution for rock-solid heartbeats and playback.
 
 ## In Progress
 - Final demonstration rehearsal and viva preparation.
