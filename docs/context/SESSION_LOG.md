@@ -1,3 +1,16 @@
+## 2026-10-25 - Step-by-Step Viva Demo Guides for All 4 Modes
+- **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
+- **Milestone:** Post-Milestone 10 Viva Presentation Runbooks
+- **Summary:** Authored comprehensive step-by-step viva presentation runbooks covering all 4 operational topologies of CustardFin: Mode 1 (Pure Local Zero-Docker Standalone), Mode 2 (Local Containerized with MinIO), Mode 3 (Floci Local Cloud Emulator Multi-PC Lab), and Mode 4 (Google Cloud Platform Live Cloud Evaluation). Each mode includes exact terminal configurations, copy-pasteable PowerShell/Bash commands, live speaker scripts ("what to say" to evaluators), screen output checkpoints, and viva defense Q&A. Created `docs/runbooks/DEMO_ALL_MODES.md` and `docs/runbooks/DOCKER_DEMO_GUIDE.md`, and updated `RUNNING.md` and `docs/runbooks/README.md`.
+- **Files Touched:**
+  - `docs/runbooks/DEMO_ALL_MODES.md`
+  - `docs/runbooks/DOCKER_DEMO_GUIDE.md`
+  - `docs/runbooks/README.md`
+  - `RUNNING.md`
+  - `docs/context/SESSION_LOG.md`
+- **Follow-ups:**
+  - Ready for viva evaluation across any chosen lab topology.
+
 ## 2026-10-25 - Fix S3 Cache Docker Image & Healthcheck for `make dev-up`
 - **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
 - **Milestone:** Post-Milestone 10 Dev Tooling & Compose Fix
