@@ -131,7 +131,6 @@ func TestConfig_GenerateTOML_HTTP(t *testing.T) {
 		`type = "http"`,
 		`localIP = "127.0.0.1"`,
 		`localPort = 8088`,
-		`subdomain = "12345678-1234-1234-1234-123456789abc"`,
 		`customDomains = ["12345678-1234-1234-1234-123456789abc"]`,
 	}
 

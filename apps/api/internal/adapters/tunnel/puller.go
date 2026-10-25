@@ -75,6 +75,7 @@ func (p *HTTPTunnelPuller) PullChunk(ctx context.Context, nodeID, mediaID, chunk
 
 	// For FRP vhost HTTP routing, send the node ID as Host header if using unified baseURL
 	if p.urlPattern == "" && p.baseURL != "" {
+		req.Host = nodeID
 		req.Header.Set("X-Node-ID", nodeID)
 	}
 

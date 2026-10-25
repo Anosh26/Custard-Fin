@@ -101,7 +101,6 @@ func (c *Config) GenerateTOML() (string, error) {
 	sb.WriteString(fmt.Sprintf("localPort = %d\n", c.LocalPort))
 
 	if c.ProxyType == ProxyTypeHTTP {
-		sb.WriteString(fmt.Sprintf("subdomain = %q\n", c.Subdomain))
 		sb.WriteString(fmt.Sprintf("customDomains = [%q]\n", c.Subdomain))
 	} else if c.ProxyType == ProxyTypeTCP {
 		sb.WriteString(fmt.Sprintf("remotePort = %d\n", c.RemotePort))
