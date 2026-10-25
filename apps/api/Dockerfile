@@ -13,7 +13,7 @@ COPY apps/api ./apps/api
 
 # Build static binary
 WORKDIR /build/apps/api
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /build/apid ./cmd/apid
+RUN CGO_ENABLED=0 GOOS=linux GOWORK=off go build -ldflags="-s -w" -o /build/apid ./cmd/apid
 
 # Production minimal runner
 FROM alpine:3.20
