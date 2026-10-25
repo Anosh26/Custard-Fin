@@ -122,8 +122,8 @@ export default async function HomePage({ searchParams }: PageProps) {
                     />
                     <span>Node: {item.node_id.slice(0, 8)}...</span>
                   </div>
-                  <span>
-                    {new Date(item.updated_at).toLocaleDateString(undefined, {
+                  <span suppressHydrationWarning>
+                    {new Date(item.updated_at).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                     })}
