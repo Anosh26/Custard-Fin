@@ -1,3 +1,29 @@
+## 2026-10-25 - Live Cloud Deployment (GCP VM), FRP Reverse Tunnel & Mobile End-to-End Verification
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Milestone 10 (Live Cloud Deployment & End-to-End Production Verification)
+- **Summary:** Successfully deployed the CustardFin cloud tier on a live GCP Compute Engine VM (`34.132.188.14`), connected the home edge daemon via outbound FRP reverse tunnel, and verified end-to-end streaming:
+  1. Cloud Tier Live Orchestration: Stood up all 7 cloud services (`postgres`, `redis`, `minio/cache`, `frps`, `api`, `web`, `caddy`) on GCP using Docker Compose. Resolved Docker Hub MinIO pull access by switching to Chainguard/pgsty MinIO images, and resolved multi-module Go build issues in Docker by setting `GOWORK=off`.
+  2. FRP Reverse Tunnel Routing: Fixed FRP `customDomains` configuration and added `req.Host = nodeID` header propagation in `apps/api/internal/adapters/tunnel/puller.go` to properly route HTTP tunnel requests through `frps` to the home edge daemon without requiring open router ports (Invariant 2).
+  3. Private Network Access (PNA) & CORS: Added `Access-Control-Allow-Private-Network: true` and comprehensive CORS headers in edge HTTP streaming daemon so web clients accessing from public cloud IPs can interact with local edge services.
+  4. Dynamic Player Routing: Configured client-side origin normalization in `apps/web/src/components/Player.tsx` and Docker SSR URL configuration (`NEXT_PUBLIC_API_URL`) so stream and playback metadata seamlessly resolve across desktop and remote mobile devices.
+  5. Live Verification Across Devices & Scenarios: Confirmed flawless operation on desktop and mobile (Brave browser on Android):
+     - Hardware acceleration: NVIDIA NVENC active on home edge daemon (`h264_nvenc`).
+     - HLS RFC 8216: 4.0s chunks generated and aligned (Invariant 6).
+     - Origin Shield Cache: Pull-through cache active (`HIT`), serving repeat chunk requests from cloud MinIO S3 with 0 home upload (Invariant 7).
+     - Security: Short-lived HMAC-SHA256 signed playback URLs verified (Invariant 9).
+     - Streaming Resilience: Smooth initial loading, player buffering recovery, timeline seeking/resuming, drag-and-drop video upload, and instant Public/Private catalog synchronization.
+- **Files Touched:**
+  - `apps/api/Dockerfile`
+  - `apps/api/internal/adapters/tunnel/puller.go`
+  - `apps/edge/internal/adapters/frp/config.go`
+  - `apps/edge/internal/adapters/frp/config_test.go`
+  - `apps/edge/internal/adapters/httpapi/server.go`
+  - `apps/web/src/components/Player.tsx`
+  - `apps/web/src/lib/api-client.ts`
+  - `deploy/compose.demo.yml`
+  - `docs/context/SESSION_LOG.md`
+  - `docs/context/STATE.md`
+
 ## 2026-10-25 - Pastel Color Palette, Typography Hierarchy & Animated Custard Mascot
 - **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
 - **Milestone:** Post-Milestone 10 Demo Presentation Aesthetics & Mascot
