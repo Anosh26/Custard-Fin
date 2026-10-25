@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ModalPortal from "./ModalPortal";
 import {
   fetchEdgeMedia,
   toggleMediaPublic,
@@ -23,6 +24,26 @@ export default function EdgeLibraryModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // Lock body scroll and register Escape key listener while modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   const loadMedia = async () => {
     setLoading(true);
@@ -69,8 +90,9 @@ export default function EdgeLibraryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card wide" onClick={(e) => e.stopPropagation()}>
+    <ModalPortal>
+      <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal-card wide" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -181,5 +203,6 @@ export default function EdgeLibraryModal({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }

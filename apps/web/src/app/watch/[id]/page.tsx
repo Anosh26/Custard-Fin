@@ -175,7 +175,7 @@ export default async function WatchPage({ params }: WatchPageProps) {
 
               <div style={{ textAlign: "right", fontSize: "0.8rem", color: "var(--text-dim)" }}>
                 <div>Media ID: {id}</div>
-                <div>URL Expiry: {new Date(playback.expires_at).toLocaleTimeString()}</div>
+                <div suppressHydrationWarning>URL Expiry: {new Date(playback.expires_at).toLocaleTimeString()}</div>
               </div>
             </div>
           </div>

@@ -1,3 +1,27 @@
+## 2026-10-25 - Fix Modal Stacking Context Overflow, Portaling & Responsive Polish
+- **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
+- **Milestone:** Post-Milestone 10 UI Hardening & Bug Fixes
+- **Summary:** Resolved modal overflow bug, backdrop stacking containment, and UI edge cases across the web application:
+  1. Root Cause Identified & Resolved: `.navbar` utilizes `backdrop-filter: blur(12px)`. In standard CSS specification, `backdrop-filter` creates an isolated stacking and containing block for all descendants, trapping `position: fixed` elements inside the 55px-tall navbar and vertically centering them at Y ≈ 27px (cutting off headers and close buttons above the top of the viewport).
+  2. ModalPortal Architecture: created `apps/web/src/components/ModalPortal.tsx` to safely portal all dialog backdrops (`AddVideoModal`, `EdgeLibraryModal`, `DevSettingsModal`) directly to `document.body`, escaping any ancestor CSS containment.
+  3. Overflow & Alignment Hardening: updated `.modal-backdrop` and `.modal-card` in `globals.css` with `margin: auto;`, `box-sizing: border-box;`, `max-height: calc(100vh - 5rem);`, and custom theme-matched scrollbars to prevent clipping on small viewports and mobile screens.
+  4. Accessibility & UX: added Escape key listeners (`keydown`) and background scroll locking (`document.body.style.overflow = "hidden"`) while any modal is active. Added backdrop drop event prevention to prevent accidental browser file navigation. Added readability delay for upload status messages before catalog auto-refresh.
+  5. Search & Watch Polish: added `useEffect` synchronization in `SearchBar.tsx` to keep the search input updated on "Clear Search" or back navigation; added `suppressHydrationWarning` on watch page URL expiry time; added `position: relative` to `.player-container` to lock the "Stats for Nerds" HUD position.
+  6. Verified via automated browser subagent: captured photographic proof confirming all modals are perfectly centered, headers and close buttons fully visible, with zero overflow on home and watch pages.
+- **Files Touched:**
+  - `apps/web/src/components/ModalPortal.tsx` (new)
+  - `apps/web/src/components/AddVideoModal.tsx`
+  - `apps/web/src/components/EdgeLibraryModal.tsx`
+  - `apps/web/src/components/DevSettingsModal.tsx`
+  - `apps/web/src/components/SearchBar.tsx`
+  - `apps/web/src/app/watch/[id]/page.tsx`
+  - `apps/web/src/app/globals.css`
+  - `docs/context/SESSION_LOG.md`
+  - `docs/context/STATE.md`
+  - `CHANGELOG.md`
+- **Follow-ups:**
+  - All modals and responsive views validated.
+
 ## 2026-10-25 - Multi-Terminal Docker Demo Launcher & Live Browser Demonstration
 - **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
 - **Milestone:** Post-Milestone 10 Multi-Terminal Presentation & Demo Hardening

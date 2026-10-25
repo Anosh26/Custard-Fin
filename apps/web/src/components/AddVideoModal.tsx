@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import ModalPortal from "./ModalPortal";
 import {
   uploadEdgeMedia,
   triggerEdgeScan,
@@ -25,6 +26,26 @@ export default function AddVideoModal({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Lock body scroll and register Escape key listener while modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -61,7 +82,9 @@ export default function AddVideoModal({
         res.message || "Video uploaded! Transcoding to 4s HLS and syncing manifest."
       );
       setSelectedFile(null);
-      if (onSuccess) onSuccess();
+      if (onSuccess) {
+        setTimeout(() => onSuccess(), 1200);
+      }
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -78,7 +101,9 @@ export default function AddVideoModal({
       setStatusMessage(
         `Directory scan complete: ${res.total} total items detected (${res.added} added). Untranscoded items are encoding.`
       );
-      if (onSuccess) onSuccess();
+      if (onSuccess) {
+        setTimeout(() => onSuccess(), 1200);
+      }
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Scan failed");
     } finally {
@@ -95,7 +120,9 @@ export default function AddVideoModal({
       setStatusMessage(
         res.message || "Sample test video synthesized, transcoded, and published to catalog!"
       );
-      if (onSuccess) onSuccess();
+      if (onSuccess) {
+        setTimeout(() => onSuccess(), 1200);
+      }
     } catch (err: unknown) {
       setErrorMessage(
         err instanceof Error ? err.message : "Failed generating sample clip"
@@ -106,8 +133,14 @@ export default function AddVideoModal({
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+    <ModalPortal>
+      <div
+        className="modal-backdrop"
+        onClick={onClose}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => e.preventDefault()}
+      >
+        <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
         <div className="modal-header">
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -327,5 +360,6 @@ export default function AddVideoModal({
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 }

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Modal Viewport Portaling & Overflow Isolation**: Fixed an issue where `.navbar`'s `backdrop-filter: blur(12px)` created an isolated CSS stacking context that trapped `position: fixed` modals (`AddVideoModal`, `EdgeLibraryModal`, `DevSettingsModal`), causing the modal card to vertically center on the 55px-tall navbar and clip its header and close button off-screen. Created `ModalPortal` (`createPortal(..., document.body)`) to mount dialogs directly into the document root.
+- **Modal Centering & Responsive Scrolling**: Applied `margin: auto;`, `box-sizing: border-box;`, `max-height: calc(100vh - 5rem);`, and custom theme-matched scrollbars to `.modal-card` to prevent top overflow on compact screens.
+- **Modal Accessibility & Navigation Safety**: Added keyboard Escape key listener (`keydown`) and background scroll locking (`document.body.style.overflow = "hidden"`) across all modals. Added drag event prevention on the backdrop to prevent accidental browser file navigation.
+- **Search & Watch Page Hydration**: Fixed SearchBar query synchronization when clicking "Clear Search" or navigating back; added `suppressHydrationWarning` on watch page URL expiry time; added `position: relative` to `.player-container` to anchor the "Stats for Nerds" HUD.
+
 ### Added
 - **Post-Milestone 10 (Interactive Video Upload, Edge Library Manager & Dev Console)**:
   - Edge Daemon Video Ingestion API: added `POST /api/media/upload` (multipart video upload with auto-transcode and manifest sync), `POST /api/media/scan` (on-demand directory re-scan), `POST /api/media/generate-sample` (1-click 15s synthetic FFmpeg test card generator), and `GET /api/status` (live node stream count and NVENC hardware probe).

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ModalPortal from "./ModalPortal";
 import {
   getApiBaseUrl,
   setApiBaseUrl,
@@ -29,6 +30,26 @@ export default function DevSettingsModal({
   const [edgeStatus, setEdgeStatus] = useState<EdgeNodeStatus | null>(null);
   const [isPinging, setIsPinging] = useState(false);
   const [simMessage, setSimMessage] = useState<string | null>(null);
+
+  // Lock body scroll and register Escape key listener while modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -84,11 +105,24 @@ export default function DevSettingsModal({
   const handleSimulateAdmissionCap = async () => {
     setSimMessage("Testing 10-stream concurrency limit against edge node...");
     const base = getApiBaseUrl();
-    const results: number[] = [];
 
-    // Dispatch parallel requests to test admission limiter
+    // Dynamically retrieve an active media ID from catalog
+    let targetMediaId = "demo";
+    try {
+      const catRes = await fetch(`${base}/v1/catalog?limit=1`);
+      if (catRes.ok) {
+        const catData = await catRes.json();
+        if (catData.items && catData.items[0]) {
+          targetMediaId = catData.items[0].media_id;
+        }
+      }
+    } catch {
+      // fallback
+    }
+
+    const results: number[] = [];
     for (let i = 0; i < 12; i++) {
-      fetch(`${base}/v1/media/681fc73d-25f3-453e-8900-985c3f3b8940/playback`)
+      fetch(`${base}/v1/media/${targetMediaId}/playback`)
         .then((res) => results.push(res.status))
         .catch(() => results.push(500));
     }
@@ -103,8 +137,9 @@ export default function DevSettingsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card wide" onClick={(e) => e.stopPropagation()}>
+    <ModalPortal>
+      <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal-card wide" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -163,7 +198,7 @@ export default function DevSettingsModal({
         </div>
 
         {/* Endpoints Configuration */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
+        <div className="dev-card-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
           {/* Cloud API Card */}
           <div className="dev-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
@@ -291,5 +326,6 @@ export default function DevSettingsModal({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }
