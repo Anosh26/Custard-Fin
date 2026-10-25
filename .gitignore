@@ -28,6 +28,8 @@ dist/
 media_cache/
 temp_segments/
 scratch/
+media/
+transcoded/
 
 # Environment files and secrets
 .env

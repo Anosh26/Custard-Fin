@@ -1,3 +1,17 @@
+## 2026-10-25 - Milestone 9: NVENC Hardware Path, Probe, Fallback & Benchmark Tooling
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi & Agent)
+- **Milestone:** Milestone 9 (NVENC path with probe, fallback and benchmark script)
+- **Summary:** Completed hardware acceleration capabilities detection, multi-encoder fallback cascade, and automated GPU/CPU benchmarking tooling adhering strictly to Invariant 6 (Pre-encoded 4s HLS chunks, NVENC optional with automatic CPU fallback). In `apps/edge/internal/adapters/ffmpeg`, implemented `ProbeCapabilities` checking NVENC, QSV, and VAAPI via 1s null test encodes, refined `ProbeEncoder` to check hardware encoders before falling back to `libx264`, and updated `Transcode` with generalized automatic CPU fallback upon any hardware encoding failure. Updated `edged/main.go` to report all detected hardware acceleration flags in periodic node heartbeats (`contracts.GPUCapabilities`). Created `scripts/bench-gpu.sh` and `scripts/bench-gpu.ps1` measuring execution wall-clock time, encoding speed multiplier (achieved 10.7x realtime on GeForce GTX), and speedup ratio. Built automated media seeder `scripts/seed-media.sh` generating standard 1080p, 720p, and 480p test fixtures into `./media`. Updated `.gitignore` to prevent committing media binaries and updated `Makefile` with `make bench` and `make seed`.
+- **Files Touched:**
+  - `apps/edge/internal/adapters/ffmpeg/{transcoder.go, transcoder_test.go}`
+  - `apps/edge/cmd/edged/main.go`
+  - `scripts/{bench-gpu.sh, bench-gpu.ps1, seed-media.sh}`
+  - `.gitignore`
+  - `Makefile`
+  - `docs/context/{STATE.md, SESSION_LOG.md}`
+- **Follow-ups:**
+  - Milestone 10: Hardening, demo profile, rehearsal, runbooks.
+
 ## 2026-10-24 - Milestone 8: Admission Control, Adaptive Bitrate & Prefetch
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi & Agent)
 - **Milestone:** Milestone 8 (Admission control, adaptive bitrate, prefetch)

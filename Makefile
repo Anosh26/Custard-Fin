@@ -30,7 +30,10 @@ demo-check:
 	@echo "All services healthy!"
 
 seed:
-	powershell -ExecutionPolicy Bypass -File scripts/seed-media.ps1
+	@bash scripts/seed-media.sh || powershell -ExecutionPolicy Bypass -File scripts/seed-media.ps1
+
+bench:
+	@bash scripts/bench-gpu.sh
 
 test:
 	go test -v ./libs/contracts/... ./apps/edge/... ./apps/api/...

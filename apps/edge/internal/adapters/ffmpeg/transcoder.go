@@ -51,22 +51,49 @@ func NewSubprocessTranscoder(ffmpegPath string, logger *slog.Logger) *Subprocess
 	}
 }
 
-// ProbeEncoder tests whether NVIDIA NVENC is operational; otherwise returns CPU encoder libx264.
-func (t *SubprocessTranscoder) ProbeEncoder(ctx context.Context) (string, error) {
-	// Probe 1-second 256x256 null encode with NVENC (NVENC requires minimum dimension >= 144)
+// ProbeCapabilities inspects available hardware encoders via FFmpeg test encodes.
+func (t *SubprocessTranscoder) ProbeCapabilities(ctx context.Context) contracts.GPUCapabilities {
+	caps := contracts.GPUCapabilities{}
+	if t.probeSingleEncoder(ctx, "h264_nvenc") {
+		caps.NVENC = true
+	}
+	if t.probeSingleEncoder(ctx, "h264_qsv") {
+		caps.QSV = true
+	}
+	if t.probeSingleEncoder(ctx, "h264_vaapi") {
+		caps.VAAPI = true
+	}
+	return caps
+}
+
+func (t *SubprocessTranscoder) probeSingleEncoder(ctx context.Context, encoder string) bool {
 	cmd := exec.CommandContext(ctx, t.ffmpegPath,
 		"-v", "error",
 		"-f", "lavfi", "-i", "testsrc=duration=1:size=256x256:rate=30",
 		"-pix_fmt", "yuv420p",
-		"-c:v", "h264_nvenc",
+		"-c:v", encoder,
 		"-f", "null", "-",
 	)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
+	return cmd.Run() == nil
+}
 
-	if err := cmd.Run(); err == nil {
+// ProbeEncoder tests hardware encoders in order of preference (NVENC -> QSV -> VAAPI)
+// and returns the best operational encoder, falling back to libx264.
+func (t *SubprocessTranscoder) ProbeEncoder(ctx context.Context) (string, error) {
+	caps := t.ProbeCapabilities(ctx)
+	if caps.NVENC {
 		t.logger.Info("hardware acceleration active: NVIDIA NVENC (h264_nvenc)")
 		return "h264_nvenc", nil
+	}
+	if caps.QSV {
+		t.logger.Info("hardware acceleration active: Intel QuickSync (h264_qsv)")
+		return "h264_qsv", nil
+	}
+	if caps.VAAPI {
+		t.logger.Info("hardware acceleration active: VAAPI (h264_vaapi)")
+		return "h264_vaapi", nil
 	}
 
 	t.logger.Info("hardware acceleration unavailable, falling back to CPU (libx264)")
@@ -164,9 +191,9 @@ func (t *SubprocessTranscoder) Transcode(ctx context.Context, job ports.Transcod
 
 		// Attempt encode with primary encoder
 		err := t.encodeRendition(ctx, job.InputPath, renditionDir, playlistPath, profile, usedEncoder)
-		if err != nil && usedEncoder == "h264_nvenc" && job.PreferredMode != ports.EncoderModeGPU {
-			// Automatic CPU fallback on NVENC error
-			t.logger.Warn("NVENC encoding failed, triggering automatic CPU fallback", "err", err)
+		if err != nil && usedEncoder != "libx264" && job.PreferredMode != ports.EncoderModeGPU {
+			// Automatic CPU fallback on any hardware failure (Invariant 6)
+			t.logger.Warn("hardware encoding failed, triggering automatic CPU fallback", "encoder", usedEncoder, "err", err)
 			usedEncoder = "libx264"
 			err = t.encodeRendition(ctx, job.InputPath, renditionDir, playlistPath, profile, usedEncoder)
 		}
@@ -224,6 +251,8 @@ func (t *SubprocessTranscoder) encodeRendition(
 
 	if encoder == "libx264" {
 		args = append(args, "-preset", "veryfast")
+	} else if encoder == "h264_nvenc" {
+		args = append(args, "-preset", "p4", "-tune", "hq")
 	}
 
 	args = append(args,

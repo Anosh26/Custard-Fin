@@ -125,9 +125,26 @@ func TestSubprocessTranscoder_ProbeEncoder(t *testing.T) {
 		t.Fatalf("ProbeEncoder returned error: %v", err)
 	}
 
-	if encoder != "h264_nvenc" && encoder != "libx264" {
+	validEncoders := map[string]bool{
+		"h264_nvenc": true,
+		"h264_qsv":   true,
+		"h264_vaapi": true,
+		"libx264":    true,
+	}
+	if !validEncoders[encoder] {
 		t.Errorf("unexpected probed encoder: %s", encoder)
 	}
+}
+
+func TestSubprocessTranscoder_ProbeCapabilities(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg not installed, skipping probe test")
+	}
+
+	tc := NewSubprocessTranscoder("", nil)
+	caps := tc.ProbeCapabilities(context.Background())
+	// Assert caps fields are readable
+	t.Logf("Probed GPU capabilities: NVENC=%v, QSV=%v, VAAPI=%v", caps.NVENC, caps.QSV, caps.VAAPI)
 }
 
 func TestSubprocessTranscoder_RealTranscode_Integration(t *testing.T) {
