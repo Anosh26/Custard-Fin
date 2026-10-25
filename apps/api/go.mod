@@ -1,6 +1,6 @@
 module github.com/anosh26/custardfin/apps/api
 
-go 1.23
+go 1.26.0
 
 replace github.com/anosh26/custardfin/libs/contracts => ../../libs/contracts
 
