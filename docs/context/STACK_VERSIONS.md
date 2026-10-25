@@ -17,7 +17,7 @@ Record all pinned dependency versions, verification dates, and official document
 | Reverse Proxy | Caddy 2.x | https://caddyserver.com/docs/ | Automated TLS for demo profile |
 | Tunnel | FRP v0.52+ (TOML config) | https://github.com/fatedier/frp | Managed subprocess frpc client adapter, outbound TLS, CGNAT bypass |
 | Transcoder | FFmpeg 8.0.1 | https://ffmpeg.org/documentation.html | Verified locally: `h264_nvenc`, `hevc_nvenc`, `av1_nvenc` active on RTX |
-| S3 Object Storage | `github.com/aws/aws-sdk-go-v2/service/s3` v1.114.3 | https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/s3 | Path-style S3 client for Origin Shield cache (MinIO/Garage/Floci) |
+| S3 Object Storage | `github.com/aws/aws-sdk-go-v2/service/s3` v1.114.3 | https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/s3 | Path-style S3 client for Origin Shield cache; dev/demo container uses `pgsty/minio:latest` (open-source MinIO compatible build) |
 | Cloud Emulator | `floci/floci:latest` | https://github.com/floci-io/floci | Open-source MIT AWS emulator (S3 on port 4566) for Origin Shield |
 
 

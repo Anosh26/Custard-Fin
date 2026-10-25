@@ -1,3 +1,15 @@
+## 2026-10-25 - Fix S3 Cache Docker Image & Healthcheck for `make dev-up`
+- **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
+- **Milestone:** Post-Milestone 10 Dev Tooling & Compose Fix
+- **Summary:** Resolved `make dev-up` failure (`pull access denied for minio/minio, repository does not exist or may require 'docker login'`) caused by MinIO's upstream removal/access restriction of public container images from Docker Hub and Quay.io. Switched S3 cache image in `deploy/compose.dev.yml` and `deploy/compose.demo.yml` to `pgsty/minio:latest`, a fully compatible open-source MinIO distribution. Updated container healthcheck from `["CMD", "mc", "ready", "local"]` to `["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]`. Verified `make dev-up` runs cleanly and all 4 containers (`custardfin-cache`, `custardfin-frps`, `custardfin-postgres`, and `custardfin-redis`) are healthy. Ran unit, domain, and adapter test suites with 100% pass rate.
+- **Files Touched:**
+  - `deploy/compose.dev.yml`
+  - `deploy/compose.demo.yml`
+  - `docs/context/STACK_VERSIONS.md`
+  - `docs/context/SESSION_LOG.md`
+- **Follow-ups:**
+  - None; stack is running and healthy.
+
 ## 2026-10-25 - PR #1 Merge Sync, Windows RTX 4060 Rehearsal & Universal Running Guide
 - **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
 - **Milestone:** Post-Milestone 10 Rehearsal, Multi-Topology Deployment & Universal Documentation
