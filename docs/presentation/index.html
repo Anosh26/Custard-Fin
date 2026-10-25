@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CustardFin - Presentation Deck</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --bg-card: #0f172a;
+      --bg-box: #1e293b;
+      --border: rgba(148, 163, 184, 0.18);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --gold: #f59e0b;
+      --gold-hover: #d97706;
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --red: #ef4444;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Ambient Glow & Top Bar */
+    .top-accent {
+      height: 4px;
+      width: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--cyan), var(--emerald));
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+
+    /* Slide Viewport */
+    .viewport {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      perspective: 1200px;
+    }
+
+    .slide {
+      position: absolute;
+      width: 100%;
+      max-width: 1340px;
+      aspect-ratio: 16 / 9;
+      max-height: calc(100vh - 120px);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(245, 158, 11, 0.08);
+      padding: 2.5rem 3.5rem;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(60px) scale(0.96);
+      transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0) scale(1);
+    }
+
+    .slide.prev {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(-60px) scale(0.96);
+    }
+
+    /* Header & Eyebrow */
+    .eyebrow {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+
+    .slide-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.2;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 2rem;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.75rem;
+      flex: 1;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.5rem;
+      flex: 1;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      flex: 1;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      border-color: rgba(245, 158, 11, 0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(245, 158, 11, 0.1);
+    }
+
+    .card.gold { border-left: 4px solid var(--gold); }
+    .card.emerald { border-left: 4px solid var(--emerald); }
+    .card.cyan { border-left: 4px solid var(--cyan); }
+    .card.red { border-left: 4px solid var(--red); }
+
+    .card-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .card.gold .card-tag { color: var(--gold); }
+    .card.emerald .card-tag { color: var(--emerald); }
+    .card.cyan .card-tag { color: var(--cyan); }
+    .card.red .card-tag { color: var(--red); }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+
+    .card-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .card-list li {
+      position: relative;
+      padding-left: 1.2rem;
+    }
+
+    .card-list li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--gold);
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    .card.emerald .card-list li::before { color: var(--emerald); }
+    .card.cyan .card-list li::before { color: var(--cyan); }
+    .card.red .card-list li::before { color: var(--red); }
+
+    /* Hero Slide Specific */
+    .hero-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--gold);
+      width: fit-content;
+      margin-bottom: 1.25rem;
+    }
+
+    .hero-title {
+      font-size: 3.5rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--gold), #ea580c);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-sub {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+
+    .hero-desc {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 800px;
+      line-height: 1.6;
+      margin-bottom: 2.5rem;
+    }
+
+    /* Bottom Controller Bar */
+    .controls {
+      height: 64px;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      z-index: 50;
+    }
+
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background: var(--gold);
+      transition: width 0.3s ease;
+    }
+
+    .control-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .control-btn:hover {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .slide-indicator {
+      font-size: 0.9rem;
+      font-weight: 700;
+      font-family: monospace;
+      color: var(--gold);
+    }
+  </style>
+</head>
+<body>
+  <div class="top-accent"></div>
+
+  <main class="viewport">
+    <!-- Slide 1: Hero -->
+    <section class="slide active" id="slide-1">
+      <div class="hero-container">
+        <div class="hero-badge">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--gold);"></span>
+          MCA Cloud Computing Lab • Final Semester Project 2026
+        </div>
+        <h1 class="hero-title">CUSTARDFIN</h1>
+        <div class="hero-sub">Distributed Community Media Platform</div>
+        <p class="hero-desc">
+          A hybrid media streaming architecture that combines the sovereign privacy of personal self-hosting (Plex/Jellyfin) with global community discovery (YouTube) at near-zero cloud cost.
+        </p>
+
+        <div class="grid-3" style="max-height: 220px;">
+          <div class="card cyan">
+            <div class="card-tag">Project Authors</div>
+            <div class="card-title">Team Credits</div>
+            <ul class="card-list">
+              <li>Anish Ghadi (25P0320009)</li>
+              <li>Anosh Chodankar (25P0320010)</li>
+              <li>MCA Cloud Computing Lab</li>
+            </ul>
+          </div>
+
+          <div class="card gold">
+            <div class="card-tag">Core Philosophy</div>
+            <div class="card-title">Zero Cloud Video</div>
+            <ul class="card-list">
+              <li>Video binaries strictly stay at home</li>
+              <li>Public sharing = ~3 KB JSON manifest</li>
+              <li>Home uploads each chunk ONCE</li>
+            </ul>
+          </div>
+
+          <div class="card emerald">
+            <div class="card-tag">Engineering</div>
+            <div class="card-title">Technology Stack</div>
+            <ul class="card-list">
+              <li>Go Daemon + Next.js 15 Client</li>
+              <li>SQLite WAL + PostgreSQL + Redis</li>
+              <li>NVIDIA NVENC Hardware 4s HLS</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2: The Core Problem -->
+    <section class="slide" id="slide-2">
+      <div class="eyebrow">Motivation & Background</div>
+      <h2 class="slide-title">The Dilemma: Isolated Silos vs Centralized Clouds</h2>
+      <div class="divider"></div>
+      <div class="grid-3">
+        <div class="card red">
+          <div class="card-tag">Traditional Self-Hosting</div>
+          <div class="card-title">Plex / Jellyfin Silos</div>
+          <ul class="card-list">
+            <li><strong>Private Island:</strong> Media is trapped on the home PC with zero global discovery.</li>
+            <li><strong>CGNAT Barrier:</strong> Residential ISPs block incoming ports; requires complex, risky router port-forwarding.</li>
+            <li><strong>Bandwidth Collapse:</strong> Every concurrent remote viewer drains home upload bandwidth simultaneously.</li>
+          </ul>
+        </div>
+
+        <div class="card red">
+          <div class="card-tag">Centralized Cloud</div>
+          <div class="card-title">YouTube / Cloud S3</div>
+          <ul class="card-list">
+            <li><strong>Storage Cost:</strong> Multi-gigabyte videos stored permanently in central cloud buckets at compounding expense.</li>
+            <li><strong>Privacy Loss:</strong> Original binaries surrendered to corporate cloud servers.</li>
+            <li><strong>Egress Bandwidth Tax:</strong> Recurring cloud egress fees make community streaming financially impossible.</li>
+          </ul>
+        </div>
+
+        <div class="card emerald">
+          <div class="card-tag">The CustardFin Answer</div>
+          <div class="card-title">Best of Both Worlds</div>
+          <ul class="card-list">
+            <li><strong>Video Stays Home:</strong> Owner retains 100% physical custody and storage sovereignty.</li>
+            <li><strong>Zero Inbound Ports:</strong> Outbound-only TLS reverse tunnel punches effortlessly through CGNAT.</li>
+            <li><strong>Origin Shield:</strong> Central cache serves viral viewers while home uploads each hot segment only once!</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3: Invariant 1 -->
+    <section class="slide" id="slide-3">
+      <div class="eyebrow">Architectural Foundation</div>
+      <h2 class="slide-title">Invariant 1: Zero Cloud Video Storage Footprint</h2>
+      <div class="divider"></div>
+      <div class="grid-2">
+        <div class="card red">
+          <div class="card-tag">Traditional Cloud Approach</div>
+          <div class="card-title">Permanent Central Storage</div>
+          <ul class="card-list">
+            <li>Every uploaded video occupies permanent S3/GCS gigabytes billed every month.</li>
+            <li>1,000 community videos = ~4 TB permanent storage footprint ($100+/mo).</li>
+            <li>Central server is a high-value single target for data breaches and copyright strikes.</li>
+            <li>The cloud provider owns the physical drive where the video resides.</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">CustardFin Invariant 1</div>
+          <div class="card-title">Lightweight 3 KB Manifests</div>
+          <ul class="card-list">
+            <li>Video files strictly live on the owner's hard drive and edge SQLite database.</li>
+            <li>Publishing to the community syncs ONLY a ~3 KB JSON manifest:
+              <br><code style="color: var(--gold); font-size: 0.8rem;">{ media_id, content_hash, duration_s, renditions[] }</code>
+            </li>
+            <li>Origin Shield temporarily buffers hot 4s chunks with automatic 24-hour LRU auto-purge.</li>
+            <li>A single $5/month cloud VM can coordinate discovery for 100,000+ community videos!</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: System Architecture -->
+    <section class="slide" id="slide-4">
+      <div class="eyebrow">System Architecture</div>
+      <h2 class="slide-title">Two-Tier Topology: Home Edge & Cloud Control Plane</h2>
+      <div class="divider"></div>
+      <div class="grid-2">
+        <div class="card cyan">
+          <div class="card-tag">Tier 1: Home Edge Node</div>
+          <div class="card-title">Edge Go Daemon (edged)</div>
+          <ul class="card-list">
+            <li><strong>Ultra Lightweight:</strong> Single static Go binary (<20 MB idle RAM).</li>
+            <li><strong>SQLite WAL:</strong> Local database for video paths, hashes, and private watch progress.</li>
+            <li><strong>Managed Transcoder:</strong> FFmpeg subprocess with automatic NVENC probe & CPU fallback.</li>
+            <li><strong>Outbound FRP Client:</strong> Establishes outbound TLS reverse tunnel. Zero port-forwarding.</li>
+            <li><strong>Local Streamer:</strong> Serves LAN viewers directly on :8090 with 0ms cloud latency.</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Tier 2: Cloud Control Plane</div>
+          <div class="card-title">Cloud API (apid) & Web UI</div>
+          <ul class="card-list">
+            <li><strong>Cloud API (Go):</strong> High throughput REST routing with goroutine workers.</li>
+            <li><strong>PostgreSQL:</strong> Stores user accounts, node registry, and 3 KB video catalog manifests.</li>
+            <li><strong>Redis Heartbeats:</strong> Ephemeral key <code style="color: var(--gold);">heartbeat:{node_id}</code> (15s TTL) for node liveness.</li>
+            <li><strong>S3 Origin Shield:</strong> Pull-through chunk cache (MinIO / Floci) with HMAC signed URLs.</li>
+            <li><strong>Next.js 15 UI:</strong> App Router with SSR, hls.js player, and Dev Settings Console.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: What It Uses -->
+    <section class="slide" id="slide-5">
+      <div class="eyebrow">What It Uses</div>
+      <h2 class="slide-title">Technology Stack: 100% Free & Open-Source</h2>
+      <div class="divider"></div>
+      <div class="grid-4">
+        <div class="card cyan">
+          <div class="card-tag">Edge Subsystem</div>
+          <div class="card-title">Go & SQLite</div>
+          <ul class="card-list">
+            <li>Go (net/http, log/slog)</li>
+            <li>modernc.org/sqlite (Pure Go)</li>
+            <li>WAL mode & busy_timeout</li>
+            <li>FFmpeg managed exec</li>
+            <li>4s keyframe segment lock</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Cloud Backend</div>
+          <div class="card-title">Go & Postgres</div>
+          <ul class="card-list">
+            <li>Go REST API (apid)</li>
+            <li>PostgreSQL 16 via pgx</li>
+            <li>sqlc type-safe queries</li>
+            <li>Goose database migrations</li>
+            <li>Redis 7 (heartbeats only)</li>
+          </ul>
+        </div>
+
+        <div class="card emerald">
+          <div class="card-tag">Network & Cache</div>
+          <div class="card-title">FRP & Origin S3</div>
+          <ul class="card-list">
+            <li>FRP client/server TLS tunnel</li>
+            <li>AWS SDK for Go v2</li>
+            <li>MinIO & Floci emulator</li>
+            <li>HMAC-SHA256 signed URLs</li>
+            <li>Argon2id password hashing</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Frontend UI</div>
+          <div class="card-title">Next.js 15</div>
+          <ul class="card-list">
+            <li>Next.js App Router (SSR)</li>
+            <li>TypeScript strict mode</li>
+            <li>hls.js adaptive video player</li>
+            <li>Live 'Stats for Nerds' HUD</li>
+            <li>Pure CSS custom tokens</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6: What It Does -->
+    <section class="slide" id="slide-6">
+      <div class="eyebrow">Core Workflows</div>
+      <h2 class="slide-title">What It Does: Ingestion & Hardware 4s HLS Pipeline</h2>
+      <div class="divider"></div>
+      <div class="grid-4">
+        <div class="card cyan">
+          <div class="card-tag">Step 1</div>
+          <div class="card-title">Ingestion & Scan</div>
+          <ul class="card-list">
+            <li>Drag & drop web upload</li>
+            <li>Direct folder drop (./media)</li>
+            <li>1-click test fixture synth</li>
+            <li>FFprobe metadata extraction</li>
+            <li>SHA-256 deduplication hash</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Step 2</div>
+          <div class="card-title">Pre-Encoded HLS</div>
+          <ul class="card-list">
+            <li>Pre-encoded 4.0s chunks</li>
+            <li>Zero live CPU transcoding</li>
+            <li>1080p, 720p, 480p ladder</li>
+            <li>Strict -g 120 keyframe lock</li>
+            <li>Instant seek & rendition hop</li>
+          </ul>
+        </div>
+
+        <div class="card emerald">
+          <div class="card-tag">Step 3</div>
+          <div class="card-title">GPU Acceleration</div>
+          <ul class="card-list">
+            <li>NVIDIA NVENC hardware chip</li>
+            <li>1s test-encode on boot</li>
+            <li>Automatic CPU fallback</li>
+            <li>12.5x real-time on RTX 4060</li>
+            <li>< 3% CPU during encoding</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Step 4</div>
+          <div class="card-title">Manifest Sync</div>
+          <ul class="card-list">
+            <li>1-click Public toggle in UI</li>
+            <li>3 KB signed JSON manifest</li>
+            <li>Validated against schema</li>
+            <li>Upserted to Cloud catalog</li>
+            <li>Discoverable globally</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 7: Play Decision Engine -->
+    <section class="slide" id="slide-7">
+      <div class="eyebrow">Stream Router</div>
+      <h2 class="slide-title">Intelligent Play Decision Engine</h2>
+      <div class="divider"></div>
+      <div class="grid-4">
+        <div class="card gold">
+          <div class="card-tag">Decision 1</div>
+          <div class="card-title">Node Liveness</div>
+          <ul class="card-list">
+            <li>Checks Redis heartbeat TTL</li>
+            <li>If missing: node is offline</li>
+            <li>Serves cached chunks if ready</li>
+            <li>Returns clear offline status</li>
+          </ul>
+        </div>
+
+        <div class="card emerald">
+          <div class="card-tag">Decision 2</div>
+          <div class="card-title">Direct LAN</div>
+          <ul class="card-list">
+            <li>Detects viewer on same subnet</li>
+            <li>Redirects directly to :8090</li>
+            <li>0 ms cloud relay latency</li>
+            <li>0 cloud egress bandwidth</li>
+          </ul>
+        </div>
+
+        <div class="card cyan">
+          <div class="card-tag">Decision 3</div>
+          <div class="card-title">Cache Hit</div>
+          <ul class="card-list">
+            <li>Checks S3 Origin Shield cache</li>
+            <li>Issues short-lived HMAC URL</li>
+            <li>Serves directly from S3/CDN</li>
+            <li>0 bytes drained from home!</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Decision 4</div>
+          <div class="card-title">Cache Miss</div>
+          <ul class="card-list">
+            <li>Checks 10-stream node cap</li>
+            <li>Pulls once via FRP tunnel</li>
+            <li>Saves chunk into S3 cache</li>
+            <li>Subsequent viewers hit cache!</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 8: Scalability & Admission Control -->
+    <section class="slide" id="slide-8">
+      <div class="eyebrow">Invariants 7 & 10</div>
+      <h2 class="slide-title">Origin Shield Cache & Concurrency Admission Control</h2>
+      <div class="divider"></div>
+      <div class="grid-2">
+        <div class="card emerald">
+          <div class="card-tag">Invariant 7: Origin Shield</div>
+          <div class="card-title">Viral Traffic Protection</div>
+          <ul class="card-list">
+            <li>Home node uploads each hot 4-second video segment <strong>ONCE</strong>.</li>
+            <li>Central S3-compatible cache stores chunk with 24-hour LRU auto-purge.</li>
+            <li>100 viewers watching the same title = <strong>99% cache hit ratio</strong>!</li>
+            <li>Home residential internet upload bandwidth sees load equivalent to exactly 1 viewer.</li>
+            <li>Verified live via multi-viewer benchmark scripts (<code style="color: var(--emerald);">load-10-viewers.ps1</code>).</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Invariant 10: Capacity Limiter</div>
+          <div class="card-title">10-Stream Per-Node Cap</div>
+          <ul class="card-list">
+            <li>10 viewers watching 10 DIFFERENT titles = 0% cache hit (upload speed is physical limit).</li>
+            <li>Strict per-node concurrency tracker implemented in Go Cloud API.</li>
+            <li>11th remote viewer receives: <strong style="color: var(--red);">HTTP 429 Too Many Requests</strong>.</li>
+            <li>Includes <code style="color: var(--gold);">Retry-After: 30</code> header with clear "Node Busy" notice.</li>
+            <li>Adaptive bitrate ladder pruning dynamically filters high-bitrate renditions under network contention.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 9: Hardware Acceleration -->
+    <section class="slide" id="slide-9">
+      <div class="eyebrow">Milestone 9 Benchmarks</div>
+      <h2 class="slide-title">Hardware Acceleration: NVIDIA NVENC vs CPU Fallback</h2>
+      <div class="divider"></div>
+      <div class="grid-2">
+        <div class="card cyan">
+          <div class="card-tag">Transcoder Engine</div>
+          <div class="card-title">Dual-Path Architecture</div>
+          <ul class="card-list">
+            <li><strong>Probe Order:</strong> NVENC &rarr; Intel QSV / VAAPI &rarr; Multi-threaded CPU libx264.</li>
+            <li><strong>Strict Alignment:</strong> <code style="color: var(--cyan);">-g 120 -keyint_min 120 -sc_threshold 0</code> locks I-frames to 4.0s boundaries.</li>
+            <li><strong>Resilient Fallback:</strong> 1-second startup test probe validates encoder health; any failure immediately reverts to CPU without crashing.</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Empirical Benchmark Data</div>
+          <div class="card-title">RTX 4060 vs Intel CPU</div>
+          <ul class="card-list">
+            <li><strong>NVIDIA NVENC (ASIC):</strong> 1.21s transcode time (<strong>12.4x real-time</strong>) with &lt; 3% CPU utilization.</li>
+            <li><strong>Software libx264 (CPU):</strong> 5.42s transcode time (<strong>2.7x real-time</strong>) with 92% peak CPU load across all cores.</li>
+            <li><strong>Result:</strong> NVENC provides 4.5x faster throughput and completely protects CPU resources for streaming and OS responsiveness.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 10: Multi-Topology Deployment -->
+    <section class="slide" id="slide-10">
+      <div class="eyebrow">Deployment Profiles</div>
+      <h2 class="slide-title">Multi-Topology Cloud Deployment Profiles</h2>
+      <div class="divider"></div>
+      <div class="grid-4">
+        <div class="card cyan">
+          <div class="card-tag">Mode 1</div>
+          <div class="card-title">Pure Local</div>
+          <ul class="card-list">
+            <li>go run ./apps/api/cmd/apid</li>
+            <li>go run ./apps/edge/cmd/edged</li>
+            <li>npm run dev (Web UI)</li>
+            <li>Rapid standalone testing</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Mode 2</div>
+          <div class="card-title">Dev Containers</div>
+          <ul class="card-list">
+            <li>compose.dev.yml up</li>
+            <li>Postgres 16 (port 5433)</li>
+            <li>Redis 7 (port 6379)</li>
+            <li>MinIO S3 (port 9000)</li>
+          </ul>
+        </div>
+
+        <div class="card emerald">
+          <div class="card-tag">Mode 3 (Lab Demo)</div>
+          <div class="card-title">Floci Emulator</div>
+          <ul class="card-list">
+            <li>compose.floci.yml up</li>
+            <li>MIT open-source cloud</li>
+            <li>Emulates AWS S3 & GCP</li>
+            <li>Multi-PC demo on lab Wi-Fi</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Mode 4 (Production)</div>
+          <div class="card-title">GCP Cloud VM</div>
+          <ul class="card-list">
+            <li>GCP e2-standard-2 VM</li>
+            <li>Caddy TLS reverse proxy</li>
+            <li>frps on static public IP</li>
+            <li>Zero residential IP exposure</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 11: Live Demo Walkthrough -->
+    <section class="slide" id="slide-11">
+      <div class="eyebrow">Presentation Flow</div>
+      <h2 class="slide-title">Live Demonstration Walkthrough & Viva Runbooks</h2>
+      <div class="divider"></div>
+      <div class="grid-2">
+        <div class="card cyan">
+          <div class="card-tag">5-Terminal Orchestration</div>
+          <div class="card-title">Single-Click Launcher</div>
+          <ul class="card-list">
+            <li><strong>scripts/start-all-terminals.ps1</strong> launches 5 synchronized tabs:
+              <br>• Tab 1: Docker Services (Postgres, Redis, MinIO)
+              <br>• Tab 2: Cloud API (apid) with auto-seeded demo credentials
+              <br>• Tab 3: Edge Node Daemon (edged) with NVENC probe
+              <br>• Tab 4: Next.js 15 Web UI (:3000)
+              <br>• Tab 5: Simulation & Benchmark Command Runner
+            </li>
+            <li>Color-coded banners with real-time heartbeat and streaming logs.</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Viva Demonstration Scenarios</div>
+          <div class="card-title">6 Core Test Cases</div>
+          <ul class="card-list">
+            <li><strong>Scenario 1:</strong> Direct LAN playback (0ms cloud latency).</li>
+            <li><strong>Scenario 2:</strong> Remote playback via FRP tunnel + Origin Shield cache.</li>
+            <li><strong>Scenario 3:</strong> 10 Viewers on same title &rarr; 90%+ cache hit ratio.</li>
+            <li><strong>Scenario 4:</strong> 10 Viewers on distinct titles &rarr; HTTP 429 admission limit.</li>
+            <li><strong>Scenario 5:</strong> Edge node disconnect &rarr; Offline cache grace fallback.</li>
+            <li><strong>Scenario 6:</strong> Interactive Dev Console & live "Stats for Nerds" HUD.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 12: Conclusion -->
+    <section class="slide" id="slide-12">
+      <div class="eyebrow">Conclusion & Q&A</div>
+      <h2 class="slide-title">Summary: Sovereign Media with Cloud Economics</h2>
+      <div class="divider"></div>
+      <div class="grid-3">
+        <div class="card emerald">
+          <div class="card-tag">Core Innovation</div>
+          <div class="card-title">Architecture Win</div>
+          <ul class="card-list">
+            <li>Zero cloud video storage footprint.</li>
+            <li>~3 KB manifests coordinate discovery globally.</li>
+            <li>Near-zero cloud hosting bills.</li>
+            <li>Outbound-only reverse tunnels bypass CGNAT.</li>
+          </ul>
+        </div>
+
+        <div class="card cyan">
+          <div class="card-tag">Engineering Rigor</div>
+          <div class="card-title">Quality Standards</div>
+          <ul class="card-list">
+            <li>100% free & open-source dependencies.</li>
+            <li>Unit & contract tests on every package.</li>
+            <li>Pre-encoded 4s HLS with NVENC acceleration.</li>
+            <li>10 Milestones successfully implemented.</li>
+          </ul>
+        </div>
+
+        <div class="card gold">
+          <div class="card-tag">Evaluation Ready</div>
+          <div class="card-title">Thank You!</div>
+          <ul class="card-list">
+            <li><strong>Team:</strong> Anish Ghadi & Anosh Chodankar</li>
+            <li><strong>GitHub:</strong> github.com/Anosh26/Custard-Fin</li>
+            <li><strong>Documentation:</strong> BRD v2, 4 Runbooks, ADRs</li>
+            <li>Ready for Live Demo & Defense!</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <footer class="controls">
+    <div class="progress-bar" id="progress-bar"></div>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <button class="control-btn" id="prev-btn" onclick="prevSlide()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>Previous</span>
+      </button>
+      <button class="control-btn" id="next-btn" onclick="nextSlide()">
+        <span>Next</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <div class="slide-indicator" id="slide-indicator">
+      SLIDE 01 / 12
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <button class="control-btn" onclick="toggleFullscreen()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        <span>Fullscreen (F)</span>
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    const progressBar = document.getElementById('progress-bar');
+    const slideIndicator = document.getElementById('slide-indicator');
+
+    function updateSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= totalSlides) index = totalSlides - 1;
+
+      slides.forEach((slide, i) => {
+        slide.classList.remove('active', 'prev');
+        if (i === index) {
+          slide.classList.add('active');
+        } else if (i < index) {
+          slide.classList.add('prev');
+        }
+      });
+
+      currentSlide = index;
+      const pct = ((index + 1) / totalSlides) * 100;
+      progressBar.style.width = `${pct}%`;
+      slideIndicator.textContent = `SLIDE ${(index + 1).toString().padStart(2, '0')} / ${totalSlides.toString().padStart(2, '0')}`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        updateSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        updateSlide(currentSlide - 1);
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // Keyboard navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      } else if (e.key === 'Home') {
+        updateSlide(0);
+      } else if (e.key === 'End') {
+        updateSlide(totalSlides - 1);
+      }
+    });
+
+    updateSlide(0);
+  </script>
+</body>
+</html>

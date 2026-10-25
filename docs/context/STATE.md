@@ -23,8 +23,8 @@
   - Edge ingestion API: `POST /api/media/upload`, `POST /api/media/scan`, `POST /api/media/generate-sample`, and `GET /api/status`.
   - Next.js UI Modals: `AddVideoModal` (drag-and-drop / scan / sample generator), `EdgeLibraryModal` (local videos & 1-click Public/Private sync toggle), `DevSettingsModal` (endpoint switcher, latency ping, Invariant checklist, stream limit simulator), and Player "Stats for Nerds" live HUD.
   - Modal Viewport Portaling & Overflow Isolation: Created `ModalPortal` (`createPortal(..., document.body)`) to escape navbar `backdrop-filter` CSS containment; resolved top-clipping bug with `margin: auto;`, `box-sizing: border-box;`, `max-height: calc(100vh - 5rem);`, Escape key support, background scroll locks, and custom sleek scrollbars.
-  - Multi-terminal demo launcher (`scripts/start-all-terminals.ps1`, `scripts/start-all-terminals.bat`, `scripts/tab1`..`tab5`) providing 1-click terminal orchestration across Docker, Cloud API, Edge NVENC Daemon, Web UI, and Simulation.
   - Demo auto-pairing & host PostgreSQL port 5433 conflict resolution for rock-solid heartbeats and playback.
+  - Modern Presentation Deck & OpenXML Exporter: Built automated generator `scripts/generate_presentation.py` producing 12-slide widescreen PowerPoint (`docs/presentation/CustardFin_Presentation.pptx`) with OpenXML transitions and entrance animations, full formatted OpenXML dump (`docs/presentation/presentation.xml`), and interactive HTML5 animated slide deck (`docs/presentation/index.html`).
 
 ## In Progress
 - Final demonstration rehearsal and viva preparation.

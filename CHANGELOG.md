@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Search & Watch Page Hydration**: Fixed SearchBar query synchronization when clicking "Clear Search" or navigating back; added `suppressHydrationWarning` on watch page URL expiry time; added `position: relative` to `.player-container` to anchor the "Stats for Nerds" HUD.
 
 ### Added
+- **Modern OpenXML Presentation Deck & Interactive Presentation**:
+  - Automated Generator (`scripts/generate_presentation.py`): builds a 12-slide modern widescreen (16:9) PowerPoint presentation (`docs/presentation/CustardFin_Presentation.pptx`) with dark theme (`#090D16`), cards, `<p:transition>` slide fades/pushes, and `<p:timing>` entrance animations.
+  - OpenXML PresentationML Dump (`docs/presentation/presentation.xml`): full formatted XML export with presentation properties, slide hierarchies, and animation trees.
+  - Interactive HTML5 Presentation Deck (`docs/presentation/index.html`): browser-viewable presentation with 60fps animations, keyboard navigation (Arrows/Spacebar), fullscreen mode (`F`), progress bar, and card hover effects.
+  - Comprehensive Slide Outline: Intro & Authors, Core Problem, Invariant 1 (Zero Cloud Video), Two-Tier Architecture, Technology Stack, Ingestion & 4s HLS Pipeline, Play Decision Router, Scalability & Admission Control, NVENC Benchmarks, Multi-Topology Deployment, and Live Demonstration Flow.
 - **Post-Milestone 10 (Interactive Video Upload, Edge Library Manager & Dev Console)**:
   - Edge Daemon Video Ingestion API: added `POST /api/media/upload` (multipart video upload with auto-transcode and manifest sync), `POST /api/media/scan` (on-demand directory re-scan), `POST /api/media/generate-sample` (1-click 15s synthetic FFmpeg test card generator), and `GET /api/status` (live node stream count and NVENC hardware probe).
   - Web UI `+ Add Video` Modal (`apps/web/src/components/AddVideoModal.tsx`) featuring drag-and-drop file upload, folder scan trigger, and 1-click test clip synthesizer.
