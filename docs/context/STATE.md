@@ -25,6 +25,7 @@
   - Modal Viewport Portaling & Overflow Isolation: Created `ModalPortal` (`createPortal(..., document.body)`) to escape navbar `backdrop-filter` CSS containment; resolved top-clipping bug with `margin: auto;`, `box-sizing: border-box;`, `max-height: calc(100vh - 5rem);`, Escape key support, background scroll locks, and custom sleek scrollbars.
   - Demo auto-pairing & host PostgreSQL port 5433 conflict resolution for rock-solid heartbeats and playback.
   - Modern Presentation Deck & OpenXML Exporter: Built automated generator `scripts/generate_presentation.py` producing 12-slide widescreen PowerPoint (`docs/presentation/CustardFin_Presentation.pptx`) with OpenXML transitions and entrance animations, full formatted OpenXML dump (`docs/presentation/presentation.xml`), and interactive HTML5 animated slide deck (`docs/presentation/index.html`).
+  - Pastel Design System & Animated Mascot: Created vector SVG custard mascot (`docs/presentation/custard_mascot.svg`) and high-resolution PNG (`docs/presentation/custard_mascot.png`). Applied a refined pastel color palette (Custard `#FEF08A`, Mint `#A7F3D0`, Lavender `#DDD6FE`, Sky `#BAE6FD`, Peach `#FED7AA`, Rose `#FECDD3`), Plus Jakarta Sans typography, and an interactive floating corner mascot with animated speech bubbles on both HTML and PPTX decks.
 
 ## In Progress
 - Final demonstration rehearsal and viva preparation.

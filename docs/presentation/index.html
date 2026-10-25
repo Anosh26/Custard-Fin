@@ -3,22 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CustardFin - Presentation Deck</title>
+  <title>CustardFin - Distributed Community Media Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #090d16;
-      --bg-card: #0f172a;
-      --bg-box: #1e293b;
-      --border: rgba(148, 163, 184, 0.18);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      --gold: #f59e0b;
-      --gold-hover: #d97706;
-      --cyan: #06b6d4;
-      --emerald: #10b981;
-      --red: #ef4444;
-      --radius: 14px;
+      /* Deep Obsidian Canvas for Pastel Contrast */
+      --bg-dark: #090d16;
+      --bg-card: #131b2e;
+      --bg-card-hover: #1a253d;
+      
+      /* Refined Pastel Color Palette */
+      --pastel-custard: #fef08a;   /* Warm Custard Cream */
+      --pastel-caramel: #fde047;   /* Rich Custard Gold */
+      --pastel-mint: #a7f3d0;      /* Fresh Sage Mint */
+      --pastel-lavender: #ddd6fe;  /* Soft Violet Lilac */
+      --pastel-sky: #bae6fd;       /* Powder Ice Blue */
+      --pastel-peach: #fed7aa;     /* Warm Amber Peach */
+      --pastel-rose: #fecdd3;      /* Gentle Coral Rose */
+      
+      /* Typography Colors */
+      --text-main: #f8fafc;
+      --text-sub: #cbd5e1;
+      --text-dim: #94a3b8;
+      
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
     }
 
     * {
@@ -28,96 +41,115 @@
     }
 
     body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       height: 100vh;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       user-select: none;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Ambient Glow & Top Bar */
-    .top-accent {
+    /* Ambient Pastel Top Gradient */
+    .top-accent-bar {
       height: 4px;
       width: 100%;
-      background: linear-gradient(90deg, var(--gold), var(--cyan), var(--emerald));
+      background: linear-gradient(90deg, var(--pastel-custard), var(--pastel-mint), var(--pastel-sky), var(--pastel-lavender), var(--pastel-peach));
       position: fixed;
       top: 0;
       left: 0;
       z-index: 100;
     }
 
-    /* Slide Viewport */
-    .viewport {
+    /* Viewport Stage */
+    .stage {
       flex: 1;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.5rem;
-      perspective: 1200px;
+      padding: 1.5rem 2rem;
+      perspective: 1400px;
     }
 
+    /* Slide Box */
     .slide {
       position: absolute;
       width: 100%;
-      max-width: 1340px;
+      max-width: 1360px;
       aspect-ratio: 16 / 9;
-      max-height: calc(100vh - 120px);
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(245, 158, 11, 0.08);
-      padding: 2.5rem 3.5rem;
+      max-height: calc(100vh - 110px);
+      background: radial-gradient(circle at 10% 10%, rgba(30, 41, 59, 0.4) 0%, rgba(9, 13, 22, 0.95) 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.95), 0 0 45px rgba(254, 240, 138, 0.05);
+      padding: 2.75rem 3.5rem;
       display: flex;
       flex-direction: column;
       opacity: 0;
       visibility: hidden;
-      transform: translateX(60px) scale(0.96);
-      transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateY(24px) scale(0.97);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
       overflow-y: auto;
     }
 
     .slide.active {
       opacity: 1;
       visibility: visible;
-      transform: translateX(0) scale(1);
+      transform: translateY(0) scale(1);
     }
 
     .slide.prev {
       opacity: 0;
       visibility: hidden;
-      transform: translateX(-60px) scale(0.96);
+      transform: translateY(-24px) scale(0.97);
     }
 
-    /* Header & Eyebrow */
+    /* Eyebrow & Slide Headings */
     .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
       font-size: 0.85rem;
       font-weight: 700;
-      letter-spacing: 0.1em;
-      color: var(--gold);
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin-bottom: 0.35rem;
+      color: var(--pastel-custard);
+      margin-bottom: 0.4rem;
+    }
+
+    .eyebrow-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--pastel-custard);
+      box-shadow: 0 0 10px var(--pastel-custard);
     }
 
     .slide-title {
-      font-size: 2.2rem;
+      font-size: 2.4rem;
       font-weight: 800;
-      color: var(--text);
-      line-height: 1.2;
+      color: #ffffff;
+      line-height: 1.25;
       margin-bottom: 0.75rem;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
+    }
+
+    .slide-title span.highlight {
+      background: linear-gradient(135deg, var(--pastel-custard), var(--pastel-peach));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .divider {
       height: 1px;
-      background: var(--border);
-      margin-bottom: 2rem;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.02));
+      margin-bottom: 1.75rem;
     }
 
-    /* Grid Layouts */
+    /* Grids */
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -127,7 +159,7 @@
 
     .grid-3 {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 1.5rem;
       flex: 1;
     }
@@ -139,156 +171,330 @@
       flex: 1;
     }
 
-    /* Cards */
-    .card {
+    /* Pastel Cards */
+    .pastel-card {
       background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.6rem 1.4rem;
       display: flex;
       flex-direction: column;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
       overflow: hidden;
+      backdrop-filter: blur(8px);
     }
 
-    .card:hover {
-      border-color: rgba(245, 158, 11, 0.4);
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(245, 158, 11, 0.1);
+    .pastel-card:hover {
+      background: var(--bg-card-hover);
+      transform: translateY(-4px);
     }
 
-    .card.gold { border-left: 4px solid var(--gold); }
-    .card.emerald { border-left: 4px solid var(--emerald); }
-    .card.cyan { border-left: 4px solid var(--cyan); }
-    .card.red { border-left: 4px solid var(--red); }
+    /* Pastel Card Themes */
+    .pastel-card.custard {
+      border-left: 4px solid var(--pastel-custard);
+    }
+    .pastel-card.custard:hover {
+      box-shadow: 0 14px 30px -8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(254, 240, 138, 0.18);
+      border-color: rgba(254, 240, 138, 0.4);
+    }
+
+    .pastel-card.mint {
+      border-left: 4px solid var(--pastel-mint);
+    }
+    .pastel-card.mint:hover {
+      box-shadow: 0 14px 30px -8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(167, 243, 208, 0.18);
+      border-color: rgba(167, 243, 208, 0.4);
+    }
+
+    .pastel-card.lavender {
+      border-left: 4px solid var(--pastel-lavender);
+    }
+    .pastel-card.lavender:hover {
+      box-shadow: 0 14px 30px -8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(221, 214, 254, 0.18);
+      border-color: rgba(221, 214, 254, 0.4);
+    }
+
+    .pastel-card.sky {
+      border-left: 4px solid var(--pastel-sky);
+    }
+    .pastel-card.sky:hover {
+      box-shadow: 0 14px 30px -8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(186, 230, 253, 0.18);
+      border-color: rgba(186, 230, 253, 0.4);
+    }
+
+    .pastel-card.peach {
+      border-left: 4px solid var(--pastel-peach);
+    }
+    .pastel-card.peach:hover {
+      box-shadow: 0 14px 30px -8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(254, 215, 170, 0.18);
+      border-color: rgba(254, 215, 170, 0.4);
+    }
+
+    .pastel-card.rose {
+      border-left: 4px solid var(--pastel-rose);
+    }
+    .pastel-card.rose:hover {
+      box-shadow: 0 14px 30px -8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(254, 205, 211, 0.18);
+      border-color: rgba(254, 205, 211, 0.4);
+    }
 
     .card-tag {
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       margin-bottom: 0.5rem;
     }
 
-    .card.gold .card-tag { color: var(--gold); }
-    .card.emerald .card-tag { color: var(--emerald); }
-    .card.cyan .card-tag { color: var(--cyan); }
-    .card.red .card-tag { color: var(--red); }
+    .pastel-card.custard .card-tag { color: var(--pastel-custard); }
+    .pastel-card.mint .card-tag { color: var(--pastel-mint); }
+    .pastel-card.lavender .card-tag { color: var(--pastel-lavender); }
+    .pastel-card.sky .card-tag { color: var(--pastel-sky); }
+    .pastel-card.peach .card-tag { color: var(--pastel-peach); }
+    .pastel-card.rose .card-tag { color: var(--pastel-rose); }
 
-    .card-title {
-      font-size: 1.2rem;
+    .card-heading {
+      font-size: 1.25rem;
       font-weight: 700;
-      color: var(--text);
-      margin-bottom: 1rem;
+      color: #ffffff;
+      margin-bottom: 0.9rem;
+      line-height: 1.3;
     }
 
-    .card-list {
+    .card-body-list {
       list-style: none;
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      font-size: 0.92rem;
-      color: var(--text-muted);
-      line-height: 1.5;
+      font-size: 0.96rem;
+      color: var(--text-sub);
+      line-height: 1.6;
     }
 
-    .card-list li {
+    .card-body-list li {
       position: relative;
-      padding-left: 1.2rem;
+      padding-left: 1.25rem;
     }
 
-    .card-list li::before {
+    .card-body-list li::before {
       content: "•";
       position: absolute;
       left: 0;
-      color: var(--gold);
-      font-size: 1.2rem;
+      font-size: 1.3rem;
       line-height: 1;
     }
 
-    .card.emerald .card-list li::before { color: var(--emerald); }
-    .card.cyan .card-list li::before { color: var(--cyan); }
-    .card.red .card-list li::before { color: var(--red); }
+    .pastel-card.custard .card-body-list li::before { color: var(--pastel-custard); }
+    .pastel-card.mint .card-body-list li::before { color: var(--pastel-mint); }
+    .pastel-card.lavender .card-body-list li::before { color: var(--pastel-lavender); }
+    .pastel-card.sky .card-body-list li::before { color: var(--pastel-sky); }
+    .pastel-card.peach .card-body-list li::before { color: var(--pastel-peach); }
+    .pastel-card.rose .card-body-list li::before { color: var(--pastel-rose); }
 
-    /* Hero Slide Specific */
-    .hero-container {
+    /* Code & Highlight Tags */
+    .code-pill {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--pastel-custard);
+    }
+
+    /* Hero Slide Layout */
+    .hero-wrap {
       display: flex;
       flex-direction: column;
       justify-content: center;
       height: 100%;
     }
 
-    .hero-badge {
+    .hero-badge-pill {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.85rem;
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.3);
+      gap: 0.6rem;
+      padding: 0.4rem 1rem;
+      background: rgba(254, 240, 138, 0.1);
+      border: 1px solid rgba(254, 240, 138, 0.25);
       border-radius: 9999px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--gold);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--pastel-custard);
       width: fit-content;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
     }
 
-    .hero-title {
-      font-size: 3.5rem;
+    .hero-headline {
+      font-size: 4.2rem;
       font-weight: 900;
-      letter-spacing: -0.03em;
-      background: linear-gradient(135deg, var(--gold), #ea580c);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #ffffff 30%, var(--pastel-custard) 75%, var(--pastel-peach) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subheadline {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 1.1rem;
+    }
+
+    .hero-paragraph {
+      font-size: 1.15rem;
+      color: var(--text-sub);
+      max-width: 820px;
+      line-height: 1.65;
+      margin-bottom: 2.25rem;
+    }
+
+    /* Staggered Build Animation for Cards on Active Slide */
+    .slide.active .pastel-card {
+      animation: cardGlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    }
+    .slide.active .pastel-card:nth-child(1) { animation-delay: 0.08s; }
+    .slide.active .pastel-card:nth-child(2) { animation-delay: 0.16s; }
+    .slide.active .pastel-card:nth-child(3) { animation-delay: 0.24s; }
+    .slide.active .pastel-card:nth-child(4) { animation-delay: 0.32s; }
+
+    @keyframes cardGlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* ==================================================================== */
+    /* ANIMATED MOVING CUSTARD MASCOT IN THE CORNER                         */
+    /* ==================================================================== */
+    .mascot-container {
+      position: fixed;
+      bottom: 76px;
+      right: 28px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    .mascot-bubble {
+      background: rgba(19, 27, 46, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(254, 240, 138, 0.4);
+      color: var(--pastel-custard);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
       margin-bottom: 0.5rem;
+      white-space: nowrap;
+      animation: bubbleFloat 3.5s ease-in-out infinite;
+      transition: all 0.2s ease;
     }
 
-    .hero-sub {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 1rem;
+    .mascot-bubble::after {
+      content: "";
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px 6px 0;
+      border-style: solid;
+      border-color: rgba(19, 27, 46, 0.95) transparent;
+      display: block;
+      width: 0;
     }
 
-    .hero-desc {
-      font-size: 1.1rem;
-      color: var(--text-muted);
-      max-width: 800px;
-      line-height: 1.6;
-      margin-bottom: 2.5rem;
+    .mascot-svg-wrap {
+      width: 95px;
+      height: 95px;
+      animation: floatCustard 4s ease-in-out infinite, jellyJiggle 6s ease-in-out infinite;
+      transition: transform 0.2s ease;
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 12px rgba(254, 240, 138, 0.25));
     }
 
-    /* Bottom Controller Bar */
-    .controls {
+    .mascot-container:hover .mascot-svg-wrap {
+      transform: scale(1.15) rotate(6deg);
+    }
+
+    .mascot-container:hover .mascot-bubble {
+      background: var(--pastel-custard);
+      color: #090d16;
+      border-color: #ffffff;
+    }
+
+    @keyframes floatCustard {
+      0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-14px) rotate(3deg);
+      }
+    }
+
+    @keyframes jellyJiggle {
+      0%, 100% {
+        transform: scale(1, 1);
+      }
+      25% {
+        transform: scale(1.04, 0.96);
+      }
+      75% {
+        transform: scale(0.97, 1.03);
+      }
+    }
+
+    @keyframes bubbleFloat {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    /* Controller Footer Bar */
+    .controller-bar {
       height: 64px;
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(12px);
-      border-top: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 2rem;
+      padding: 0 2.5rem;
       z-index: 50;
+      position: relative;
     }
 
-    .progress-bar {
+    .slide-progress {
       position: absolute;
       top: 0;
       left: 0;
       height: 3px;
-      background: var(--gold);
-      transition: width 0.3s ease;
+      background: linear-gradient(90deg, var(--pastel-custard), var(--pastel-mint));
+      box-shadow: 0 0 10px var(--pastel-custard);
+      transition: width 0.35s ease;
     }
 
-    .control-btn {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
+    .nav-button {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      font-size: 0.88rem;
+      font-weight: 700;
+      padding: 0.5rem 1.15rem;
+      border-radius: var(--radius-sm);
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -296,62 +502,65 @@
       transition: all 0.2s ease;
     }
 
-    .control-btn:hover {
-      background: rgba(245, 158, 11, 0.15);
-      border-color: var(--gold);
-      color: var(--gold);
+    .nav-button:hover {
+      background: rgba(254, 240, 138, 0.15);
+      border-color: var(--pastel-custard);
+      color: var(--pastel-custard);
     }
 
-    .slide-indicator {
-      font-size: 0.9rem;
-      font-weight: 700;
+    .counter-tag {
+      font-size: 0.95rem;
+      font-weight: 800;
       font-family: monospace;
-      color: var(--gold);
+      color: var(--pastel-custard);
+      letter-spacing: 0.05em;
     }
   </style>
 </head>
 <body>
-  <div class="top-accent"></div>
+  <div class="top-accent-bar"></div>
 
-  <main class="viewport">
+  <!-- Stage -->
+  <main class="stage">
+
     <!-- Slide 1: Hero -->
     <section class="slide active" id="slide-1">
-      <div class="hero-container">
-        <div class="hero-badge">
-          <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--gold);"></span>
-          MCA Cloud Computing Lab • Final Semester Project 2026
+      <div class="hero-wrap">
+        <div class="hero-badge-pill">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--pastel-custard);"></span>
+          MCA Cloud Computing Lab &bull; Semester End Evaluation 2026
         </div>
-        <h1 class="hero-title">CUSTARDFIN</h1>
-        <div class="hero-sub">Distributed Community Media Platform</div>
-        <p class="hero-desc">
-          A hybrid media streaming architecture that combines the sovereign privacy of personal self-hosting (Plex/Jellyfin) with global community discovery (YouTube) at near-zero cloud cost.
+        <h1 class="hero-headline">CUSTARDFIN</h1>
+        <div class="hero-subheadline">Distributed Community Media Streaming Platform</div>
+        <p class="hero-paragraph">
+          A hybrid media streaming architecture combining the sovereign privacy of personal self-hosting (Plex/Jellyfin) with global community discovery (YouTube) &mdash; engineered with Zero Cloud Video Storage.
         </p>
 
-        <div class="grid-3" style="max-height: 220px;">
-          <div class="card cyan">
+        <div class="grid-3" style="max-height: 230px;">
+          <div class="pastel-card lavender">
             <div class="card-tag">Project Authors</div>
-            <div class="card-title">Team Credits</div>
-            <ul class="card-list">
+            <div class="card-heading">Team Credits</div>
+            <ul class="card-body-list">
               <li>Anish Ghadi (25P0320009)</li>
               <li>Anosh Chodankar (25P0320010)</li>
-              <li>MCA Cloud Computing Lab</li>
+              <li>MCA Cloud Computing Lab 2026</li>
             </ul>
           </div>
 
-          <div class="card gold">
+          <div class="pastel-card custard">
             <div class="card-tag">Core Philosophy</div>
-            <div class="card-title">Zero Cloud Video</div>
-            <ul class="card-list">
-              <li>Video binaries strictly stay at home</li>
+            <div class="card-heading">Zero Cloud Storage</div>
+            <ul class="card-body-list">
+              <li>Videos strictly remain at home</li>
               <li>Public sharing = ~3 KB JSON manifest</li>
-              <li>Home uploads each chunk ONCE</li>
+              <li>Home uploads each hot chunk ONCE</li>
             </ul>
           </div>
 
-          <div class="card emerald">
-            <div class="card-tag">Engineering</div>
-            <div class="card-title">Technology Stack</div>
-            <ul class="card-list">
+          <div class="pastel-card mint">
+            <div class="card-tag">Engineering Quality</div>
+            <div class="card-heading">Technology Core</div>
+            <ul class="card-body-list">
               <li>Go Daemon + Next.js 15 Client</li>
               <li>SQLite WAL + PostgreSQL + Redis</li>
               <li>NVIDIA NVENC Hardware 4s HLS</li>
@@ -363,37 +572,37 @@
 
     <!-- Slide 2: The Core Problem -->
     <section class="slide" id="slide-2">
-      <div class="eyebrow">Motivation & Background</div>
-      <h2 class="slide-title">The Dilemma: Isolated Silos vs Centralized Clouds</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Motivation & Background</div>
+      <h2 class="slide-title">The Dilemma: <span class="highlight">Isolated Silos vs Centralized Clouds</span></h2>
       <div class="divider"></div>
       <div class="grid-3">
-        <div class="card red">
+        <div class="pastel-card rose">
           <div class="card-tag">Traditional Self-Hosting</div>
-          <div class="card-title">Plex / Jellyfin Silos</div>
-          <ul class="card-list">
-            <li><strong>Private Island:</strong> Media is trapped on the home PC with zero global discovery.</li>
-            <li><strong>CGNAT Barrier:</strong> Residential ISPs block incoming ports; requires complex, risky router port-forwarding.</li>
-            <li><strong>Bandwidth Collapse:</strong> Every concurrent remote viewer drains home upload bandwidth simultaneously.</li>
+          <div class="card-heading">Plex / Jellyfin Silos</div>
+          <ul class="card-body-list">
+            <li><strong>Private Island:</strong> Media files trapped on home PC with zero global or community discovery.</li>
+            <li><strong>CGNAT Barrier:</strong> Residential ISPs block incoming ports; requires risky manual port forwarding.</li>
+            <li><strong>Upload Collapse:</strong> Multiple concurrent remote viewers directly saturate home upload bandwidth.</li>
           </ul>
         </div>
 
-        <div class="card red">
+        <div class="pastel-card rose">
           <div class="card-tag">Centralized Cloud</div>
-          <div class="card-title">YouTube / Cloud S3</div>
-          <ul class="card-list">
-            <li><strong>Storage Cost:</strong> Multi-gigabyte videos stored permanently in central cloud buckets at compounding expense.</li>
-            <li><strong>Privacy Loss:</strong> Original binaries surrendered to corporate cloud servers.</li>
-            <li><strong>Egress Bandwidth Tax:</strong> Recurring cloud egress fees make community streaming financially impossible.</li>
+          <div class="card-heading">YouTube / Cloud S3</div>
+          <ul class="card-body-list">
+            <li><strong>Compounding Storage Fees:</strong> Terabytes of permanent cloud storage billed continuously.</li>
+            <li><strong>Custody Loss:</strong> Video binaries surrendered to centralized hosting servers.</li>
+            <li><strong>Egress Bandwidth Tax:</strong> Crushing cloud transfer charges make indie community apps financially impossible.</li>
           </ul>
         </div>
 
-        <div class="card emerald">
+        <div class="pastel-card mint">
           <div class="card-tag">The CustardFin Answer</div>
-          <div class="card-title">Best of Both Worlds</div>
-          <ul class="card-list">
-            <li><strong>Video Stays Home:</strong> Owner retains 100% physical custody and storage sovereignty.</li>
-            <li><strong>Zero Inbound Ports:</strong> Outbound-only TLS reverse tunnel punches effortlessly through CGNAT.</li>
-            <li><strong>Origin Shield:</strong> Central cache serves viral viewers while home uploads each hot segment only once!</li>
+          <div class="card-heading">Best of Both Worlds</div>
+          <ul class="card-body-list">
+            <li><strong>Video Stays Home:</strong> Owner retains 100% physical ownership and sovereignty.</li>
+            <li><strong>Outbound Tunnels:</strong> TLS reverse tunnel punches effortlessly through residential CGNAT.</li>
+            <li><strong>Origin Shield:</strong> Central cache serves viral viewers; home uploads each hot segment only once!</li>
           </ul>
         </div>
       </div>
@@ -401,30 +610,30 @@
 
     <!-- Slide 3: Invariant 1 -->
     <section class="slide" id="slide-3">
-      <div class="eyebrow">Architectural Foundation</div>
-      <h2 class="slide-title">Invariant 1: Zero Cloud Video Storage Footprint</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Architectural Foundation</div>
+      <h2 class="slide-title">Invariant 1: <span class="highlight">Zero Cloud Video Storage Footprint</span></h2>
       <div class="divider"></div>
       <div class="grid-2">
-        <div class="card red">
+        <div class="pastel-card rose">
           <div class="card-tag">Traditional Cloud Approach</div>
-          <div class="card-title">Permanent Central Storage</div>
-          <ul class="card-list">
-            <li>Every uploaded video occupies permanent S3/GCS gigabytes billed every month.</li>
+          <div class="card-heading">Permanent Central Storage</div>
+          <ul class="card-body-list">
+            <li>Every uploaded video occupies permanent S3/GCS gigabytes billed month after month.</li>
             <li>1,000 community videos = ~4 TB permanent storage footprint ($100+/mo).</li>
-            <li>Central server is a high-value single target for data breaches and copyright strikes.</li>
-            <li>The cloud provider owns the physical drive where the video resides.</li>
+            <li>Central cloud is a high-value target for data leaks and centralized takedowns.</li>
+            <li>The cloud provider owns the physical drive where your video files reside.</li>
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card custard">
           <div class="card-tag">CustardFin Invariant 1</div>
-          <div class="card-title">Lightweight 3 KB Manifests</div>
-          <ul class="card-list">
+          <div class="card-heading">Lightweight ~3 KB Manifests</div>
+          <ul class="card-body-list">
             <li>Video files strictly live on the owner's hard drive and edge SQLite database.</li>
-            <li>Publishing to the community syncs ONLY a ~3 KB JSON manifest:
-              <br><code style="color: var(--gold); font-size: 0.8rem;">{ media_id, content_hash, duration_s, renditions[] }</code>
+            <li>Publishing to the community catalog syncs ONLY a ~3 KB JSON manifest:
+              <br><code class="code-pill">{ media_id, content_hash, duration_s, renditions[] }</code>
             </li>
-            <li>Origin Shield temporarily buffers hot 4s chunks with automatic 24-hour LRU auto-purge.</li>
+            <li>Origin Shield temporarily buffers hot 4s chunks with 24-hour LRU auto-purge.</li>
             <li>A single $5/month cloud VM can coordinate discovery for 100,000+ community videos!</li>
           </ul>
         </div>
@@ -433,15 +642,15 @@
 
     <!-- Slide 4: System Architecture -->
     <section class="slide" id="slide-4">
-      <div class="eyebrow">System Architecture</div>
-      <h2 class="slide-title">Two-Tier Topology: Home Edge & Cloud Control Plane</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>System Architecture</div>
+      <h2 class="slide-title">Two-Tier Topology: <span class="highlight">Home Edge & Cloud Control Plane</span></h2>
       <div class="divider"></div>
       <div class="grid-2">
-        <div class="card cyan">
+        <div class="pastel-card lavender">
           <div class="card-tag">Tier 1: Home Edge Node</div>
-          <div class="card-title">Edge Go Daemon (edged)</div>
-          <ul class="card-list">
-            <li><strong>Ultra Lightweight:</strong> Single static Go binary (<20 MB idle RAM).</li>
+          <div class="card-heading">Edge Go Daemon (edged)</div>
+          <ul class="card-body-list">
+            <li><strong>Ultra Lightweight:</strong> Single static Go binary (<20 MB idle RAM footprint).</li>
             <li><strong>SQLite WAL:</strong> Local database for video paths, hashes, and private watch progress.</li>
             <li><strong>Managed Transcoder:</strong> FFmpeg subprocess with automatic NVENC probe & CPU fallback.</li>
             <li><strong>Outbound FRP Client:</strong> Establishes outbound TLS reverse tunnel. Zero port-forwarding.</li>
@@ -449,13 +658,13 @@
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card custard">
           <div class="card-tag">Tier 2: Cloud Control Plane</div>
-          <div class="card-title">Cloud API (apid) & Web UI</div>
-          <ul class="card-list">
+          <div class="card-heading">Cloud API (apid) & Web UI</div>
+          <ul class="card-body-list">
             <li><strong>Cloud API (Go):</strong> High throughput REST routing with goroutine workers.</li>
             <li><strong>PostgreSQL:</strong> Stores user accounts, node registry, and 3 KB video catalog manifests.</li>
-            <li><strong>Redis Heartbeats:</strong> Ephemeral key <code style="color: var(--gold);">heartbeat:{node_id}</code> (15s TTL) for node liveness.</li>
+            <li><strong>Redis Heartbeats:</strong> Ephemeral key <code class="code-pill">heartbeat:{node_id}</code> (15s TTL) for node liveness.</li>
             <li><strong>S3 Origin Shield:</strong> Pull-through chunk cache (MinIO / Floci) with HMAC signed URLs.</li>
             <li><strong>Next.js 15 UI:</strong> App Router with SSR, hls.js player, and Dev Settings Console.</li>
           </ul>
@@ -465,14 +674,14 @@
 
     <!-- Slide 5: What It Uses -->
     <section class="slide" id="slide-5">
-      <div class="eyebrow">What It Uses</div>
-      <h2 class="slide-title">Technology Stack: 100% Free & Open-Source</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Technology Stack</div>
+      <h2 class="slide-title">What It Uses: <span class="highlight">100% Free & Open-Source Stack</span></h2>
       <div class="divider"></div>
       <div class="grid-4">
-        <div class="card cyan">
+        <div class="pastel-card lavender">
           <div class="card-tag">Edge Subsystem</div>
-          <div class="card-title">Go & SQLite</div>
-          <ul class="card-list">
+          <div class="card-heading">Go & SQLite</div>
+          <ul class="card-body-list">
             <li>Go (net/http, log/slog)</li>
             <li>modernc.org/sqlite (Pure Go)</li>
             <li>WAL mode & busy_timeout</li>
@@ -481,10 +690,10 @@
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card custard">
           <div class="card-tag">Cloud Backend</div>
-          <div class="card-title">Go & Postgres</div>
-          <ul class="card-list">
+          <div class="card-heading">Go & Postgres</div>
+          <ul class="card-body-list">
             <li>Go REST API (apid)</li>
             <li>PostgreSQL 16 via pgx</li>
             <li>sqlc type-safe queries</li>
@@ -493,10 +702,10 @@
           </ul>
         </div>
 
-        <div class="card emerald">
+        <div class="pastel-card mint">
           <div class="card-tag">Network & Cache</div>
-          <div class="card-title">FRP & Origin S3</div>
-          <ul class="card-list">
+          <div class="card-heading">FRP & Origin S3</div>
+          <ul class="card-body-list">
             <li>FRP client/server TLS tunnel</li>
             <li>AWS SDK for Go v2</li>
             <li>MinIO & Floci emulator</li>
@@ -505,10 +714,10 @@
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card sky">
           <div class="card-tag">Frontend UI</div>
-          <div class="card-title">Next.js 15</div>
-          <ul class="card-list">
+          <div class="card-heading">Next.js 15</div>
+          <ul class="card-body-list">
             <li>Next.js App Router (SSR)</li>
             <li>TypeScript strict mode</li>
             <li>hls.js adaptive video player</li>
@@ -521,14 +730,14 @@
 
     <!-- Slide 6: What It Does -->
     <section class="slide" id="slide-6">
-      <div class="eyebrow">Core Workflows</div>
-      <h2 class="slide-title">What It Does: Ingestion & Hardware 4s HLS Pipeline</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Core Workflows</div>
+      <h2 class="slide-title">What It Does: <span class="highlight">Ingestion & Hardware 4s HLS Pipeline</span></h2>
       <div class="divider"></div>
       <div class="grid-4">
-        <div class="card cyan">
+        <div class="pastel-card lavender">
           <div class="card-tag">Step 1</div>
-          <div class="card-title">Ingestion & Scan</div>
-          <ul class="card-list">
+          <div class="card-heading">Ingestion & Scan</div>
+          <ul class="card-body-list">
             <li>Drag & drop web upload</li>
             <li>Direct folder drop (./media)</li>
             <li>1-click test fixture synth</li>
@@ -537,10 +746,10 @@
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card custard">
           <div class="card-tag">Step 2</div>
-          <div class="card-title">Pre-Encoded HLS</div>
-          <ul class="card-list">
+          <div class="card-heading">Pre-Encoded HLS</div>
+          <ul class="card-body-list">
             <li>Pre-encoded 4.0s chunks</li>
             <li>Zero live CPU transcoding</li>
             <li>1080p, 720p, 480p ladder</li>
@@ -549,10 +758,10 @@
           </ul>
         </div>
 
-        <div class="card emerald">
+        <div class="pastel-card mint">
           <div class="card-tag">Step 3</div>
-          <div class="card-title">GPU Acceleration</div>
-          <ul class="card-list">
+          <div class="card-heading">GPU Acceleration</div>
+          <ul class="card-body-list">
             <li>NVIDIA NVENC hardware chip</li>
             <li>1s test-encode on boot</li>
             <li>Automatic CPU fallback</li>
@@ -561,10 +770,10 @@
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card peach">
           <div class="card-tag">Step 4</div>
-          <div class="card-title">Manifest Sync</div>
-          <ul class="card-list">
+          <div class="card-heading">Manifest Sync</div>
+          <ul class="card-body-list">
             <li>1-click Public toggle in UI</li>
             <li>3 KB signed JSON manifest</li>
             <li>Validated against schema</li>
@@ -577,14 +786,14 @@
 
     <!-- Slide 7: Play Decision Engine -->
     <section class="slide" id="slide-7">
-      <div class="eyebrow">Stream Router</div>
-      <h2 class="slide-title">Intelligent Play Decision Engine</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Stream Router</div>
+      <h2 class="slide-title">Intelligent Play Decision Engine <span class="highlight">(Stream Router)</span></h2>
       <div class="divider"></div>
       <div class="grid-4">
-        <div class="card gold">
+        <div class="pastel-card custard">
           <div class="card-tag">Decision 1</div>
-          <div class="card-title">Node Liveness</div>
-          <ul class="card-list">
+          <div class="card-heading">Node Liveness</div>
+          <ul class="card-body-list">
             <li>Checks Redis heartbeat TTL</li>
             <li>If missing: node is offline</li>
             <li>Serves cached chunks if ready</li>
@@ -592,10 +801,10 @@
           </ul>
         </div>
 
-        <div class="card emerald">
+        <div class="pastel-card mint">
           <div class="card-tag">Decision 2</div>
-          <div class="card-title">Direct LAN</div>
-          <ul class="card-list">
+          <div class="card-heading">Direct LAN</div>
+          <ul class="card-body-list">
             <li>Detects viewer on same subnet</li>
             <li>Redirects directly to :8090</li>
             <li>0 ms cloud relay latency</li>
@@ -603,10 +812,10 @@
           </ul>
         </div>
 
-        <div class="card cyan">
+        <div class="pastel-card sky">
           <div class="card-tag">Decision 3</div>
-          <div class="card-title">Cache Hit</div>
-          <ul class="card-list">
+          <div class="card-heading">Cache Hit</div>
+          <ul class="card-body-list">
             <li>Checks S3 Origin Shield cache</li>
             <li>Issues short-lived HMAC URL</li>
             <li>Serves directly from S3/CDN</li>
@@ -614,10 +823,10 @@
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card peach">
           <div class="card-tag">Decision 4</div>
-          <div class="card-title">Cache Miss</div>
-          <ul class="card-list">
+          <div class="card-heading">Cache Miss</div>
+          <ul class="card-body-list">
             <li>Checks 10-stream node cap</li>
             <li>Pulls once via FRP tunnel</li>
             <li>Saves chunk into S3 cache</li>
@@ -629,30 +838,30 @@
 
     <!-- Slide 8: Scalability & Admission Control -->
     <section class="slide" id="slide-8">
-      <div class="eyebrow">Invariants 7 & 10</div>
-      <h2 class="slide-title">Origin Shield Cache & Concurrency Admission Control</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Invariants 7 & 10</div>
+      <h2 class="slide-title">Origin Shield Cache & <span class="highlight">10-Stream Admission Control</span></h2>
       <div class="divider"></div>
       <div class="grid-2">
-        <div class="card emerald">
+        <div class="pastel-card mint">
           <div class="card-tag">Invariant 7: Origin Shield</div>
-          <div class="card-title">Viral Traffic Protection</div>
-          <ul class="card-list">
+          <div class="card-heading">Viral Traffic Protection</div>
+          <ul class="card-body-list">
             <li>Home node uploads each hot 4-second video segment <strong>ONCE</strong>.</li>
             <li>Central S3-compatible cache stores chunk with 24-hour LRU auto-purge.</li>
             <li>100 viewers watching the same title = <strong>99% cache hit ratio</strong>!</li>
             <li>Home residential internet upload bandwidth sees load equivalent to exactly 1 viewer.</li>
-            <li>Verified live via multi-viewer benchmark scripts (<code style="color: var(--emerald);">load-10-viewers.ps1</code>).</li>
+            <li>Verified live via multi-viewer benchmark scripts (<code class="code-pill">load-10-viewers.ps1</code>).</li>
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card custard">
           <div class="card-tag">Invariant 10: Capacity Limiter</div>
-          <div class="card-title">10-Stream Per-Node Cap</div>
-          <ul class="card-list">
+          <div class="card-heading">10-Stream Per-Node Cap</div>
+          <ul class="card-body-list">
             <li>10 viewers watching 10 DIFFERENT titles = 0% cache hit (upload speed is physical limit).</li>
             <li>Strict per-node concurrency tracker implemented in Go Cloud API.</li>
-            <li>11th remote viewer receives: <strong style="color: var(--red);">HTTP 429 Too Many Requests</strong>.</li>
-            <li>Includes <code style="color: var(--gold);">Retry-After: 30</code> header with clear "Node Busy" notice.</li>
+            <li>11th remote viewer receives: <strong style="color: var(--pastel-rose);">HTTP 429 Too Many Requests</strong>.</li>
+            <li>Includes <code class="code-pill">Retry-After: 30</code> header with clear "Node Busy" notice.</li>
             <li>Adaptive bitrate ladder pruning dynamically filters high-bitrate renditions under network contention.</li>
           </ul>
         </div>
@@ -661,24 +870,24 @@
 
     <!-- Slide 9: Hardware Acceleration -->
     <section class="slide" id="slide-9">
-      <div class="eyebrow">Milestone 9 Benchmarks</div>
-      <h2 class="slide-title">Hardware Acceleration: NVIDIA NVENC vs CPU Fallback</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Milestone 9 Benchmarks</div>
+      <h2 class="slide-title">Hardware Acceleration: <span class="highlight">NVIDIA NVENC vs CPU Benchmark</span></h2>
       <div class="divider"></div>
       <div class="grid-2">
-        <div class="card cyan">
+        <div class="pastel-card sky">
           <div class="card-tag">Transcoder Engine</div>
-          <div class="card-title">Dual-Path Architecture</div>
-          <ul class="card-list">
+          <div class="card-heading">Dual-Path Architecture</div>
+          <ul class="card-body-list">
             <li><strong>Probe Order:</strong> NVENC &rarr; Intel QSV / VAAPI &rarr; Multi-threaded CPU libx264.</li>
-            <li><strong>Strict Alignment:</strong> <code style="color: var(--cyan);">-g 120 -keyint_min 120 -sc_threshold 0</code> locks I-frames to 4.0s boundaries.</li>
+            <li><strong>Strict Alignment:</strong> <code class="code-pill">-g 120 -keyint_min 120 -sc_threshold 0</code> locks I-frames to 4.0s boundaries.</li>
             <li><strong>Resilient Fallback:</strong> 1-second startup test probe validates encoder health; any failure immediately reverts to CPU without crashing.</li>
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card custard">
           <div class="card-tag">Empirical Benchmark Data</div>
-          <div class="card-title">RTX 4060 vs Intel CPU</div>
-          <ul class="card-list">
+          <div class="card-heading">RTX 4060 vs Intel CPU</div>
+          <ul class="card-body-list">
             <li><strong>NVIDIA NVENC (ASIC):</strong> 1.21s transcode time (<strong>12.4x real-time</strong>) with &lt; 3% CPU utilization.</li>
             <li><strong>Software libx264 (CPU):</strong> 5.42s transcode time (<strong>2.7x real-time</strong>) with 92% peak CPU load across all cores.</li>
             <li><strong>Result:</strong> NVENC provides 4.5x faster throughput and completely protects CPU resources for streaming and OS responsiveness.</li>
@@ -689,14 +898,14 @@
 
     <!-- Slide 10: Multi-Topology Deployment -->
     <section class="slide" id="slide-10">
-      <div class="eyebrow">Deployment Profiles</div>
-      <h2 class="slide-title">Multi-Topology Cloud Deployment Profiles</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Deployment Profiles</div>
+      <h2 class="slide-title">Multi-Topology <span class="highlight">Cloud Deployment Profiles</span></h2>
       <div class="divider"></div>
       <div class="grid-4">
-        <div class="card cyan">
+        <div class="pastel-card sky">
           <div class="card-tag">Mode 1</div>
-          <div class="card-title">Pure Local</div>
-          <ul class="card-list">
+          <div class="card-heading">Pure Local</div>
+          <ul class="card-body-list">
             <li>go run ./apps/api/cmd/apid</li>
             <li>go run ./apps/edge/cmd/edged</li>
             <li>npm run dev (Web UI)</li>
@@ -704,10 +913,10 @@
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card custard">
           <div class="card-tag">Mode 2</div>
-          <div class="card-title">Dev Containers</div>
-          <ul class="card-list">
+          <div class="card-heading">Dev Containers</div>
+          <ul class="card-body-list">
             <li>compose.dev.yml up</li>
             <li>Postgres 16 (port 5433)</li>
             <li>Redis 7 (port 6379)</li>
@@ -715,10 +924,10 @@
           </ul>
         </div>
 
-        <div class="card emerald">
+        <div class="pastel-card mint">
           <div class="card-tag">Mode 3 (Lab Demo)</div>
-          <div class="card-title">Floci Emulator</div>
-          <ul class="card-list">
+          <div class="card-heading">Floci Emulator</div>
+          <ul class="card-body-list">
             <li>compose.floci.yml up</li>
             <li>MIT open-source cloud</li>
             <li>Emulates AWS S3 & GCP</li>
@@ -726,10 +935,10 @@
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card peach">
           <div class="card-tag">Mode 4 (Production)</div>
-          <div class="card-title">GCP Cloud VM</div>
-          <ul class="card-list">
+          <div class="card-heading">GCP Cloud VM</div>
+          <ul class="card-body-list">
             <li>GCP e2-standard-2 VM</li>
             <li>Caddy TLS reverse proxy</li>
             <li>frps on static public IP</li>
@@ -741,29 +950,29 @@
 
     <!-- Slide 11: Live Demo Walkthrough -->
     <section class="slide" id="slide-11">
-      <div class="eyebrow">Presentation Flow</div>
-      <h2 class="slide-title">Live Demonstration Walkthrough & Viva Runbooks</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Presentation Flow</div>
+      <h2 class="slide-title">Live Demonstration Walkthrough & <span class="highlight">Viva Runbooks</span></h2>
       <div class="divider"></div>
       <div class="grid-2">
-        <div class="card cyan">
+        <div class="pastel-card sky">
           <div class="card-tag">5-Terminal Orchestration</div>
-          <div class="card-title">Single-Click Launcher</div>
-          <ul class="card-list">
+          <div class="card-heading">Single-Click Launcher</div>
+          <ul class="card-body-list">
             <li><strong>scripts/start-all-terminals.ps1</strong> launches 5 synchronized tabs:
-              <br>• Tab 1: Docker Services (Postgres, Redis, MinIO)
-              <br>• Tab 2: Cloud API (apid) with auto-seeded demo credentials
-              <br>• Tab 3: Edge Node Daemon (edged) with NVENC probe
-              <br>• Tab 4: Next.js 15 Web UI (:3000)
-              <br>• Tab 5: Simulation & Benchmark Command Runner
+              <br>&bull; Tab 1: Docker Services (Postgres, Redis, MinIO)
+              <br>&bull; Tab 2: Cloud API (apid) with auto-seeded demo credentials
+              <br>&bull; Tab 3: Edge Node Daemon (edged) with NVENC probe
+              <br>&bull; Tab 4: Next.js 15 Web UI (:3000)
+              <br>&bull; Tab 5: Simulation & Benchmark Command Runner
             </li>
             <li>Color-coded banners with real-time heartbeat and streaming logs.</li>
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card custard">
           <div class="card-tag">Viva Demonstration Scenarios</div>
-          <div class="card-title">6 Core Test Cases</div>
-          <ul class="card-list">
+          <div class="card-heading">6 Core Test Cases</div>
+          <ul class="card-body-list">
             <li><strong>Scenario 1:</strong> Direct LAN playback (0ms cloud latency).</li>
             <li><strong>Scenario 2:</strong> Remote playback via FRP tunnel + Origin Shield cache.</li>
             <li><strong>Scenario 3:</strong> 10 Viewers on same title &rarr; 90%+ cache hit ratio.</li>
@@ -777,25 +986,25 @@
 
     <!-- Slide 12: Conclusion -->
     <section class="slide" id="slide-12">
-      <div class="eyebrow">Conclusion & Q&A</div>
-      <h2 class="slide-title">Summary: Sovereign Media with Cloud Economics</h2>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Conclusion & Q&A</div>
+      <h2 class="slide-title">Summary: <span class="highlight">Sovereign Media with Cloud Economics</span></h2>
       <div class="divider"></div>
       <div class="grid-3">
-        <div class="card emerald">
+        <div class="pastel-card mint">
           <div class="card-tag">Core Innovation</div>
-          <div class="card-title">Architecture Win</div>
-          <ul class="card-list">
+          <div class="card-heading">Architecture Win</div>
+          <ul class="card-body-list">
             <li>Zero cloud video storage footprint.</li>
             <li>~3 KB manifests coordinate discovery globally.</li>
-            <li>Near-zero cloud hosting bills.</li>
+            <li>Near-zero recurring cloud bills.</li>
             <li>Outbound-only reverse tunnels bypass CGNAT.</li>
           </ul>
         </div>
 
-        <div class="card cyan">
+        <div class="pastel-card lavender">
           <div class="card-tag">Engineering Rigor</div>
-          <div class="card-title">Quality Standards</div>
-          <ul class="card-list">
+          <div class="card-heading">Quality Standards</div>
+          <ul class="card-body-list">
             <li>100% free & open-source dependencies.</li>
             <li>Unit & contract tests on every package.</li>
             <li>Pre-encoded 4s HLS with NVENC acceleration.</li>
@@ -803,10 +1012,10 @@
           </ul>
         </div>
 
-        <div class="card gold">
+        <div class="pastel-card custard">
           <div class="card-tag">Evaluation Ready</div>
-          <div class="card-title">Thank You!</div>
-          <ul class="card-list">
+          <div class="card-heading">Thank You!</div>
+          <ul class="card-body-list">
             <li><strong>Team:</strong> Anish Ghadi & Anosh Chodankar</li>
             <li><strong>GitHub:</strong> github.com/Anosh26/Custard-Fin</li>
             <li><strong>Documentation:</strong> BRD v2, 4 Runbooks, ADRs</li>
@@ -817,26 +1026,87 @@
     </section>
   </main>
 
-  <!-- Bottom Navigation Bar -->
-  <footer class="controls">
-    <div class="progress-bar" id="progress-bar"></div>
+  <!-- Animated Moving Custard Mascot in Corner -->
+  <aside class="mascot-container" id="custard-mascot" title="I'm Custard! Click me!">
+    <div class="mascot-bubble" id="mascot-speech">Zero Cloud Storage! ✨</div>
+    <div class="mascot-svg-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+        <defs>
+          <linearGradient id="puddingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#FEF08A"/>
+            <stop offset="100%" stop-color="#FACC15"/>
+          </linearGradient>
+          <linearGradient id="caramelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#F59E0B"/>
+            <stop offset="100%" stop-color="#B45309"/>
+          </linearGradient>
+          <linearGradient id="plateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#E2E8F0"/>
+            <stop offset="100%" stop-color="#94A3B8"/>
+          </linearGradient>
+          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+          </filter>
+        </defs>
+
+        <!-- Ambient Glow beneath plate -->
+        <ellipse cx="100" cy="172" rx="70" ry="12" fill="rgba(254, 240, 138, 0.3)" filter="url(#glow)"/>
+
+        <!-- Plate / Dish -->
+        <ellipse cx="100" cy="168" rx="80" ry="16" fill="url(#plateGrad)"/>
+        <ellipse cx="100" cy="166" rx="68" ry="11" fill="#F8FAFC"/>
+        <ellipse cx="100" cy="165" rx="56" ry="8" fill="#E2E8F0"/>
+
+        <!-- Pudding Flan Body -->
+        <path d="M 46 160 C 44 140, 56 78, 64 68 C 66 65, 134 65, 136 68 C 144 78, 156 140, 154 160 C 140 170, 60 170, 46 160 Z" fill="url(#puddingGrad)"/>
+
+        <!-- Caramel Syrup Top & Drippings -->
+        <path d="M 64 68 C 66 65, 134 65, 136 68 C 142 76, 145 92, 143 98 C 140 106, 132 102, 128 96 C 124 90, 120 108, 114 112 C 108 116, 102 100, 98 96 C 94 92, 88 106, 82 108 C 76 110, 72 94, 68 96 C 64 98, 60 84, 64 68 Z" fill="url(#caramelGrad)"/>
+
+        <!-- Caramel Gloss Highlight -->
+        <ellipse cx="88" cy="72" rx="22" ry="7" fill="rgba(255, 255, 255, 0.55)" transform="rotate(-6 88 72)"/>
+
+        <!-- Kawaii Face on Custard -->
+        <path d="M 78 126 C 81 120, 89 120, 92 126" stroke="#451A03" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+        <path d="M 108 126 C 111 120, 119 120, 122 126" stroke="#451A03" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+        <path d="M 96 135 C 98 141, 102 141, 104 135" stroke="#451A03" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <ellipse cx="73" cy="132" rx="7" ry="4" fill="#F43F5E" opacity="0.6"/>
+        <ellipse cx="127" cy="132" rx="7" ry="4" fill="#F43F5E" opacity="0.6"/>
+
+        <!-- Glossy Cherry on Top -->
+        <circle cx="100" cy="50" r="16" fill="#EF4444"/>
+        <ellipse cx="96" cy="46" rx="5" ry="3" fill="rgba(255, 255, 255, 0.6)" transform="rotate(-20 96 46)"/>
+        <path d="M 100 48 C 104 30, 120 22, 130 26" stroke="#15803D" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <path d="M 112 34 C 118 28, 128 32, 124 40 C 118 42, 110 38, 112 34 Z" fill="#22C55E"/>
+
+        <!-- Floating Sparkles -->
+        <path d="M 32 60 L 36 68 L 44 72 L 36 76 L 32 84 L 28 76 L 20 72 L 28 68 Z" fill="#FDE047" opacity="0.85"/>
+        <path d="M 166 88 L 169 94 L 175 97 L 169 100 L 166 106 L 163 100 L 157 97 L 163 94 Z" fill="#BAE6FD" opacity="0.85"/>
+      </svg>
+    </div>
+  </aside>
+
+  <!-- Controller Footer Bar -->
+  <footer class="controller-bar">
+    <div class="slide-progress" id="slide-progress"></div>
     <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <button class="control-btn" id="prev-btn" onclick="prevSlide()">
+      <button class="nav-button" onclick="prevSlide()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         <span>Previous</span>
       </button>
-      <button class="control-btn" id="next-btn" onclick="nextSlide()">
+      <button class="nav-button" onclick="nextSlide()">
         <span>Next</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
 
-    <div class="slide-indicator" id="slide-indicator">
+    <div class="counter-tag" id="slide-counter">
       SLIDE 01 / 12
     </div>
 
     <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <button class="control-btn" onclick="toggleFullscreen()">
+      <button class="nav-button" onclick="toggleFullscreen()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         <span>Fullscreen (F)</span>
       </button>
@@ -847,8 +1117,24 @@
     let currentSlide = 0;
     const slides = document.querySelectorAll('.slide');
     const totalSlides = slides.length;
-    const progressBar = document.getElementById('progress-bar');
-    const slideIndicator = document.getElementById('slide-indicator');
+    const progressBar = document.getElementById('slide-progress');
+    const slideCounter = document.getElementById('slide-counter');
+    const mascotBubble = document.getElementById('mascot-speech');
+
+    const speechPhrases = [
+      "Zero Cloud Storage! ✨",
+      "Videos Stay at Home! 🏠",
+      "3 KB Manifest Sync! ⚡",
+      "No Open Router Ports! 🔒",
+      "100% Free & Open-Source! 💻",
+      "4-Second Keyframe HLS! 🎬",
+      "Intelligent Stream Router! 🧠",
+      "Origin Shield Absorbs 99%! 🛡️",
+      "NVENC 12.4x Speed! 🚀",
+      "Floci & GCP Cloud Ready! ☁️",
+      "Live 5-Terminal Demo! 🖥️",
+      "All 10 Milestones Complete! 🏆"
+    ];
 
     function updateSlide(index) {
       if (index < 0) index = 0;
@@ -866,7 +1152,12 @@
       currentSlide = index;
       const pct = ((index + 1) / totalSlides) * 100;
       progressBar.style.width = `${pct}%`;
-      slideIndicator.textContent = `SLIDE ${(index + 1).toString().padStart(2, '0')} / ${totalSlides.toString().padStart(2, '0')}`;
+      slideCounter.textContent = `SLIDE ${(index + 1).toString().padStart(2, '0')} / ${totalSlides.toString().padStart(2, '0')}`;
+
+      // Update custard speech bubble
+      if (mascotBubble && speechPhrases[index]) {
+        mascotBubble.textContent = speechPhrases[index];
+      }
     }
 
     function nextSlide() {
@@ -904,6 +1195,19 @@
       } else if (e.key === 'End') {
         updateSlide(totalSlides - 1);
       }
+    });
+
+    // Mascot click Easter egg
+    document.getElementById('custard-mascot')?.addEventListener('click', () => {
+      const randomSayings = [
+        "Jellyfin + YouTube = CustardFin! 🍮",
+        "Only ~3 KB Manifests! 💾",
+        "Home upload speed protected! 🛡️",
+        "RTX 4060 NVENC Transcoding! ⚡",
+        "Origin Shield Active (HIT)! 🎯"
+      ];
+      const saying = randomSayings[Math.floor(Math.random() * randomSayings.length)];
+      if (mascotBubble) mascotBubble.textContent = saying;
     });
 
     updateSlide(0);

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="puddingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FEF08A"/>
+      <stop offset="100%" stop-color="#FACC15"/>
+    </linearGradient>
+    <linearGradient id="caramelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="plateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E2E8F0"/>
+      <stop offset="100%" stop-color="#94A3B8"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Ambient Glow beneath plate -->
+  <ellipse cx="100" cy="172" rx="70" ry="12" fill="rgba(245, 158, 11, 0.25)" filter="url(#glow)"/>
+
+  <!-- Plate / Dish -->
+  <ellipse cx="100" cy="168" rx="80" ry="16" fill="url(#plateGrad)"/>
+  <ellipse cx="100" cy="166" rx="68" ry="11" fill="#F8FAFC"/>
+  <ellipse cx="100" cy="165" rx="56" ry="8" fill="#E2E8F0"/>
+
+  <!-- Pudding Flan Body -->
+  <path d="M 46 160 C 44 140, 56 78, 64 68 C 66 65, 134 65, 136 68 C 144 78, 156 140, 154 160 C 140 170, 60 170, 46 160 Z" fill="url(#puddingGrad)"/>
+
+  <!-- Caramel Syrup Top & Drippings -->
+  <path d="M 64 68 C 66 65, 134 65, 136 68 C 142 76, 145 92, 143 98 C 140 106, 132 102, 128 96 C 124 90, 120 108, 114 112 C 108 116, 102 100, 98 96 C 94 92, 88 106, 82 108 C 76 110, 72 94, 68 96 C 64 98, 60 84, 64 68 Z" fill="url(#caramelGrad)"/>
+
+  <!-- Caramel Gloss Highlight -->
+  <ellipse cx="88" cy="72" rx="22" ry="7" fill="rgba(255, 255, 255, 0.55)" transform="rotate(-6 88 72)"/>
+
+  <!-- Kawaii Face on Custard -->
+  <!-- Left Eye -->
+  <path d="M 78 126 C 81 120, 89 120, 92 126" stroke="#451A03" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <!-- Right Eye -->
+  <path d="M 108 126 C 111 120, 119 120, 122 126" stroke="#451A03" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <!-- Smile Mouth -->
+  <path d="M 96 135 C 98 141, 102 141, 104 135" stroke="#451A03" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Rosy Cheeks -->
+  <ellipse cx="73" cy="132" rx="7" ry="4" fill="#F43F5E" opacity="0.6"/>
+  <ellipse cx="127" cy="132" rx="7" ry="4" fill="#F43F5E" opacity="0.6"/>
+
+  <!-- Cherry on Top -->
+  <circle cx="100" cy="50" r="16" fill="#EF4444"/>
+  <ellipse cx="96" cy="46" rx="5" ry="3" fill="rgba(255, 255, 255, 0.6)" transform="rotate(-20 96 46)"/>
+  <!-- Cherry Stem -->
+  <path d="M 100 48 C 104 30, 120 22, 130 26" stroke="#15803D" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Mint Leaf -->
+  <path d="M 112 34 C 118 28, 128 32, 124 40 C 118 42, 110 38, 112 34 Z" fill="#22C55E"/>
+
+  <!-- Floating Sparkles -->
+  <path d="M 32 60 L 36 68 L 44 72 L 36 76 L 32 84 L 28 76 L 20 72 L 28 68 Z" fill="#FDE047" opacity="0.85"/>
+  <path d="M 166 88 L 169 94 L 175 97 L 169 100 L 166 106 L 163 100 L 157 97 L 163 94 Z" fill="#BAE6FD" opacity="0.85"/>
+  <path d="M 152 42 L 154 47 L 159 49 L 154 51 L 152 56 L 150 51 L 145 49 L 150 47 Z" fill="#FDE047" opacity="0.7"/>
+</svg>
