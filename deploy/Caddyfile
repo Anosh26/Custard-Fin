@@ -1,0 +1,27 @@
+{
+    # Global options
+    auto_https off
+    admin off
+}
+
+:80 {
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+
+    # API and Health endpoints
+    handle /v1/* {
+        reverse_proxy api:8080
+    }
+
+    handle /healthz {
+        reverse_proxy api:8080
+    }
+
+    # Frontend UI routes
+    handle {
+        reverse_proxy web:3000
+    }
+}

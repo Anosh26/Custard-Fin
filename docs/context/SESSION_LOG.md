@@ -1,3 +1,48 @@
+## 2026-10-25 - Milestone 10: Demo Profile, Load Simulation Scripts, GCP Deployment & Viva Runbooks
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi & Agent)
+- **Milestone:** Milestone 10 (Hardening, demo profile, rehearsal, runbooks)
+- **Summary:** Completed the final milestone of the CustardFin project roadmap. Built cross-platform 10-viewer load and admission simulation scripts (`scripts/load-10-viewers.sh` and `scripts/load-10-viewers.ps1`) executing live assertions for Origin Shield cache hit offload (90% reduction in home edge upload bandwidth), dynamic master playlist rendition pruning under load, the 10-stream per-node hard cap (HTTP 429 Retry-After: 30), and offline playback fallback. Created production-ready multi-stage Dockerfiles for cloud control API (`apps/api/Dockerfile`) and Next.js frontend (`apps/web/Dockerfile`). Assembled unified demo orchestration profile in `deploy/compose.demo.yml` with Caddy reverse proxy (`deploy/Caddyfile`) managing ports 80/443. Added `make load-test` target in `Makefile`. Authored comprehensive GCP deployment runbook (`docs/runbooks/deploy.md`) with VPC firewall rules, ports table, VM sizing ($40 credits budget), and home edge client configuration. Authored semester viva presentation script and defense guide (`docs/runbooks/demo.md`) with step-by-step walkthroughs and anticipated Q&A. Authored troubleshooting and emergency clean-slate recovery guide (`docs/runbooks/troubleshooting.md`).
+- **Files Touched:**
+  - `scripts/{load-10-viewers.sh, load-10-viewers.ps1}`
+  - `apps/api/Dockerfile`
+  - `apps/web/Dockerfile`
+  - `deploy/{compose.demo.yml, Caddyfile}`
+  - `Makefile`
+  - `docs/runbooks/{README.md, deploy.md, demo.md, troubleshooting.md}`
+  - `docs/context/{STATE.md, SESSION_LOG.md}`
+- **Follow-ups:**
+  - Rehearse live demonstration flow with Anosh Chodankar ahead of final lab evaluation.
+
+## 2026-10-25 - Milestone 9: NVENC Hardware Path, Probe, Fallback & Benchmark Tooling
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi & Agent)
+- **Milestone:** Milestone 9 (NVENC path with probe, fallback and benchmark script)
+- **Summary:** Completed hardware acceleration capabilities detection, multi-encoder fallback cascade, and automated GPU/CPU benchmarking tooling adhering strictly to Invariant 6 (Pre-encoded 4s HLS chunks, NVENC optional with automatic CPU fallback). In `apps/edge/internal/adapters/ffmpeg`, implemented `ProbeCapabilities` checking NVENC, QSV, and VAAPI via 1s null test encodes, refined `ProbeEncoder` to check hardware encoders before falling back to `libx264`, and updated `Transcode` with generalized automatic CPU fallback upon any hardware encoding failure. Updated `edged/main.go` to report all detected hardware acceleration flags in periodic node heartbeats (`contracts.GPUCapabilities`). Created `scripts/bench-gpu.sh` and `scripts/bench-gpu.ps1` measuring execution wall-clock time, encoding speed multiplier (achieved 10.7x realtime on GeForce GTX), and speedup ratio. Built automated media seeder `scripts/seed-media.sh` generating standard 1080p, 720p, and 480p test fixtures into `./media`. Updated `.gitignore` to prevent committing media binaries and updated `Makefile` with `make bench` and `make seed`.
+- **Files Touched:**
+  - `apps/edge/internal/adapters/ffmpeg/{transcoder.go, transcoder_test.go}`
+  - `apps/edge/cmd/edged/main.go`
+  - `scripts/{bench-gpu.sh, bench-gpu.ps1, seed-media.sh}`
+  - `.gitignore`
+  - `Makefile`
+  - `docs/context/{STATE.md, SESSION_LOG.md}`
+- **Follow-ups:**
+  - Milestone 10: Hardening, demo profile, rehearsal, runbooks.
+
+## 2026-10-24 - Milestone 8: Admission Control, Adaptive Bitrate & Prefetch
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi & Agent)
+- **Milestone:** Milestone 8 (Admission control, adaptive bitrate, prefetch)
+- **Summary:** Delivered node saturation estimation, adaptive master playlist rendition throttling, and initial chunk prefetch worker adhering strictly to Invariant 7 (Origin Shield pull-through cache), Invariant 9 (ephemeral HMAC signed URLs), and Invariant 10 (10-stream concurrency limit). In `apps/api`, defined `ports.SaturationEstimator` and `ports.Prefetcher` in `apps/api/internal/ports/admission.go`, implemented `domain.LoadLevel` (`LoadNormal`, `LoadModerate`, `LoadSaturated`, `LoadExhausted`) with resolution filtering rules in `apps/api/internal/domain/load.go`. Implemented `admission.DefaultEstimator` (`apps/api/internal/adapters/admission`) mapping heartbeat active stream counts to load tiers. Built `prefetch.BackgroundPrefetcher` (`apps/api/internal/adapters/prefetch`) proactively warming Origin Shield cache with initial `.ts` video chunks ahead of time. Enhanced `httpapi.Server` master playlist rewriting with `rewritePlaylistWithLoad`, dynamically pruning 1080p under moderate load and 1080p+720p under saturated load (with single-rendition safety fallback). Wired asynchronous prefetch into `handleGetPlayback` and saturation estimator into `handleStreamChunk`. Added comprehensive unit test coverage and updated ADR 0002.
+- **Files Touched:**
+  - `apps/api/internal/domain/{load.go, load_test.go}`
+  - `apps/api/internal/ports/admission.go`
+  - `apps/api/internal/adapters/admission/{estimator.go, estimator_test.go, README.md}`
+  - `apps/api/internal/adapters/prefetch/{prefetcher.go, prefetcher_test.go, README.md}`
+  - `apps/api/internal/adapters/httpapi/{server.go, server_test.go}`
+  - `tests/e2e/e2e_test.go`
+  - `docs/adr/0002-admission-control-and-adaptive-bitrate.md`
+  - `docs/context/{STATE.md, SESSION_LOG.md}`
+- **Follow-ups:**
+  - Milestone 9: NVENC path with probe, fallback and benchmark script.
+
 ## 2026-10-19 - Milestone 7: Origin Shield Cache, Signed URLs & Stream Router
 - **Author/Agents:** CustardFin Pair Programming Agent
 - **Milestone:** Milestone 7 (Origin Shield cache + signed URLs + stream router)

@@ -1,4 +1,4 @@
-.PHONY: help dev-up dev-down demo-up demo-down demo-check seed test lint fmt
+.PHONY: help dev-up dev-down demo-up demo-down demo-check seed bench load-test test lint fmt
 
 help:
 	@echo "CustardFin Development Targets:"
@@ -8,6 +8,8 @@ help:
 	@echo "  make demo-down  - Stop demo stack"
 	@echo "  make demo-check - Run health checks on all active components"
 	@echo "  make seed       - Seed media fixtures for testing and demo"
+	@echo "  make bench      - Run GPU vs CPU transcoding benchmark"
+	@echo "  make load-test  - Run 10-viewer load and admission simulation"
 	@echo "  make test       - Run unit and contract tests"
 	@echo "  make lint       - Run quality gates across all modules"
 	@echo "  make fmt        - Format Go and TS code"
@@ -30,7 +32,13 @@ demo-check:
 	@echo "All services healthy!"
 
 seed:
-	powershell -ExecutionPolicy Bypass -File scripts/seed-media.ps1
+	@bash scripts/seed-media.sh || powershell -ExecutionPolicy Bypass -File scripts/seed-media.ps1
+
+bench:
+	@bash scripts/bench-gpu.sh || powershell -ExecutionPolicy Bypass -File scripts/bench-gpu.ps1
+
+load-test:
+	@bash scripts/load-10-viewers.sh || powershell -ExecutionPolicy Bypass -File scripts/load-10-viewers.ps1
 
 test:
 	go test -v ./libs/contracts/... ./apps/edge/... ./apps/api/...
@@ -41,3 +49,4 @@ lint:
 
 fmt:
 	gofmt -s -w .
+

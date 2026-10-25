@@ -149,13 +149,13 @@ func main() {
 			heartbeatIntervalSec = 15
 		}
 
-		// Probe GPU encoding capabilities (NVENC)
+		// Probe GPU encoding capabilities (NVENC / QSV / VAAPI)
 		ffmpegBin := getEnv("EDGE_FFMPEG_BIN", "ffmpeg")
 		transcoder := ffmpeg.NewSubprocessTranscoder(ffmpegBin, logger)
-		encoder, _ := transcoder.ProbeEncoder(ctx)
+		caps := transcoder.ProbeCapabilities(ctx)
 		var gpuCaps *contracts.GPUCapabilities
-		if encoder == "h264_nvenc" {
-			gpuCaps = &contracts.GPUCapabilities{NVENC: true}
+		if caps.NVENC || caps.QSV || caps.VAAPI {
+			gpuCaps = &caps
 		}
 
 		worker, err := heartbeat.NewWorker(heartbeat.Config{
