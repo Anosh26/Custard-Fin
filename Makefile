@@ -1,9 +1,11 @@
-.PHONY: help dev-up dev-down demo-up demo-down demo-check seed bench load-test test lint fmt
+.PHONY: help dev-up dev-down floci-up floci-down demo-up demo-down demo-check seed bench load-test test lint fmt
 
 help:
 	@echo "CustardFin Development Targets:"
-	@echo "  make dev-up     - Start dev dependencies via docker-compose"
+	@echo "  make dev-up     - Start dev dependencies via docker-compose (MinIO)"
 	@echo "  make dev-down   - Tear down dev dependencies"
+	@echo "  make floci-up   - Start local cloud emulator stack via Floci (port 4566)"
+	@echo "  make floci-down - Tear down Floci local cloud emulator stack"
 	@echo "  make demo-up    - Run stack with demo profile and Caddy"
 	@echo "  make demo-down  - Stop demo stack"
 	@echo "  make demo-check - Run health checks on all active components"
@@ -19,6 +21,12 @@ dev-up:
 
 dev-down:
 	docker compose -f deploy/compose.dev.yml down
+
+floci-up:
+	docker compose -f deploy/floci/compose.floci.yml up -d
+
+floci-down:
+	docker compose -f deploy/floci/compose.floci.yml down
 
 demo-up:
 	docker compose -f deploy/compose.demo.yml up -d

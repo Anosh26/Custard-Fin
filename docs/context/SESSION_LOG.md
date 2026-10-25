@@ -1,3 +1,19 @@
+## 2026-10-25 - PR #1 Merge Sync, Windows RTX 4060 Rehearsal & Universal Running Guide
+- **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
+- **Milestone:** Post-Milestone 10 Rehearsal, Multi-Topology Deployment & Universal Documentation
+- **Summary:** Synchronized local repository with remote `origin/master` following the merge of PR #1 (`feat/m8-admission-prefetch`). Fast-forwarded 7 commits cleanly and verified unit and e2e test suites. Executed the complete live viva demonstration workflow on the Windows host equipped with NVIDIA GeForce RTX 4060 Laptop GPU. Upgraded `scripts/seed-media.ps1` to automatically synthesize 1080p, 720p, and 480p test video fixtures using FFmpeg. Executed `scripts/bench-gpu.ps1` verifying 16.48x realtime processing on RTX 4060 NVENC (2.73s vs 3.63s CPU baseline, 4.0s keyframe alignment). Fixed PowerShell string interpolation syntax in `scripts/load-10-viewers.ps1`. Tested `edged` daemon startup and confirmed automatic directory scanning, SHA-256 content hashing, FFprobe dimension/codec extraction, and SQLite persistence for all seeded media fixtures. Tested `apid` cloud API in local development mode and successfully ran the 10-viewer admission and Origin Shield load simulation across all 4 scenarios. Authored universal running guide `docs/runbooks/RUNNING_GUIDE.md` and `RUNNING.md` detailing all four deployment topologies (Pure Local Zero-Docker, Local Containerized, Floci Local Cloud Emulator Multi-PC Lab setup, and Google Cloud Platform). Created Floci cloud emulator compose profile (`deploy/floci/compose.floci.yml`) and guide (`deploy/floci/README.md`), adding `make floci-up` and `make floci-down` Makefile targets.
+- **Files Touched:**
+  - `docs/runbooks/RUNNING_GUIDE.md`
+  - `RUNNING.md`
+  - `deploy/floci/{compose.floci.yml, README.md}`
+  - `Makefile`
+  - `README.md`
+  - `docs/runbooks/README.md`
+  - `scripts/{seed-media.ps1, load-10-viewers.ps1}`
+  - `docs/context/{STATE.md, SESSION_LOG.md, STACK_VERSIONS.md}`
+- **Follow-ups:**
+  - Rehearse viva presentation Q&A ahead of final evaluation.
+
 ## 2026-10-25 - Milestone 10: Demo Profile, Load Simulation Scripts, GCP Deployment & Viva Runbooks
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi & Agent)
 - **Milestone:** Milestone 10 (Hardening, demo profile, rehearsal, runbooks)

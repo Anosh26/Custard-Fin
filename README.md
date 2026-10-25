@@ -18,24 +18,21 @@ HOME EDGE (Go daemon, static binary, <20 MB idle RAM)        CLOUD CONTROL
  local streamer ──▶ LAN viewers (direct)                      S3-compatible cache (Origin Shield) [+ optional CDN]
 ```
 
-## Quick Start (Dev)
+## How to Run (4 Operational Modes)
 
-```bash
-# 1. Start cloud dependencies
-docker compose -f deploy/compose.dev.yml up -d
+CustardFin supports 4 flexible execution topologies depending on your environment. See [**`RUNNING.md`**](RUNNING.md) and [**`docs/runbooks/RUNNING_GUIDE.md`**](docs/runbooks/RUNNING_GUIDE.md) for full instructions:
 
-# 2. Run Cloud API
-cd apps/api && go run ./cmd/apid
+1. **[Mode 1: Pure Local (Zero Docker)](docs/runbooks/RUNNING_GUIDE.md#3-mode-1-pure-local-zero-docker--standalone-mode)**: In-memory fallback stores; zero external services needed.
+2. **[Mode 2: Local Containerized](docs/runbooks/RUNNING_GUIDE.md#4-mode-2-local-containerized-dev-profile-with-minio)**: Full local Docker stack (`make dev-up`).
+3. **[Mode 3: Floci Local Cloud Emulator (Multi-PC Lab)](docs/runbooks/RUNNING_GUIDE.md#5-mode-3-floci-local-cloud-emulator-multi-pc-lab-setup)**: Multi-computer lab demo with Floci S3 emulator (:4566), RTX 4060 edge node, and remote viewer clients.
+4. **[Mode 4: Google Cloud Platform (GCP Live Cloud)](docs/runbooks/RUNNING_GUIDE.md#6-mode-4-google-cloud-platform-gcp-live-cloud-way)**: Real cloud deployment on GCP VM with Caddy HTTPS and outbound reverse tunnel punching through CGNAT.
 
-# 3. Run Home Edge Daemon
-cd apps/edge && go run ./cmd/edged
-
-# 4. Run Web UI
-cd apps/web && npm install && npm run dev
-```
-
-## Documentation
-- Master Agent Instructions: [AGENTS.md](file:///c:/Users/Anosh/Documents/Notes/Projects/Cloud_Computing/sem_end/Custard%20Fin/AGENTS.md)
-- Invariants: [INVARIANTS.md](file:///c:/Users/Anosh/Documents/Notes/Projects/Cloud_Computing/sem_end/Custard%20Fin/docs/context/INVARIANTS.md)
-- Project State: [STATE.md](file:///c:/Users/Anosh/Documents/Notes/Projects/Cloud_Computing/sem_end/Custard%20Fin/docs/context/STATE.md)
-- OpenAPI Specification: [openapi.yaml](file:///c:/Users/Anosh/Documents/Notes/Projects/Cloud_Computing/sem_end/Custard%20Fin/docs/api/openapi.yaml)
+## Documentation & Runbooks
+- **Deployment & Running Guide**: [docs/runbooks/RUNNING_GUIDE.md](docs/runbooks/RUNNING_GUIDE.md)
+- **Viva Demo Script & Defense Guide**: [docs/runbooks/demo.md](docs/runbooks/demo.md)
+- **GCP Cloud Deployment Guide**: [docs/runbooks/deploy.md](docs/runbooks/deploy.md)
+- **Troubleshooting & Emergency Recovery**: [docs/runbooks/troubleshooting.md](docs/runbooks/troubleshooting.md)
+- **Master Agent Prompt**: [AGENTS.md](AGENTS.md)
+- **Ten Architectural Invariants**: [docs/context/INVARIANTS.md](docs/context/INVARIANTS.md)
+- **Project State**: [docs/context/STATE.md](docs/context/STATE.md)
+- **OpenAPI Specification**: [docs/api/openapi.yaml](docs/api/openapi.yaml)

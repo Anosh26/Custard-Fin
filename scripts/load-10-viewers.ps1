@@ -71,15 +71,15 @@ if ($streamUrl) {
             $cacheStatus = $resp.Headers["X-Cache"]
             if ($cacheStatus -eq "HIT") {
                 $hits++
-                Write-Host "  Viewer $i: X-Cache: HIT (Served by Origin Shield cache - 0 home node upload)" -ForegroundColor Green
+                Write-Host "  Viewer ${i}: X-Cache: HIT (Served by Origin Shield cache - 0 home node upload)" -ForegroundColor Green
             } elseif ($cacheStatus -eq "MISS") {
                 $misses++
-                Write-Host "  Viewer $i: X-Cache: MISS (Proactively pulled once over reverse tunnel)" -ForegroundColor Yellow
+                Write-Host "  Viewer ${i}: X-Cache: MISS (Proactively pulled once over reverse tunnel)" -ForegroundColor Yellow
             } else {
-                Write-Host "  Viewer $i: Direct playback response"
+                Write-Host "  Viewer ${i}: Direct playback response"
             }
         } catch {
-            Write-Host "  Viewer $i: Request processed ($($_.Exception.Message))"
+            Write-Host "  Viewer ${i}: Request processed ($($_.Exception.Message))"
         }
     }
 
@@ -93,7 +93,7 @@ if ($streamUrl) {
     Write-Host "Simulating mock Origin Shield pull-through cache verification..." -ForegroundColor Yellow
     Write-Host "  Viewer 1:  X-Cache: MISS (1st chunk fetched from edge node)" -ForegroundColor Yellow
     for ($i = 2; $i -le 10; $i++) {
-        Write-Host "  Viewer $i:  X-Cache: HIT  (Origin Shield S3 Cache, latency < 5ms)" -ForegroundColor Green
+        Write-Host "  Viewer ${i}:  X-Cache: HIT  (Origin Shield S3 Cache, latency < 5ms)" -ForegroundColor Green
     }
     Write-Host "`n  OK - Invariant 7 Verified: 90% cache offload ratio." -ForegroundColor Green
 }

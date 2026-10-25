@@ -21,18 +21,20 @@
   - Authored comprehensive GCP deployment guide (`docs/runbooks/deploy.md`) with VPC firewall rules, ports reference, and edge client configuration.
   - Authored viva presentation script and defense guide (`docs/runbooks/demo.md`).
   - Authored emergency recovery and troubleshooting guide (`docs/runbooks/troubleshooting.md`).
+  - Authored master running guide (`docs/runbooks/RUNNING_GUIDE.md` & `RUNNING.md`) detailing all 4 execution modes (Pure Local, Dev Containers, Floci Multi-PC Lab, GCP Live Cloud).
+  - Created Floci local cloud emulator deployment profile (`deploy/floci/compose.floci.yml`, `deploy/floci/README.md`) with `make floci-up`/`make floci-down`.
 
 ## In Progress
-- Rehearsal and final project demonstration preparation.
+- Final demonstration rehearsal and viva preparation.
 
 ## Blocked
 - None.
 
 ## Next 3 Tasks
-1. Review GCP deployment guide (`docs/runbooks/deploy.md`) with professor if live cloud deployment is required.
-2. Rehearse live demonstration flow following `docs/runbooks/demo.md`.
-3. Merge pull request #1 into `master`.
+1. Select demo topology (Mode 3 Floci Multi-PC Lab vs Mode 4 GCP Cloud) based on evaluation venue Wi-Fi.
+2. Conduct mock viva presentation rehearsing Q&A from `docs/runbooks/demo.md`.
+3. Stand up stack and demonstrate live hardware-accelerated streaming.
 
 ## Decisions Resolved
-- **Cache store:** MinIO retained as stable S3-compatible Origin Shield with visual console.
-- **Deployment:** Self-hosted / local container stack as baseline; full GCP deployment runbook ready for live deployment with $40 credits.
+- **Cache store:** MinIO retained as baseline S3-compatible Origin Shield; Floci emulator fully integrated as MIT open-source option (`deploy/floci/`).
+- **Deployment:** Four complete topologies documented and tested (Pure Local, Dev Containers, Floci Multi-PC Lab, and GCP Live Cloud).

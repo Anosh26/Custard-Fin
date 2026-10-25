@@ -1,0 +1,87 @@
+services:
+  # ----------------------------------------------------------------------------
+  # Floci Local Cloud Emulator (AWS S3 on Port 4566)
+  # Drop-in MIT open-source emulator for Origin Shield S3 cache (Invariant 1 & 7)
+  # ----------------------------------------------------------------------------
+  floci:
+    image: floci/floci:latest
+    container_name: custardfin-floci
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      FLOCI_HOSTNAME: floci
+      SERVICES: s3
+    volumes:
+      - floci_data:/app/data
+
+  # Automatic bucket initializer for Floci S3 Origin Shield
+  init-floci:
+    image: amazon/aws-cli:latest
+    container_name: custardfin-floci-init
+    depends_on:
+      - floci
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      echo "Waiting for Floci S3 emulator to boot..." &&
+      sleep 3 &&
+      aws --endpoint-url=http://floci:4566 s3 mb s3://custardfin-origin-cache || true &&
+      echo "Floci S3 Origin Shield bucket 'custardfin-origin-cache' successfully created!"
+
+  # ----------------------------------------------------------------------------
+  # PostgreSQL (Relational metadata catalog - Invariant 4)
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: custardfin-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-custard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-custard_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-custardfin}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # Redis (Strictly ephemeral node heartbeats with TTL - Invariant 5)
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: custardfin-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # Fast Reverse Proxy (FRP Relay for outbound-only CGNAT traversal - Invariant 2)
+  # ----------------------------------------------------------------------------
+  frps:
+    image: snowdreamtech/frps:latest
+    container_name: custardfin-frps
+    restart: unless-stopped
+    ports:
+      - "7000:7000"
+      - "7500:7500"
+      - "8000-8020:8000-8020"
+    volumes:
+      - ../frps.toml:/etc/frp/frps.toml
+
+volumes:
+  pgdata:
+  floci_data:
