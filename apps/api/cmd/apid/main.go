@@ -15,6 +15,7 @@ import (
 	redisAdapter "github.com/anosh26/custardfin/apps/api/internal/adapters/redis"
 	s3Adapter "github.com/anosh26/custardfin/apps/api/internal/adapters/s3"
 	tunnelAdapter "github.com/anosh26/custardfin/apps/api/internal/adapters/tunnel"
+	"github.com/anosh26/custardfin/apps/api/internal/domain"
 	"github.com/anosh26/custardfin/apps/api/internal/ports"
 	redisClient "github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
@@ -33,7 +34,8 @@ func main() {
 
 	// 1. Resolve configuration from environment
 	apiAddr := getEnv("API_ADDR", ":8080")
-	dbURL := getEnv("DATABASE_URL", "postgres://custard:custard_secret@localhost:5432/custardfin?sslmode=disable")
+	defaultDBURL := "postgres://custard:custard_secret@127.0.0.1:5433/custardfin?sslmode=disable"
+	dbURL := getEnv("DATABASE_URL", defaultDBURL)
 	redisAddr := getEnv("REDIS_ADDR", "localhost:6379")
 	jwtSecret := getEnv("JWT_SECRET", "custardfin_development_jwt_secret_key_32_bytes!!")
 
@@ -59,6 +61,11 @@ func main() {
 		catalogRepo = memory.NewInMemoryCatalogRepository()
 	} else {
 		pgPool, err := postgres.Connect(ctx, dbURL)
+		if err != nil && dbURL == defaultDBURL {
+			// Fallback check to port 5432
+			fallbackURL := "postgres://custard:custard_secret@127.0.0.1:5432/custardfin?sslmode=disable"
+			pgPool, err = postgres.Connect(ctx, fallbackURL)
+		}
 		if err != nil {
 			slog.Warn("postgresql unavailable, falling back to in-memory repositories for local development", "err", err)
 			userRepo = memory.NewInMemoryUserRepository()
@@ -79,6 +86,39 @@ func main() {
 			nodeRepo = postgres.NewNodeRepository(pgPool)
 			catalogRepo = postgres.NewCatalogRepository(pgPool)
 		}
+	}
+
+	// Pre-seed default demo user and node (for local dev, tests, and presentations)
+	const (
+		demoUserID    = "usr-demo-00000000000000000000"
+		demoNodeID    = "898ea0c7-f7a3-48e8-ba59-b378a219f9ee"
+		demoNodeToken = "1c94b7b8fd38a97cd634b4894358fc1feed28f3a180a104aa0b83f9710190de2"
+		demoFrpToken  = "frp_secret_demo_123456"
+	)
+
+	if _, err := userRepo.FindByID(ctx, demoUserID); err != nil {
+		demoPassHash, _ := hasher.HashPassword("demo1234")
+		_ = userRepo.Create(ctx, &domain.User{
+			ID:           demoUserID,
+			Username:     "demo",
+			PasswordHash: demoPassHash,
+			CreatedAt:    time.Now().UTC(),
+			UpdatedAt:    time.Now().UTC(),
+		})
+	}
+
+	if _, err := nodeRepo.FindByID(ctx, demoNodeID); err != nil {
+		tokenHash := domain.HashNodeToken(demoNodeToken)
+		_ = nodeRepo.Create(ctx, &domain.Node{
+			ID:            demoNodeID,
+			UserID:        demoUserID,
+			Name:          "home-rtx-4060",
+			NodeTokenHash: tokenHash,
+			FrpAuthToken:  demoFrpToken,
+			CreatedAt:     time.Now().UTC(),
+			UpdatedAt:     time.Now().UTC(),
+		})
+		slog.Info("pre-seeded development demo node", "node_id", demoNodeID)
 	}
 
 	// 4. Initialize Redis Heartbeat Store (Invariant 5) with In-Memory fallback

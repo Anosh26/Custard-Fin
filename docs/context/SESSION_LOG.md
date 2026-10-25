@@ -1,3 +1,22 @@
+## 2026-10-25 - Fix Edge Node 401 Heartbeat Rejection via Credential Pre-Seeding & Port Conflict Resolution
+- **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
+- **Milestone:** Post-Milestone 10 Demo Reliability & Node Heartbeat Fix
+- **Summary:** Diagnosed and resolved repeated `401 Unauthorized (Invalid node token)` heartbeat rejection on `apid`:
+  1. Identified root cause: `apid` was attempting to connect to port 5432, which was captured by a native Windows PostgreSQL service (`postgres.exe`, PID 8292), causing SASL auth failure and silently falling back to in-memory repositories with an empty node table.
+  2. Updated `deploy/compose.dev.yml` to map Docker PostgreSQL to host port `${POSTGRES_PORT:-5433}:5432`, eliminating host port collision.
+  3. Updated `apps/api/cmd/apid/main.go` default `DATABASE_URL` to connect to `127.0.0.1:5433` (with fallback to 5432) and automatically run schema migrations.
+  4. Added automatic pre-seeding of the development demo user (`usr-demo-...`) and edge node (`898ea0c7-f7a3-48e8-ba59-b378a219f9ee`, token `1c94b7b8fd38a97cd634b4894358fc1feed28f3a180a104aa0b83f9710190de2`) in `apid` during startup in both PostgreSQL and in-memory modes.
+  5. Updated `apps/edge/cmd/edged/main.go` to automatically publish and sync scanned library manifests to the cloud API upon transcode verification.
+  6. Verified end-to-end: periodic heartbeats return HTTP 200 OK, Redis stores `heartbeat:{node_id}` with NVENC GPU caps, `GET /v1/catalog` lists all 3 items with `is_node_online: true`, `GET /v1/media/{id}/playback` returns signed stream URLs, and video chunks stream with HTTP 200 via Origin Shield.
+- **Files Touched:**
+  - `apps/api/cmd/apid/main.go`
+  - `apps/api/internal/adapters/postgres/postgres_test.go`
+  - `apps/edge/cmd/edged/main.go`
+  - `deploy/compose.dev.yml`
+  - `docs/context/SESSION_LOG.md`
+- **Follow-ups:**
+  - Push master commit to GitHub.
+
 ## 2026-10-25 - Seamless Edge Node Pairing, Auto-Transcoding & Port Conflict Resolution
 - **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
 - **Milestone:** Post-Milestone 10 Demo Polishing & Edge Integration

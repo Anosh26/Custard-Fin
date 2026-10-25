@@ -44,3 +44,26 @@ func TestInitialSchemaSQL_ContainsRequiredTables(t *testing.T) {
 		}
 	}
 }
+
+func TestConnect_LivePostgresIfAvailable(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dsns := []string{
+		"postgres://custard:custard_secret@127.0.0.1:5433/custardfin?sslmode=disable",
+		"postgres://custard:custard_secret@127.0.0.1:5432/custardfin?sslmode=disable",
+	}
+	for _, dsn := range dsns {
+		p, err := postgres.Connect(ctx, dsn)
+		if err == nil {
+			defer p.Close()
+			if err := postgres.Migrate(ctx, p); err != nil {
+				t.Fatalf("failed to run migrations: %v", err)
+			}
+			t.Logf("migrations successfully verified on %s", dsn)
+			return
+		}
+	}
+	t.Log("no local postgres container reachable, skipping live verification")
+}
+

@@ -117,9 +117,26 @@ func main() {
 							slog.Error("transcoding fixture failed", "title", m.Title, "err", err)
 						}
 					}
+
+					// Ensure media items are set to public and synced to cloud catalog
+					if syncer != nil {
+						_ = mediaRepo.SetPublic(ctx, m.ID, true)
+						m.IsPublic = true
+						renditions := []contracts.Rendition{
+							{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
+							{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},
+							{Resolution: "480p", BitrateBps: 1200000, PlaylistPath: "480p.m3u8", ChunkDurationS: 4},
+						}
+						if err := syncer.SyncManifest(ctx, m, renditions); err != nil {
+							slog.Warn("syncing media manifest to cloud catalog failed", "title", m.Title, "err", err)
+						} else {
+							slog.Info("manifest synced to cloud catalog", "title", m.Title, "id", m.ID)
+						}
+					}
 				}
 			}
 		}()
+
 	} else {
 		slog.Warn("media directory does not exist, skipping scan", "path", mediaDir)
 	}
