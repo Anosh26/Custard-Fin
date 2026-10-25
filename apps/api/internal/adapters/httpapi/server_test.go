@@ -1011,4 +1011,3 @@ func TestServer_FirstChunkPrefetchOnPlayback(t *testing.T) {
 		t.Errorf("unexpected prefetch params: node=%s, media=%s, path=%s", mockPf.triggeredNode, mockPf.triggeredMedia, mockPf.triggeredPath)
 	}
 }
-
