@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -59,10 +60,12 @@ func main() {
 
 	scanService := app.NewScanService(fileScanner, prober, hasher, mediaRepo, logger)
 
-	// 4. Initialize Cloud Manifest Syncer (if configured)
+	// 4. Initialize Cloud Manifest Syncer (with demo fallback credentials)
 	cloudURL := getEnv("EDGE_CLOUD_URL", "http://localhost:8080")
-	nodeID := getEnv("EDGE_NODE_ID", "")
-	nodeToken := getEnv("EDGE_NODE_TOKEN", "")
+	nodeID := getEnv("EDGE_NODE_ID", "898ea0c7-f7a3-48e8-ba59-b378a219f9ee")
+	nodeToken := getEnv("EDGE_NODE_TOKEN", "1c94b7b8fd38a97cd634b4894358fc1feed28f3a180a104aa0b83f9710190de2")
+	ffmpegBin := getEnv("EDGE_FFMPEG_BIN", "ffmpeg")
+	transcoder := ffmpeg.NewSubprocessTranscoder(ffmpegBin, logger)
 
 	var syncer ports.ManifestSyncer
 	if nodeID != "" && nodeToken != "" {
@@ -88,11 +91,33 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 5. Run initial media library scan in background
+	// 5. Run initial media library scan and auto-transcoding in background
 	if _, err := os.Stat(mediaDir); err == nil {
 		go func() {
 			if _, err := scanService.ScanDirectory(ctx, mediaDir); err != nil {
 				slog.Error("media library scan encountered errors", "err", err)
+			}
+
+			// Automatically ensure all scanned media fixtures have 4-second HLS renditions
+			mediaList, err := mediaRepo.List(ctx)
+			if err == nil {
+				for _, m := range mediaList {
+					outDir := filepath.Join(transcodeDir, m.ID)
+					masterPath := filepath.Join(outDir, "master.m3u8")
+					if _, err := os.Stat(masterPath); os.IsNotExist(err) {
+						slog.Info("transcoding media fixture to 4s HLS chunks", "title", m.Title, "id", m.ID)
+						_, err := transcoder.Transcode(ctx, ports.TranscodeJob{
+							MediaID:      m.ID,
+							InputPath:    m.Path,
+							OutputDir:    outDir,
+							SourceWidth:  m.Width,
+							SourceHeight: m.Height,
+						})
+						if err != nil {
+							slog.Error("transcoding fixture failed", "title", m.Title, "err", err)
+						}
+					}
+				}
 			}
 		}()
 	} else {
@@ -150,8 +175,6 @@ func main() {
 		}
 
 		// Probe GPU encoding capabilities (NVENC / QSV / VAAPI)
-		ffmpegBin := getEnv("EDGE_FFMPEG_BIN", "ffmpeg")
-		transcoder := ffmpeg.NewSubprocessTranscoder(ffmpegBin, logger)
 		caps := transcoder.ProbeCapabilities(ctx)
 		var gpuCaps *contracts.GPUCapabilities
 		if caps.NVENC || caps.QSV || caps.VAAPI {

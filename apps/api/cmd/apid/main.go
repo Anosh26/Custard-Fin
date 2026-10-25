@@ -130,7 +130,7 @@ func main() {
 	}
 
 	// 6. Initialize Reverse Tunnel Puller (Invariant 2, Invariant 7)
-	tunnelBaseURL := getEnv("TUNNEL_BASE_URL", "http://localhost:8088")
+	tunnelBaseURL := getEnv("TUNNEL_BASE_URL", "http://localhost:8090")
 	tunnelPuller, err := tunnelAdapter.NewHTTPTunnelPuller(tunnelAdapter.Config{
 		BaseURL: tunnelBaseURL,
 		Timeout: 10 * time.Second,
