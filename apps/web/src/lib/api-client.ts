@@ -46,9 +46,10 @@ export interface EdgeNodeStatus {
 export function getApiBaseUrl(): string {
   if (typeof window !== "undefined") {
     const saved = localStorage.getItem("custardfin_cloud_api_url");
-    if (saved && saved.trim()) return saved.trim();
+    if (saved && saved.trim()) return saved.trim().replace(/\/v1\/?$/, "");
   }
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+  const url = process.env.NEXT_PUBLIC_API_URL || "http://api:8080";
+  return url.trim().replace(/\/v1\/?$/, "");
 }
 
 export function setApiBaseUrl(url: string) {
