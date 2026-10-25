@@ -1,3 +1,18 @@
+## 2026-10-25 - Milestone 10: Demo Profile, Load Simulation Scripts, GCP Deployment & Viva Runbooks
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi & Agent)
+- **Milestone:** Milestone 10 (Hardening, demo profile, rehearsal, runbooks)
+- **Summary:** Completed the final milestone of the CustardFin project roadmap. Built cross-platform 10-viewer load and admission simulation scripts (`scripts/load-10-viewers.sh` and `scripts/load-10-viewers.ps1`) executing live assertions for Origin Shield cache hit offload (90% reduction in home edge upload bandwidth), dynamic master playlist rendition pruning under load, the 10-stream per-node hard cap (HTTP 429 Retry-After: 30), and offline playback fallback. Created production-ready multi-stage Dockerfiles for cloud control API (`apps/api/Dockerfile`) and Next.js frontend (`apps/web/Dockerfile`). Assembled unified demo orchestration profile in `deploy/compose.demo.yml` with Caddy reverse proxy (`deploy/Caddyfile`) managing ports 80/443. Added `make load-test` target in `Makefile`. Authored comprehensive GCP deployment runbook (`docs/runbooks/deploy.md`) with VPC firewall rules, ports table, VM sizing ($40 credits budget), and home edge client configuration. Authored semester viva presentation script and defense guide (`docs/runbooks/demo.md`) with step-by-step walkthroughs and anticipated Q&A. Authored troubleshooting and emergency clean-slate recovery guide (`docs/runbooks/troubleshooting.md`).
+- **Files Touched:**
+  - `scripts/{load-10-viewers.sh, load-10-viewers.ps1}`
+  - `apps/api/Dockerfile`
+  - `apps/web/Dockerfile`
+  - `deploy/{compose.demo.yml, Caddyfile}`
+  - `Makefile`
+  - `docs/runbooks/{README.md, deploy.md, demo.md, troubleshooting.md}`
+  - `docs/context/{STATE.md, SESSION_LOG.md}`
+- **Follow-ups:**
+  - Rehearse live demonstration flow with Anosh Chodankar ahead of final lab evaluation.
+
 ## 2026-10-25 - Milestone 9: NVENC Hardware Path, Probe, Fallback & Benchmark Tooling
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi & Agent)
 - **Milestone:** Milestone 9 (NVENC path with probe, fallback and benchmark script)
