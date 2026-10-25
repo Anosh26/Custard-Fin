@@ -210,6 +210,7 @@ Goal: the whole **cloud tier** runs on infrastructure we control and can explain
 - Test pyramid: unit (domain/use cases with fakes), contract tests for every adapter, integration (Postgres/Redis/S3-compatible via containers), e2e (play a video through each path), load (`10 same title`, `10 different titles`).
 - Every bug fix gets a regression test.
 - Git: short-lived branches, **Conventional Commits** (`feat(edge): …`), PRs small and linked to an FR-ID, CI must be green.
+- **NEVER auto-commit or auto-push:** The agent must NEVER run `git commit` or `git push` unless explicitly instructed by the human in that specific turn. Present diffs and let the human control commits and pushes.
 - Config via environment (`env.example` committed, real secrets never). Fail fast on invalid config.
 - Observability: structured logs with `node_id`/`request_id`, `/healthz` and `/readyz` on every service, basic metrics (active streams, cache hit ratio, encode queue length, heartbeat age).
 
