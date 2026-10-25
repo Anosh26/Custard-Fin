@@ -2,6 +2,7 @@ import "./globals.css";
 import Link from "next/link";
 import React, { Suspense } from "react";
 import SearchBar from "../components/SearchBar";
+import NavbarClientControls from "../components/NavbarClientControls";
 
 export const metadata = {
   title: "CustardFin - Distributed Community Media",
@@ -40,10 +41,12 @@ export default function RootLayout({
             <SearchBar />
           </Suspense>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <NavbarClientControls />
             <div
+              className="badge-lab"
               style={{
-                fontSize: "0.8rem",
+                fontSize: "0.78rem",
                 padding: "0.35rem 0.75rem",
                 borderRadius: "9999px",
                 background: "rgba(245, 158, 11, 0.1)",
@@ -56,6 +59,7 @@ export default function RootLayout({
             </div>
           </div>
         </nav>
+
 
         <main className="container">{children}</main>
 

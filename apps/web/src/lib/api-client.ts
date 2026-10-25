@@ -19,20 +19,70 @@ export interface PlaybackResponse {
   expires_at: string;
 }
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+export interface EdgeMediaItem {
+  id: string;
+  title: string;
+  path: string;
+  content_hash: string;
+  duration_s: number;
+  width: number;
+  height: number;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EdgeNodeStatus {
+  node_id: string;
+  status: string;
+  media_dir: string;
+  transcode_dir: string;
+  media_count: number;
+  active_streams: number;
+  max_streams: number;
+  nvenc_enabled: boolean;
+}
+
+export function getApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("custardfin_cloud_api_url");
+    if (saved && saved.trim()) return saved.trim();
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+}
+
+export function setApiBaseUrl(url: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("custardfin_cloud_api_url", url.trim());
+  }
+}
+
+export function getEdgeBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("custardfin_edge_api_url");
+    if (saved && saved.trim()) return saved.trim();
+  }
+  return "http://localhost:8090";
+}
+
+export function setEdgeBaseUrl(url: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("custardfin_edge_api_url", url.trim());
+  }
+}
 
 export async function fetchCatalog(
   q?: string,
   limit = 24,
   offset = 0
 ): Promise<CatalogResponse> {
+  const baseUrl = getApiBaseUrl();
   const params = new URLSearchParams();
   if (q && q.trim()) params.set("q", q.trim());
   params.set("limit", limit.toString());
   params.set("offset", offset.toString());
 
-  const res = await fetch(`${API_BASE_URL}/v1/catalog?${params.toString()}`, {
+  const res = await fetch(`${baseUrl}/v1/catalog?${params.toString()}`, {
     cache: "no-store",
   });
 
@@ -46,7 +96,8 @@ export async function fetchCatalog(
 export async function fetchPlayback(
   mediaId: string
 ): Promise<PlaybackResponse> {
-  const res = await fetch(`${API_BASE_URL}/v1/media/${mediaId}/playback`, {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/v1/media/${mediaId}/playback`, {
     cache: "no-store",
   });
 
@@ -63,8 +114,107 @@ export async function fetchPlayback(
   return res.json();
 }
 
+export async function fetchEdgeStatus(): Promise<EdgeNodeStatus> {
+  const edgeUrl = getEdgeBaseUrl();
+  const res = await fetch(`${edgeUrl}/api/status`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Edge node status failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function fetchEdgeMedia(): Promise<EdgeMediaItem[]> {
+  const edgeUrl = getEdgeBaseUrl();
+  const res = await fetch(`${edgeUrl}/api/media`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Edge node media failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function toggleMediaPublic(mediaId: string, isPublic: boolean): Promise<void> {
+  const edgeUrl = getEdgeBaseUrl();
+  const res = await fetch(`${edgeUrl}/api/media/${mediaId}/public`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ is_public: isPublic }),
+  });
+  if (!res.ok) throw new Error(`Failed updating public status: ${res.statusText}`);
+}
+
+export async function uploadEdgeMedia(
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<{ status: string; filename: string; message: string }> {
+  const edgeUrl = getEdgeBaseUrl();
+  const formData = new FormData();
+  formData.append("video", file);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${edgeUrl}/api/media/upload`);
+
+    if (xhr.upload && onProgress) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          resolve(data);
+        } catch {
+          resolve({ status: "ok", filename: file.name, message: "Uploaded successfully" });
+        }
+      } else {
+        try {
+          const errData = JSON.parse(xhr.responseText);
+          reject(new Error(errData.error || `Upload failed: ${xhr.statusText}`));
+        } catch {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error during file upload to edge node"));
+    xhr.send(formData);
+  });
+}
+
+export async function triggerEdgeScan(): Promise<{ total: number; added: number }> {
+  const edgeUrl = getEdgeBaseUrl();
+  const res = await fetch(`${edgeUrl}/api/media/scan`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`Library scan failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function generateSampleClip(): Promise<{ filename: string; message: string }> {
+  const edgeUrl = getEdgeBaseUrl();
+  const res = await fetch(`${edgeUrl}/api/media/generate-sample`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`Sample generation failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function pingEndpoint(url: string): Promise<{ ok: boolean; latencyMs: number }> {
+  const start = performance.now();
+  try {
+    const res = await fetch(`${url}/healthz`, { method: "GET", cache: "no-store" });
+    const latencyMs = Math.round(performance.now() - start);
+    return { ok: res.ok, latencyMs };
+  } catch {
+    const latencyMs = Math.round(performance.now() - start);
+    return { ok: false, latencyMs };
+  }
+}
+
 export function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
+

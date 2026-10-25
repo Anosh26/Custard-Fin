@@ -1,3 +1,29 @@
+## 2026-10-25 - Interactive Video Management, Dev Console Settings & Player Stats HUD
+- **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
+- **Milestone:** Post-Milestone 10 Web UI & Edge Ergonomics
+- **Summary:** Enhanced CustardFin with user-friendly video management and an interactive Dev Settings Console:
+  1. Edge Daemon Video Ingestion API: added `POST /api/media/upload` (multipart video upload with auto-transcode and manifest sync), `POST /api/media/scan` (on-demand directory re-scan), `POST /api/media/generate-sample` (1-click 15s synthetic FFmpeg test card generator), and `GET /api/status` (live node stream count and NVENC hardware probe).
+  2. Web UI "+ Add Video" Modal: created `AddVideoModal.tsx` featuring drag-and-drop file upload, folder scan trigger, and 1-click test clip synthesizer.
+  3. Edge Library Manager Modal: created `EdgeLibraryModal.tsx` showing all local edge videos with resolution, duration, storage path, and 1-click "Public / Private" community sharing switch.
+  4. Dev Settings Console: created `DevSettingsModal.tsx` with dynamic Cloud API and Edge Node endpoint switcher, live latency ping tester, Invariant verification checklist (Invariants 1, 2, 5, 6, 7, 9, 10), and live admission control concurrency simulation button.
+  5. Player "Stats for Nerds" HUD: added live diagnostic overlay in `Player.tsx` displaying stream protocol (HLS RFC 8216), 4s segment enforcement, active rendition/bitrate, Origin Shield cache status, and HMAC token validity.
+  6. Design system upgrade in `globals.css` with glassmorphic cards, glowing status badges, and responsive navigation controls.
+- **Files Touched:**
+  - `apps/edge/internal/adapters/httpapi/server.go`
+  - `apps/edge/cmd/edged/main.go`
+  - `apps/web/src/lib/api-client.ts`
+  - `apps/web/src/components/AddVideoModal.tsx`
+  - `apps/web/src/components/EdgeLibraryModal.tsx`
+  - `apps/web/src/components/DevSettingsModal.tsx`
+  - `apps/web/src/components/NavbarClientControls.tsx`
+  - `apps/web/src/components/Player.tsx`
+  - `apps/web/src/app/layout.tsx`
+  - `apps/web/src/app/page.tsx`
+  - `apps/web/src/app/globals.css`
+  - `docs/context/SESSION_LOG.md`
+- **Follow-ups:**
+  - Push commit to GitHub master.
+
 ## 2026-10-25 - Fix Edge Node 401 Heartbeat Rejection via Credential Pre-Seeding & Port Conflict Resolution
 - **Author/Agents:** CustardFin Pair Programming Agent (Anosh Chodankar & Agent)
 - **Milestone:** Post-Milestone 10 Demo Reliability & Node Heartbeat Fix

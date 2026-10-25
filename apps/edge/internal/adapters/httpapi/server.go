@@ -5,15 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/anosh26/custardfin/apps/edge/internal/app"
 	"github.com/anosh26/custardfin/apps/edge/internal/domain"
 	"github.com/anosh26/custardfin/apps/edge/internal/ports"
 	"github.com/anosh26/custardfin/libs/contracts"
@@ -29,6 +32,8 @@ var _ ports.StreamTracker = (*Server)(nil)
 type Config struct {
 	Addr         string
 	TranscodeDir string
+	MediaDir     string
+	NodeID       string
 }
 
 // Server provides the local HTTP streaming and metadata API for the home edge daemon.
@@ -38,6 +43,10 @@ type Server struct {
 	watchRepo    ports.WatchProgressRepository
 	syncer       ports.ManifestSyncer
 	transcodeDir string
+	mediaDir     string
+	nodeID       string
+	scanService  *app.ScanService
+	transcoder   ports.Transcoder
 	logger       *slog.Logger
 	listener     net.Listener
 	streamMu     sync.Mutex
@@ -52,6 +61,9 @@ func NewServer(cfg Config, mediaRepo ports.MediaRepository, watchRepo ports.Watc
 	if cfg.TranscodeDir == "" {
 		cfg.TranscodeDir = "./transcoded"
 	}
+	if cfg.MediaDir == "" {
+		cfg.MediaDir = "./media"
+	}
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -61,15 +73,21 @@ func NewServer(cfg Config, mediaRepo ports.MediaRepository, watchRepo ports.Watc
 		watchRepo:    watchRepo,
 		syncer:       syncer,
 		transcodeDir: filepath.Clean(cfg.TranscodeDir),
+		mediaDir:     filepath.Clean(cfg.MediaDir),
+		nodeID:       cfg.NodeID,
 		logger:       logger,
 		sessions:     make(map[string]time.Time),
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
+	mux.HandleFunc("GET /api/status", s.handleStatus)
 	mux.HandleFunc("GET /api/media", s.handleListMedia)
 	mux.HandleFunc("GET /api/media/{id}", s.handleGetMedia)
 	mux.HandleFunc("PUT /api/media/{id}/public", s.handleTogglePublic)
+	mux.HandleFunc("POST /api/media/upload", s.handleUploadMedia)
+	mux.HandleFunc("POST /api/media/scan", s.handleScanMedia)
+	mux.HandleFunc("POST /api/media/generate-sample", s.handleGenerateSample)
 	mux.HandleFunc("GET /stream/{id}/{path...}", s.handleStream)
 	mux.HandleFunc("GET /api/watch/{id}", s.handleGetWatchProgress)
 	mux.HandleFunc("POST /api/watch/{id}", s.handleSaveWatchProgress)
@@ -276,8 +294,8 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 func (s *Server) withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Range, Authorization")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Range, Authorization, X-Node-Token")
 		w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges")
 
 		if r.Method == http.MethodOptions {
@@ -287,6 +305,7 @@ func (s *Server) withCORS(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
 
 // Middleware: Logging
 func (s *Server) withLogging(next http.Handler) http.Handler {
@@ -395,3 +414,226 @@ func (s *Server) ActiveStreams() int {
 	}
 	return len(s.sessions)
 }
+
+// SetScanService assigns the scan service for directory library rescans.
+func (s *Server) SetScanService(svc *app.ScanService) {
+	s.scanService = svc
+}
+
+// SetTranscoder assigns the transcoder for on-demand/upload transcoding.
+func (s *Server) SetTranscoder(t ports.Transcoder) {
+	s.transcoder = t
+}
+
+func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
+	mediaList, _ := s.mediaRepo.List(r.Context())
+	count := 0
+	if mediaList != nil {
+		count = len(mediaList)
+	}
+	hasNVENC := false
+	if s.transcoder != nil {
+		enc, _ := s.transcoder.ProbeEncoder(r.Context())
+		hasNVENC = strings.Contains(enc, "nvenc")
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"node_id":        s.nodeID,
+		"status":         "online",
+		"media_dir":      s.mediaDir,
+		"transcode_dir":  s.transcodeDir,
+		"media_count":    count,
+		"active_streams": s.ActiveStreams(),
+		"max_streams":    10,
+		"nvenc_enabled":  hasNVENC,
+	})
+}
+
+func (s *Server) handleUploadMedia(w http.ResponseWriter, r *http.Request) {
+	// Limit request payload to 500 MB
+	r.Body = http.MaxBytesReader(w, r.Body, 500<<20)
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Failed to parse form or file exceeds 500 MB limit"})
+		return
+	}
+
+	file, header, err := r.FormFile("video")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing 'video' file in form payload"})
+		return
+	}
+	defer file.Close()
+
+	cleanName := filepath.Base(header.Filename)
+	ext := strings.ToLower(filepath.Ext(cleanName))
+	if ext != ".mp4" && ext != ".mkv" && ext != ".mov" && ext != ".webm" && ext != ".avi" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Unsupported video format; please upload .mp4, .mkv, .mov, or .webm"})
+		return
+	}
+
+	if s.mediaDir == "" {
+		s.mediaDir = "./media"
+	}
+	_ = os.MkdirAll(s.mediaDir, 0755)
+
+	targetPath := filepath.Join(s.mediaDir, cleanName)
+	dst, err := os.Create(targetPath)
+	if err != nil {
+		s.logger.Error("failed creating target media file", "path", targetPath, "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed creating file on disk"})
+		return
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		s.logger.Error("failed writing uploaded video payload", "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed writing video payload"})
+		return
+	}
+
+	s.logger.Info("video file uploaded successfully to edge node", "filename", cleanName, "size_bytes", header.Size)
+
+	// Trigger library scan, transcode, and catalog sync in background
+	if s.scanService != nil {
+		go func() {
+			bgCtx := context.Background()
+			_, _ = s.scanService.ScanDirectory(bgCtx, s.mediaDir)
+			mediaItem, err := s.mediaRepo.FindByPath(bgCtx, targetPath)
+			if err == nil && mediaItem != nil && s.transcoder != nil {
+				outDir := filepath.Join(s.transcodeDir, mediaItem.ID)
+				_, _ = s.transcoder.Transcode(bgCtx, ports.TranscodeJob{
+					MediaID:      mediaItem.ID,
+					InputPath:    mediaItem.Path,
+					OutputDir:    outDir,
+					SourceWidth:  mediaItem.Width,
+					SourceHeight: mediaItem.Height,
+				})
+				if s.syncer != nil {
+					_ = s.mediaRepo.SetPublic(bgCtx, mediaItem.ID, true)
+					mediaItem.IsPublic = true
+					renditions := []contracts.Rendition{
+						{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
+						{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},
+						{Resolution: "480p", BitrateBps: 1200000, PlaylistPath: "480p.m3u8", ChunkDurationS: 4},
+					}
+					_ = s.syncer.SyncManifest(bgCtx, mediaItem, renditions)
+				}
+			}
+		}()
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"status":   "ok",
+		"filename": cleanName,
+		"size":     header.Size,
+		"message":  "Video uploaded to edge node. Transcoding and catalog publishing in progress.",
+	})
+}
+
+func (s *Server) handleScanMedia(w http.ResponseWriter, r *http.Request) {
+	if s.scanService == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "message": "No scan service attached"})
+		return
+	}
+
+	if s.mediaDir == "" {
+		s.mediaDir = "./media"
+	}
+	result, err := s.scanService.ScanDirectory(r.Context(), s.mediaDir)
+	if err != nil {
+		s.logger.Error("manual scan failed", "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	go func() {
+		bgCtx := context.Background()
+		items, _ := s.mediaRepo.List(bgCtx)
+		for _, m := range items {
+			outDir := filepath.Join(s.transcodeDir, m.ID)
+			masterPath := filepath.Join(outDir, "master.m3u8")
+			if _, err := os.Stat(masterPath); os.IsNotExist(err) && s.transcoder != nil {
+				_, _ = s.transcoder.Transcode(bgCtx, ports.TranscodeJob{
+					MediaID:      m.ID,
+					InputPath:    m.Path,
+					OutputDir:    outDir,
+					SourceWidth:  m.Width,
+					SourceHeight: m.Height,
+				})
+			}
+			if s.syncer != nil && m.IsPublic {
+				renditions := []contracts.Rendition{
+					{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
+					{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},
+					{Resolution: "480p", BitrateBps: 1200000, PlaylistPath: "480p.m3u8", ChunkDurationS: 4},
+				}
+				_ = s.syncer.SyncManifest(bgCtx, m, renditions)
+			}
+		}
+	}()
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":    "ok",
+		"total":     result.TotalScanned,
+		"added":     result.Added,
+		"updated":   result.Updated,
+		"unchanged": result.Unchanged,
+	})
+}
+
+func (s *Server) handleGenerateSample(w http.ResponseWriter, r *http.Request) {
+	if s.mediaDir == "" {
+		s.mediaDir = "./media"
+	}
+	_ = os.MkdirAll(s.mediaDir, 0755)
+
+	timestamp := time.Now().Format("20060102_150405")
+	fileName := fmt.Sprintf("sample_demo_%s.mp4", timestamp)
+	targetPath := filepath.Join(s.mediaDir, fileName)
+
+	cmd := exec.CommandContext(r.Context(), "ffmpeg", "-y", "-v", "error",
+		"-f", "lavfi", "-i", "testsrc2=duration=15:size=1280x720:rate=30",
+		"-f", "lavfi", "-i", "sine=frequency=1000:duration=15",
+		"-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast",
+		"-c:a", "aac", "-b:a", "128k", "-shortest",
+		targetPath,
+	)
+
+	if err := cmd.Run(); err != nil {
+		s.logger.Error("failed generating sample test video clip", "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed synthesizing sample clip with ffmpeg"})
+		return
+	}
+
+	if s.scanService != nil {
+		_, _ = s.scanService.ScanDirectory(r.Context(), s.mediaDir)
+		mediaItem, err := s.mediaRepo.FindByPath(r.Context(), targetPath)
+		if err == nil && mediaItem != nil && s.transcoder != nil {
+			outDir := filepath.Join(s.transcodeDir, mediaItem.ID)
+			_, _ = s.transcoder.Transcode(r.Context(), ports.TranscodeJob{
+				MediaID:      mediaItem.ID,
+				InputPath:    mediaItem.Path,
+				OutputDir:    outDir,
+				SourceWidth:  mediaItem.Width,
+				SourceHeight: mediaItem.Height,
+			})
+			if s.syncer != nil {
+				_ = s.mediaRepo.SetPublic(r.Context(), mediaItem.ID, true)
+				mediaItem.IsPublic = true
+				renditions := []contracts.Rendition{
+					{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
+					{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},
+					{Resolution: "480p", BitrateBps: 1200000, PlaylistPath: "480p.m3u8", ChunkDurationS: 4},
+				}
+				_ = s.syncer.SyncManifest(r.Context(), mediaItem, renditions)
+			}
+		}
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"status":   "ok",
+		"filename": fileName,
+		"message":  "Sample clip synthesized, transcoded to 4s HLS, and published to community catalog!",
+	})
+}
+

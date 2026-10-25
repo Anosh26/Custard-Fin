@@ -84,12 +84,17 @@ func main() {
 	httpServer := httpapi.NewServer(httpapi.Config{
 		Addr:         listenAddr,
 		TranscodeDir: transcodeDir,
+		MediaDir:     mediaDir,
+		NodeID:       nodeID,
 	}, mediaRepo, watchRepo, syncer, logger)
+	httpServer.SetScanService(scanService)
+	httpServer.SetTranscoder(transcoder)
 
 	if err := httpServer.Start(); err != nil {
 		slog.Error("failed starting edge local http server", "err", err)
 		os.Exit(1)
 	}
+
 
 	// 5. Run initial media library scan and auto-transcoding in background
 	if _, err := os.Stat(mediaDir); err == nil {
