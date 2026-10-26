@@ -422,3 +422,47 @@ export function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+export interface CloudNodeStatus {
+  node_id: string;
+  status: string;
+  is_online: boolean;
+  active_streams: number;
+  max_streams: number;
+  nvenc_enabled: boolean;
+  version: string;
+  last_heartbeat: string;
+  owner_user_id?: string;
+  owner_username?: string;
+}
+
+export async function fetchNodeStatus(
+  nodeId: string = "898ea0c7-f7a3-48e8-ba59-b378a219f9ee"
+): Promise<CloudNodeStatus> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/v1/nodes/${nodeId}/status`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch node status");
+  return res.json();
+}
+
+export async function claimNode(
+  nodeId: string = "898ea0c7-f7a3-48e8-ba59-b378a219f9ee"
+): Promise<{ status: string; message: string; owner_username: string }> {
+  const baseUrl = getApiBaseUrl();
+  const token = getAuthToken();
+  const res = await fetch(`${baseUrl}/v1/nodes/${nodeId}/claim`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to link edge node to your account");
+  }
+  return res.json();
+}
+
+

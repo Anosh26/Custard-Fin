@@ -556,14 +556,28 @@ func (s *Server) handleUploadMedia(w http.ResponseWriter, r *http.Request) {
 			mediaItem, err := s.mediaRepo.FindByPath(bgCtx, targetPath)
 			if err == nil && mediaItem != nil && s.transcoder != nil {
 				outDir := filepath.Join(s.transcodeDir, mediaItem.ID)
-				_, _ = s.transcoder.Transcode(bgCtx, ports.TranscodeJob{
-					MediaID:      mediaItem.ID,
-					InputPath:    mediaItem.Path,
-					OutputDir:    outDir,
-					SourceWidth:  mediaItem.Width,
-					SourceHeight: mediaItem.Height,
-				})
-				if s.syncer != nil {
+				_ = os.MkdirAll(outDir, 0755)
+
+				// Generate thumbnail immediately
+				thumbPath := filepath.Join(outDir, "thumb.jpg")
+				if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
+					_ = s.transcoder.GenerateThumbnail(bgCtx, mediaItem.Path, thumbPath)
+				}
+
+				// Transcode to 4s HLS
+				masterPath := filepath.Join(outDir, "master.m3u8")
+				if _, err := os.Stat(masterPath); os.IsNotExist(err) {
+					_, _ = s.transcoder.Transcode(bgCtx, ports.TranscodeJob{
+						MediaID:      mediaItem.ID,
+						InputPath:    mediaItem.Path,
+						OutputDir:    outDir,
+						SourceWidth:  mediaItem.Width,
+						SourceHeight: mediaItem.Height,
+					})
+				}
+
+				// Only sync manifest to catalog once master playlist exists on disk
+				if _, err := os.Stat(masterPath); err == nil && s.syncer != nil {
 					_ = s.mediaRepo.SetPublic(bgCtx, mediaItem.ID, true)
 					mediaItem.IsPublic = true
 					renditions := []contracts.Rendition{
@@ -606,7 +620,14 @@ func (s *Server) handleScanMedia(w http.ResponseWriter, r *http.Request) {
 		items, _ := s.mediaRepo.List(bgCtx)
 		for _, m := range items {
 			outDir := filepath.Join(s.transcodeDir, m.ID)
+			_ = os.MkdirAll(outDir, 0755)
 			masterPath := filepath.Join(outDir, "master.m3u8")
+			thumbPath := filepath.Join(outDir, "thumb.jpg")
+
+			if _, err := os.Stat(thumbPath); os.IsNotExist(err) && s.transcoder != nil {
+				_ = s.transcoder.GenerateThumbnail(bgCtx, m.Path, thumbPath)
+			}
+
 			if _, err := os.Stat(masterPath); os.IsNotExist(err) && s.transcoder != nil {
 				_, _ = s.transcoder.Transcode(bgCtx, ports.TranscodeJob{
 					MediaID:      m.ID,
@@ -617,12 +638,14 @@ func (s *Server) handleScanMedia(w http.ResponseWriter, r *http.Request) {
 				})
 			}
 			if s.syncer != nil && m.IsPublic {
-				renditions := []contracts.Rendition{
-					{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
-					{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},
-					{Resolution: "480p", BitrateBps: 1200000, PlaylistPath: "480p.m3u8", ChunkDurationS: 4},
+				if _, err := os.Stat(masterPath); err == nil {
+					renditions := []contracts.Rendition{
+						{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
+						{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},
+						{Resolution: "480p", BitrateBps: 1200000, PlaylistPath: "480p.m3u8", ChunkDurationS: 4},
+					}
+					_ = s.syncer.SyncManifest(bgCtx, m, renditions)
 				}
-				_ = s.syncer.SyncManifest(bgCtx, m, renditions)
 			}
 		}
 	}()

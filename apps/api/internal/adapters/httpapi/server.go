@@ -139,6 +139,7 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 
 	// Nodes (Requires JWT Bearer Auth)
 	mux.Handle("POST /v1/nodes", RequireUserAuth(s.tokenService)(http.HandlerFunc(s.handleRegisterNode)))
+	mux.Handle("POST /v1/nodes/{id}/claim", RequireUserAuth(s.tokenService)(http.HandlerFunc(s.handleClaimNode)))
 
 	// Node Heartbeat & Manifest Sync (Requires X-Node-Token Auth)
 	nodeAuth := RequireNodeAuth(s.nodeRepo)
@@ -394,6 +395,41 @@ func (s *Server) handleRegisterNode(w http.ResponseWriter, r *http.Request) {
 		NodeID:       node.ID,
 		NodeToken:    rawToken, // Sent only once during registration
 		FrpAuthToken: frpToken,
+	})
+}
+
+func (s *Server) handleClaimNode(w http.ResponseWriter, r *http.Request) {
+	claims, ok := GetUserClaims(r.Context())
+	if !ok || claims == nil {
+		writeError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User authorization required")
+		return
+	}
+	nodeID := r.PathValue("id")
+	if nodeID == "" || nodeID == "demo" || nodeID == "default" {
+		nodeID = "898ea0c7-f7a3-48e8-ba59-b378a219f9ee"
+	}
+	node, err := s.nodeRepo.FindByID(r.Context(), nodeID)
+	if err != nil || node == nil {
+		writeError(w, http.StatusNotFound, "NOT_FOUND", "Node not found")
+		return
+	}
+
+	if err := s.nodeRepo.UpdateOwner(r.Context(), nodeID, claims.UserID); err != nil {
+		s.logger.Error("failed to claim node", "node_id", nodeID, "user_id", claims.UserID, "err", err)
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to claim node")
+		return
+	}
+
+	s.logger.Info("node claimed by user", "node_id", nodeID, "user_id", claims.UserID, "username", claims.Username)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"status":         "ok",
+		"node_id":        nodeID,
+		"owner_user_id":  claims.UserID,
+		"owner_username": claims.Username,
+		"message":        fmt.Sprintf("Node successfully linked to @%s", claims.Username),
 	})
 }
 
@@ -664,6 +700,21 @@ func (s *Server) handleGetNodeStatus(w http.ResponseWriter, r *http.Request) {
 		lastHeartbeat = hb.SentAt
 	}
 
+	var ownerUserID string
+	var ownerUsername string
+	if s.nodeRepo != nil {
+		node, _ := s.nodeRepo.FindByID(r.Context(), nodeID)
+		if node != nil {
+			ownerUserID = node.UserID
+			if s.userRepo != nil && node.UserID != "" {
+				user, _ := s.userRepo.FindByID(r.Context(), node.UserID)
+				if user != nil {
+					ownerUsername = user.Username
+				}
+			}
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -675,6 +726,8 @@ func (s *Server) handleGetNodeStatus(w http.ResponseWriter, r *http.Request) {
 		"nvenc_enabled":  nvenc,
 		"version":        version,
 		"last_heartbeat": lastHeartbeat,
+		"owner_user_id":  ownerUserID,
+		"owner_username": ownerUsername,
 	})
 }
 
@@ -913,7 +966,7 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 	// 4. Remote viewer with active node -> Origin Shield signed stream URL
 	// Warm initial video chunk ahead of time to eliminate TTFB buffering (Milestone 8, FR-10)
 	if s.prefetcher != nil {
-		s.prefetcher.TriggerPrefetch(r.Context(), item.NodeID, item.MediaID, "1080p/segment_000.ts")
+		s.prefetcher.TriggerPrefetch(r.Context(), item.NodeID, item.MediaID, "1080p/segment_0000.ts")
 	}
 
 	baseURL := s.resolveBaseURL(r)

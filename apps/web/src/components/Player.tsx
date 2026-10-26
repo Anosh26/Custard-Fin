@@ -70,6 +70,7 @@ export default function Player({ streamUrl, title, poster }: PlayerProps) {
 
       hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
         setIsLoading(false);
+        setError(null);
         const parsedLevels: LevelOption[] = data.levels.map((lvl, idx) => ({
           id: idx,
           label: lvl.height ? `${lvl.height}p` : `Level ${idx}`,
@@ -86,8 +87,16 @@ export default function Player({ streamUrl, title, poster }: PlayerProps) {
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              setError("Network error encountered while fetching stream chunks. Retrying...");
-              hls.startLoad();
+              setError("Stream warming up on home edge node. Retrying...");
+              if (data.details === "manifestLoadError" || data.details === "manifestLoadTimeOut") {
+                setTimeout(() => {
+                  if (hlsRef.current) {
+                    hlsRef.current.loadSource(streamUrl);
+                  }
+                }, 2500);
+              } else {
+                hls.startLoad();
+              }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
               setError("Media error decoding video segments. Recovering...");
@@ -95,7 +104,6 @@ export default function Player({ streamUrl, title, poster }: PlayerProps) {
               break;
             default:
               setError(`Fatal stream error: ${data.details || "Cannot load HLS stream"}`);
-              hls.destroy();
               break;
           }
         }
@@ -105,6 +113,7 @@ export default function Player({ streamUrl, title, poster }: PlayerProps) {
       video.src = streamUrl;
       video.addEventListener("loadedmetadata", () => {
         setIsLoading(false);
+        setError(null);
       });
       video.addEventListener("error", () => {
         setError("Error loading media via native HLS player.");
@@ -131,11 +140,52 @@ export default function Player({ streamUrl, title, poster }: PlayerProps) {
   const handleRetry = () => {
     setError(null);
     setIsLoading(true);
+    if (!videoRef.current) return;
+
     if (hlsRef.current) {
-      hlsRef.current.loadSource(streamUrl);
-      if (videoRef.current) {
-        hlsRef.current.attachMedia(videoRef.current);
-      }
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        backBufferLength: 90,
+      });
+      hlsRef.current = hls;
+      hls.loadSource(streamUrl);
+      hls.attachMedia(videoRef.current);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+        setIsLoading(false);
+        setError(null);
+        const parsedLevels: LevelOption[] = data.levels.map((lvl, idx) => ({
+          id: idx,
+          label: lvl.height ? `${lvl.height}p` : `Level ${idx}`,
+          bitrate: lvl.bitrate,
+        }));
+        setLevels(parsedLevels);
+        videoRef.current?.play().catch(() => {});
+      });
+
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            setError("Stream warming up on home edge node. Retrying...");
+            setTimeout(() => {
+              if (hlsRef.current) hlsRef.current.loadSource(streamUrl);
+            }, 2500);
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            setError("Media error decoding video segments. Recovering...");
+            hls.recoverMediaError();
+          } else {
+            setError(`Fatal stream error: ${data.details || "Cannot load HLS stream"}`);
+          }
+        }
+      });
+    } else {
+      videoRef.current.src = streamUrl;
     }
   };
 

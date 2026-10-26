@@ -867,6 +867,43 @@ func TestServer_Node_Heartbeat(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("expected 500 for storage error, got %d", w.Code)
 	}
+
+	// Subtest 10: Claim node with another authenticated user
+	heartbeatStore.SimulateErr = nil
+	regPayload2 := `{"username":"anish_claimer","password":"secure_password_456"}`
+	req = httptest.NewRequest(http.MethodPost, "/v1/auth/register", bytes.NewBufferString(regPayload2))
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	var authRes2 struct {
+		AccessToken string `json:"access_token"`
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &authRes2)
+
+	claimURL := fmt.Sprintf("/v1/nodes/%s/claim", nodeRes.NodeID)
+	req = httptest.NewRequest(http.MethodPost, claimURL, nil)
+	req.Header.Set("Authorization", "Bearer "+authRes2.AccessToken)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK claiming node, got %d (body: %s)", w.Code, w.Body.String())
+	}
+
+	// Verify node status reflects new owner
+	req = httptest.NewRequest(http.MethodGet, statusURL, nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for node status, got %d", w.Code)
+	}
+	var claimedNodeStatus struct {
+		OwnerUsername string `json:"owner_username"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &claimedNodeStatus); err != nil {
+		t.Fatalf("failed to decode node status response: %v", err)
+	}
+	if claimedNodeStatus.OwnerUsername != "anish_claimer" {
+		t.Errorf("expected OwnerUsername = anish_claimer, got %q", claimedNodeStatus.OwnerUsername)
+	}
 }
 
 func TestServer_AdaptiveRenditionThrottling(t *testing.T) {
@@ -1035,7 +1072,7 @@ func TestServer_FirstChunkPrefetchOnPlayback(t *testing.T) {
 	if mockPf.calledCount != 1 {
 		t.Errorf("expected prefetcher to be triggered once, called %d times", mockPf.calledCount)
 	}
-	if mockPf.triggeredNode != nodeID || mockPf.triggeredMedia != mediaID || mockPf.triggeredPath != "1080p/segment_000.ts" {
+	if mockPf.triggeredNode != nodeID || mockPf.triggeredMedia != mediaID || mockPf.triggeredPath != "1080p/segment_0000.ts" {
 		t.Errorf("unexpected prefetch params: node=%s, media=%s, path=%s", mockPf.triggeredNode, mockPf.triggeredMedia, mockPf.triggeredPath)
 	}
 }

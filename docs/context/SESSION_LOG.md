@@ -1,3 +1,24 @@
+## 2026-10-26 - Edge Node Claiming, Transcode Readiness & Playback Auto-Recovery
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Summary:** Resolved 3 interconnected issues reported during live multi-user testing:
+  1. Node Ownership Binding: The demo edge node (`898ea0c7-f7a3-48e8-ba59-b378a219f9ee`) was pre-seeded under `@demo`. Added `POST /v1/nodes/{id}/claim` to `apps/api` allowing an authenticated user (e.g. `@anish`) to claim the edge node. Updated `nodes.user_id = anish.ID`, dynamically re-attributing all videos to `@anish` in the Community Catalog.
+  2. Edge Library Modal Attribution UI: Added node ownership check in `EdgeLibraryModal.tsx`. If the node belongs to another user (or demo), a prominent "Link to @anish" button claims the node in 1 click and updates the catalog feed immediately.
+  3. Transcoding Race Condition Fix: Large videos (e.g., Cyberpunk, 29 mins) were syncing manifests to Cloud PostgreSQL *before* FFmpeg finished generating `master.m3u8` and HLS renditions, causing 404 network errors when viewers attempted to stream immediately. Updated `edged/main.go` and `server.go` to generate crisp poster thumbnails immediately and ONLY sync media manifests once `master.m3u8` is confirmed to exist on disk.
+  4. Player Auto-Recovery: Updated `Player.tsx` to automatically re-poll manifests during edge warm-up (`manifestLoadError`) with a user-friendly status message ("Stream warming up on home edge node. Retrying...") and recreated HLS instances cleanly on manual retry.
+- **Files Touched:**
+  - `apps/api/internal/ports/node_repository.go`
+  - `apps/api/internal/adapters/memory/node_repo.go`
+  - `apps/api/internal/adapters/postgres/node_repo.go`
+  - `apps/api/internal/adapters/httpapi/server.go`
+  - `apps/api/internal/adapters/httpapi/server_test.go`
+  - `apps/edge/cmd/edged/main.go`
+  - `apps/edge/internal/adapters/httpapi/server.go`
+  - `apps/web/src/lib/api-client.ts`
+  - `apps/web/src/components/EdgeLibraryModal.tsx`
+  - `apps/web/src/components/Player.tsx`
+  - `docs/context/STATE.md`
+  - `docs/context/SESSION_LOG.md`
+
 ## 2026-10-26 - User Accounts & Private Video Ownership System
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Post-Milestone 10 User Identity & Private Video Access Control

@@ -83,3 +83,20 @@ func (r *InMemoryNodeRepository) ListByUserID(ctx context.Context, userID string
 	}
 	return nodes, nil
 }
+
+func (r *InMemoryNodeRepository) UpdateOwner(ctx context.Context, nodeID, userID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.SimulateErr != nil {
+		return r.SimulateErr
+	}
+
+	node, exists := r.byID[nodeID]
+	if !exists {
+		return domain.ErrNotFound
+	}
+	node.UserID = userID
+	return nil
+}
+

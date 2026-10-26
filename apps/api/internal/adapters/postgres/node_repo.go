@@ -104,3 +104,22 @@ func (r *NodeRepository) ListByUserID(ctx context.Context, userID string) ([]*do
 	}
 	return nodes, rows.Err()
 }
+
+func (r *NodeRepository) UpdateOwner(ctx context.Context, nodeID, userID string) error {
+	nodeID = strings.TrimSpace(nodeID)
+	userID = strings.TrimSpace(userID)
+	query := `
+	UPDATE nodes
+	SET user_id = $1, updated_at = NOW()
+	WHERE id = $2
+	`
+	cmdTag, err := r.pool.Exec(ctx, query, userID, nodeID)
+	if err != nil {
+		return fmt.Errorf("failed to update node owner: %w", err)
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}
+

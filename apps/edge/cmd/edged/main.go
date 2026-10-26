@@ -122,6 +122,18 @@ func main() {
 					}
 
 					outDir := filepath.Join(transcodeDir, m.ID)
+					_ = os.MkdirAll(outDir, 0755)
+
+					// Ensure crisp 640x360 poster thumbnail (thumb.jpg) exists for catalog cards
+					thumbPath := filepath.Join(outDir, "thumb.jpg")
+					if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
+						if err := transcoder.GenerateThumbnail(ctx, m.Path, thumbPath); err != nil {
+							slog.Warn("generating thumbnail failed", "title", m.Title, "err", err)
+						} else {
+							slog.Info("thumbnail generated for media", "title", m.Title, "id", m.ID)
+						}
+					}
+
 					masterPath := filepath.Join(outDir, "master.m3u8")
 					if _, err := os.Stat(masterPath); os.IsNotExist(err) {
 						slog.Info("transcoding media fixture to 4s HLS chunks", "title", m.Title, "id", m.ID)
@@ -134,17 +146,14 @@ func main() {
 						})
 						if err != nil {
 							slog.Error("transcoding fixture failed", "title", m.Title, "err", err)
+							continue
 						}
 					}
 
-					// Ensure crisp 640x360 poster thumbnail (thumb.jpg) exists for catalog cards
-					thumbPath := filepath.Join(outDir, "thumb.jpg")
-					if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
-						if err := transcoder.GenerateThumbnail(ctx, m.Path, thumbPath); err != nil {
-							slog.Warn("generating thumbnail failed", "title", m.Title, "err", err)
-						} else {
-							slog.Info("thumbnail generated for media", "title", m.Title, "id", m.ID)
-						}
+					// Verify master.m3u8 is present before syncing manifest to cloud catalog
+					if _, statErr := os.Stat(masterPath); statErr != nil {
+						slog.Warn("master.m3u8 not yet available, skipping catalog sync", "title", m.Title, "id", m.ID)
+						continue
 					}
 
 					// Sync to cloud catalog (conveys current public/private status so owner can view private items)
