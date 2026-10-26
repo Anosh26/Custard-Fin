@@ -225,6 +225,7 @@ type authRequest struct {
 
 type authResponse struct {
 	AccessToken string `json:"access_token"`
+	Token       string `json:"token"`
 	TokenType   string `json:"token_type"`
 	ExpiresIn   int    `json:"expires_in"`
 	UserID      string `json:"user_id"`
@@ -274,6 +275,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(authResponse{
 		AccessToken: token,
+		Token:       token,
 		TokenType:   "Bearer",
 		ExpiresIn:   3600,
 		UserID:      user.ID,
@@ -309,6 +311,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(authResponse{
 		AccessToken: token,
+		Token:       token,
 		TokenType:   "Bearer",
 		ExpiresIn:   3600,
 		UserID:      user.ID,

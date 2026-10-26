@@ -58,14 +58,16 @@ export interface EdgeNodeStatus {
 
 export function getAuthToken(): string | null {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("custardfin_jwt_token");
+    const t = localStorage.getItem("custardfin_jwt_token");
+    if (!t || t === "undefined" || t === "null") return null;
+    return t;
   }
   return null;
 }
 
 export function setAuthToken(token: string | null) {
   if (typeof window !== "undefined") {
-    if (token) {
+    if (token && token !== "undefined" && token !== "null") {
       localStorage.setItem("custardfin_jwt_token", token);
     } else {
       localStorage.removeItem("custardfin_jwt_token");
@@ -112,12 +114,13 @@ export async function loginUser(
     throw new Error(err.message || "Invalid username or password");
   }
   const data = await res.json();
-  setAuthToken(data.token);
+  const token = data.access_token || data.token;
+  setAuthToken(token);
   setCurrentUser({ user_id: data.user_id, username: data.username });
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("custardfin_auth_change"));
   }
-  return data;
+  return { token, user_id: data.user_id, username: data.username };
 }
 
 export async function registerUser(
@@ -135,12 +138,13 @@ export async function registerUser(
     throw new Error(err.message || "Registration failed");
   }
   const data = await res.json();
-  setAuthToken(data.token);
+  const token = data.access_token || data.token;
+  setAuthToken(token);
   setCurrentUser({ user_id: data.user_id, username: data.username });
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("custardfin_auth_change"));
   }
-  return data;
+  return { token, user_id: data.user_id, username: data.username };
 }
 
 export function logoutUser() {
@@ -451,11 +455,14 @@ export async function claimNode(
 ): Promise<{ status: string; message: string; owner_username: string }> {
   const baseUrl = getApiBaseUrl();
   const token = getAuthToken();
+  if (!token) {
+    throw new Error("Session expired or token missing. Please sign in again.");
+  }
   const res = await fetch(`${baseUrl}/v1/nodes/${nodeId}/claim`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
     },
   });
   if (!res.ok) {

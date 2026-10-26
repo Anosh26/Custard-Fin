@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import ModalPortal from "./ModalPortal";
+import AuthModal from "./AuthModal";
 import {
   fetchEdgeMedia,
   toggleMediaPublic,
@@ -9,6 +10,7 @@ import {
   EdgeMediaItem,
   formatDuration,
   getCurrentUser,
+  getAuthToken,
   fetchNodeStatus,
   claimNode,
   CloudNodeStatus,
@@ -35,6 +37,7 @@ export default function EdgeLibraryModal({
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   // Lock body scroll and register Escape key listener while modal is open
   useEffect(() => {
@@ -87,7 +90,11 @@ export default function EdgeLibraryModal({
   }, [isOpen]);
 
   const handleClaim = async () => {
-    if (!currentUser) return;
+    const token = getAuthToken();
+    if (!token || !currentUser) {
+      setIsAuthOpen(true);
+      return;
+    }
     setClaiming(true);
     setError(null);
     try {
@@ -102,7 +109,19 @@ export default function EdgeLibraryModal({
       }
       if (onChanged) onChanged();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to claim edge node");
+      const msg = err instanceof Error ? err.message : "Failed to claim edge node";
+      if (
+        msg.includes("Authorization") ||
+        msg.includes("token") ||
+        msg.includes("Session") ||
+        msg.includes("expired") ||
+        msg.includes("UNAUTHORIZED")
+      ) {
+        setError("Session expired or authentication required. Please sign in.");
+        setIsAuthOpen(true);
+      } else {
+        setError(msg);
+      }
     } finally {
       setClaiming(false);
     }
@@ -391,6 +410,17 @@ export default function EdgeLibraryModal({
         </div>
       </div>
     </div>
+
+    <AuthModal
+      isOpen={isAuthOpen}
+      onClose={() => setIsAuthOpen(false)}
+      onSuccess={() => {
+        setIsAuthOpen(false);
+        const user = getCurrentUser();
+        setCurrentUser(user);
+        handleClaim();
+      }}
+    />
     </ModalPortal>
   );
 }
