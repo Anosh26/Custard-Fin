@@ -13,4 +13,5 @@ type NodeRepository interface {
 	FindByTokenHash(ctx context.Context, tokenHash string) (*domain.Node, error)
 	ListByUserID(ctx context.Context, userID string) ([]*domain.Node, error)
 	UpdateOwner(ctx context.Context, nodeID, userID string) error
+	UpdateName(ctx context.Context, nodeID, name string) error
 }

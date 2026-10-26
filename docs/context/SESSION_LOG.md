@@ -1,3 +1,19 @@
+## 2026-10-26 - 1-Click "Edit Node Name" in My Library Modal
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Summary:** Added 1-click inline editing of the Edge Node Name in the My Library modal, backed by persistent Cloud API routes and database storage:
+  1. Go Cloud API (`apps/api`): Added `UpdateName(ctx, nodeID, name)` to `NodeRepository` (`postgres` and `memory`), exposing `PUT /v1/nodes/{id}/name` and `PATCH /v1/nodes/{id}` guarded by JWT authentication and owner authorization (`node.UserID == claims.UserID`). Validates name non-empty and max 64 characters. Added `node_name` to `/v1/nodes/{id}` status response.
+  2. Web Client (`apps/web`): Added `updateNodeName` in `api-client.ts`. Updated `EdgeLibraryModal.tsx` to provide an interactive "✏️ Edit Node Name" button and inline form with instant Save/Cancel actions and automatic catalog refresh via `onChanged`.
+  3. Testing: Added comprehensive unit test `TestServer_UpdateNodeName` in `server_test.go` verifying 401 unauthenticated, 403 non-owner, 404 not found, 400 empty name/too long name, 200 OK update, and persistence.
+- **Files Touched:**
+  - `apps/api/internal/ports/node_repository.go`
+  - `apps/api/internal/adapters/postgres/node_repo.go`
+  - `apps/api/internal/adapters/memory/node_repo.go`
+  - `apps/api/internal/adapters/httpapi/server.go`
+  - `apps/api/internal/adapters/httpapi/server_test.go`
+  - `apps/web/src/lib/api-client.ts`
+  - `apps/web/src/components/EdgeLibraryModal.tsx`
+  - `docs/context/SESSION_LOG.md`
+
 ## 2026-10-26 - Complete 8-Slide Presentation Suite (PPTX, XML, Web Deck)
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Milestone 10 Presentation Suite & Viva Defense

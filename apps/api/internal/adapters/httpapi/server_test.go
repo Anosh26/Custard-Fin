@@ -1364,4 +1364,124 @@ func TestServer_PrivateCatalogAndPlayback_Ownership(t *testing.T) {
 	}
 }
 
+func TestServer_UpdateNodeName(t *testing.T) {
+	server, userRepo, nodeRepo, _, _ := setupTestServer(t)
+
+	// Create owner user
+	owner := &domain.User{
+		ID:           "usr-owner-1",
+		Username:     "owner",
+		PasswordHash: "hashed",
+		CreatedAt:    time.Now().UTC(),
+		UpdatedAt:    time.Now().UTC(),
+	}
+	_ = userRepo.Create(context.Background(), owner)
+
+	// Create other user
+	other := &domain.User{
+		ID:           "usr-other-2",
+		Username:     "other",
+		PasswordHash: "hashed",
+		CreatedAt:    time.Now().UTC(),
+		UpdatedAt:    time.Now().UTC(),
+	}
+	_ = userRepo.Create(context.Background(), other)
+
+	// Create test node owned by owner
+	nodeID := "node-rename-test-1"
+	node := &domain.Node{
+		ID:            nodeID,
+		UserID:        owner.ID,
+		Name:          "initial-node-name",
+		NodeTokenHash: "test-hash",
+		FrpAuthToken:  "test-frp",
+		CreatedAt:     time.Now().UTC(),
+		UpdatedAt:     time.Now().UTC(),
+	}
+	_ = nodeRepo.Create(context.Background(), node)
+
+	tokenService, _ := auth.NewJWTService([]byte("test-secret-key-at-least-32-bytes-long!"))
+	ownerToken, _ := tokenService.GenerateToken(owner.ID, owner.Username, 24*time.Hour)
+	otherToken, _ := tokenService.GenerateToken(other.ID, other.Username, 24*time.Hour)
+
+	// 1. Unauthenticated request -> 401 Unauthorized
+	reqUnauth := httptest.NewRequest(http.MethodPut, "/v1/nodes/"+nodeID+"/name", strings.NewReader(`{"name":"new-name"}`))
+	wUnauth := httptest.NewRecorder()
+	server.ServeHTTP(wUnauth, reqUnauth)
+	if wUnauth.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized, got %d", wUnauth.Code)
+	}
+
+	// 2. Other user attempts rename -> 403 Forbidden
+	reqOther := httptest.NewRequest(http.MethodPut, "/v1/nodes/"+nodeID+"/name", strings.NewReader(`{"name":"stolen-name"}`))
+	reqOther.Header.Set("Authorization", "Bearer "+otherToken)
+	wOther := httptest.NewRecorder()
+	server.ServeHTTP(wOther, reqOther)
+	if wOther.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden for non-owner rename, got %d", wOther.Code)
+	}
+
+	// 3. Non-existent node -> 404 Not Found
+	reqNotFound := httptest.NewRequest(http.MethodPut, "/v1/nodes/non-existent-node/name", strings.NewReader(`{"name":"new-name"}`))
+	reqNotFound.Header.Set("Authorization", "Bearer "+ownerToken)
+	wNotFound := httptest.NewRecorder()
+	server.ServeHTTP(wNotFound, reqNotFound)
+	if wNotFound.Code != http.StatusNotFound {
+		t.Errorf("expected 404 Not Found, got %d", wNotFound.Code)
+	}
+
+	// 4. Empty name -> 400 Bad Request
+	reqEmpty := httptest.NewRequest(http.MethodPut, "/v1/nodes/"+nodeID+"/name", strings.NewReader(`{"name":"   "}`))
+	reqEmpty.Header.Set("Authorization", "Bearer "+ownerToken)
+	wEmpty := httptest.NewRecorder()
+	server.ServeHTTP(wEmpty, reqEmpty)
+	if wEmpty.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 Bad Request for empty name, got %d", wEmpty.Code)
+	}
+
+	// 5. Name exceeding 64 chars -> 400 Bad Request
+	longName := strings.Repeat("a", 65)
+	reqTooLong := httptest.NewRequest(http.MethodPut, "/v1/nodes/"+nodeID+"/name", strings.NewReader(fmt.Sprintf(`{"name":"%s"}`, longName)))
+	reqTooLong.Header.Set("Authorization", "Bearer "+ownerToken)
+	wTooLong := httptest.NewRecorder()
+	server.ServeHTTP(wTooLong, reqTooLong)
+	if wTooLong.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 Bad Request for too long name, got %d", wTooLong.Code)
+	}
+
+	// 6. Owner valid rename -> 200 OK
+	reqSuccess := httptest.NewRequest(http.MethodPut, "/v1/nodes/"+nodeID+"/name", strings.NewReader(`{"name":"anish-desktop-rig"}`))
+	reqSuccess.Header.Set("Authorization", "Bearer "+ownerToken)
+	wSuccess := httptest.NewRecorder()
+	server.ServeHTTP(wSuccess, reqSuccess)
+	if wSuccess.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for valid rename, got %d: %s", wSuccess.Code, wSuccess.Body.String())
+	}
+
+	var res map[string]any
+	_ = json.Unmarshal(wSuccess.Body.Bytes(), &res)
+	if res["node_name"] != "anish-desktop-rig" {
+		t.Errorf("expected node_name 'anish-desktop-rig', got %v", res["node_name"])
+	}
+
+	// Verify persistence in repo
+	updatedNode, err := nodeRepo.FindByID(context.Background(), nodeID)
+	if err != nil || updatedNode.Name != "anish-desktop-rig" {
+		t.Fatalf("expected repo name 'anish-desktop-rig', got %v (err: %v)", updatedNode, err)
+	}
+
+	// 7. Test PATCH route works identically
+	reqPatch := httptest.NewRequest(http.MethodPatch, "/v1/nodes/"+nodeID, strings.NewReader(`{"name":"living-room-htpc"}`))
+	reqPatch.Header.Set("Authorization", "Bearer "+ownerToken)
+	wPatch := httptest.NewRecorder()
+	server.ServeHTTP(wPatch, reqPatch)
+	if wPatch.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for PATCH rename, got %d: %s", wPatch.Code, wPatch.Body.String())
+	}
+	updatedNodePatch, _ := nodeRepo.FindByID(context.Background(), nodeID)
+	if updatedNodePatch.Name != "living-room-htpc" {
+		t.Errorf("expected repo name 'living-room-htpc', got %s", updatedNodePatch.Name)
+	}
+}
+
 

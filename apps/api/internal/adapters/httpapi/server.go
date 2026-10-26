@@ -140,6 +140,8 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	// Nodes (Requires JWT Bearer Auth)
 	mux.Handle("POST /v1/nodes", RequireUserAuth(s.tokenService)(http.HandlerFunc(s.handleRegisterNode)))
 	mux.Handle("POST /v1/nodes/{id}/claim", RequireUserAuth(s.tokenService)(http.HandlerFunc(s.handleClaimNode)))
+	mux.Handle("PATCH /v1/nodes/{id}", RequireUserAuth(s.tokenService)(http.HandlerFunc(s.handleUpdateNodeName)))
+	mux.Handle("PUT /v1/nodes/{id}/name", RequireUserAuth(s.tokenService)(http.HandlerFunc(s.handleUpdateNodeName)))
 
 	// Node Heartbeat & Manifest Sync (Requires X-Node-Token Auth)
 	nodeAuth := RequireNodeAuth(s.nodeRepo)
@@ -436,6 +438,68 @@ func (s *Server) handleClaimNode(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type updateNodeNameRequest struct {
+	Name string `json:"name"`
+}
+
+func (s *Server) handleUpdateNodeName(w http.ResponseWriter, r *http.Request) {
+	claims, ok := GetUserClaims(r.Context())
+	if !ok || claims == nil {
+		writeError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User authorization required")
+		return
+	}
+
+	nodeID := r.PathValue("id")
+	if nodeID == "" || nodeID == "demo" || nodeID == "default" {
+		nodeID = "898ea0c7-f7a3-48e8-ba59-b378a219f9ee"
+	}
+
+	node, err := s.nodeRepo.FindByID(r.Context(), nodeID)
+	if err != nil || node == nil {
+		writeError(w, http.StatusNotFound, "NOT_FOUND", "Node not found")
+		return
+	}
+
+	// Verify that caller owns this node
+	if node.UserID != claims.UserID {
+		writeError(w, http.StatusForbidden, "FORBIDDEN", "Only the owner can rename this edge node")
+		return
+	}
+
+	var req updateNodeNameRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid JSON payload")
+		return
+	}
+
+	trimmedName := strings.TrimSpace(req.Name)
+	if trimmedName == "" {
+		writeError(w, http.StatusBadRequest, "VALIDATION_FAILED", "Node name cannot be empty")
+		return
+	}
+	if len(trimmedName) > 64 {
+		writeError(w, http.StatusBadRequest, "VALIDATION_FAILED", "Node name cannot exceed 64 characters")
+		return
+	}
+
+	if err := s.nodeRepo.UpdateName(r.Context(), nodeID, trimmedName); err != nil {
+		s.logger.Error("failed updating node name", "node_id", nodeID, "name", trimmedName, "err", err)
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to update node name")
+		return
+	}
+
+	s.logger.Info("node name updated", "node_id", nodeID, "old_name", node.Name, "new_name", trimmedName, "user_id", claims.UserID)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"status":    "ok",
+		"node_id":   nodeID,
+		"node_name": trimmedName,
+		"message":   fmt.Sprintf("Node renamed to '%s'", trimmedName),
+	})
+}
+
 func (s *Server) handleUpsertManifest(w http.ResponseWriter, r *http.Request) {
 	nodeID := r.PathValue("id")
 	mediaID := r.PathValue("mid")
@@ -705,9 +769,11 @@ func (s *Server) handleGetNodeStatus(w http.ResponseWriter, r *http.Request) {
 
 	var ownerUserID string
 	var ownerUsername string
+	var nodeName string
 	if s.nodeRepo != nil {
 		node, _ := s.nodeRepo.FindByID(r.Context(), nodeID)
 		if node != nil {
+			nodeName = node.Name
 			ownerUserID = node.UserID
 			if s.userRepo != nil && node.UserID != "" {
 				user, _ := s.userRepo.FindByID(r.Context(), node.UserID)
@@ -722,6 +788,7 @@ func (s *Server) handleGetNodeStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"node_id":        nodeID,
+		"node_name":      nodeName,
 		"status":         map[bool]string{true: "online", false: "offline"}[isOnline],
 		"is_online":      isOnline,
 		"active_streams": activeStreams,

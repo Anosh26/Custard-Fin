@@ -428,6 +428,7 @@ export function formatDuration(seconds: number): string {
 
 export interface CloudNodeStatus {
   node_id: string;
+  node_name?: string;
   status: string;
   is_online: boolean;
   active_streams: number;
@@ -468,6 +469,30 @@ export async function claimNode(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || "Failed to link edge node to your account");
+  }
+  return res.json();
+}
+
+export async function updateNodeName(
+  nodeId: string = "898ea0c7-f7a3-48e8-ba59-b378a219f9ee",
+  name: string
+): Promise<{ status: string; node_name: string; message: string }> {
+  const baseUrl = getApiBaseUrl();
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Session expired or token missing. Please sign in again.");
+  }
+  const res = await fetch(`${baseUrl}/v1/nodes/${nodeId}/name`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to update node name");
   }
   return res.json();
 }

@@ -123,3 +123,24 @@ func (r *NodeRepository) UpdateOwner(ctx context.Context, nodeID, userID string)
 	return nil
 }
 
+func (r *NodeRepository) UpdateName(ctx context.Context, nodeID, name string) error {
+	nodeID = strings.TrimSpace(nodeID)
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return domain.ErrValidation
+	}
+	query := `
+	UPDATE nodes
+	SET name = $1, updated_at = NOW()
+	WHERE id = $2
+	`
+	cmdTag, err := r.pool.Exec(ctx, query, name, nodeID)
+	if err != nil {
+		return fmt.Errorf("failed to update node name: %w", err)
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}
+

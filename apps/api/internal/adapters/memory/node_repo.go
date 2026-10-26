@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/anosh26/custardfin/apps/api/internal/domain"
@@ -97,6 +98,26 @@ func (r *InMemoryNodeRepository) UpdateOwner(ctx context.Context, nodeID, userID
 		return domain.ErrNotFound
 	}
 	node.UserID = userID
+	return nil
+}
+
+func (r *InMemoryNodeRepository) UpdateName(ctx context.Context, nodeID, name string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.SimulateErr != nil {
+		return r.SimulateErr
+	}
+
+	node, exists := r.byID[nodeID]
+	if !exists {
+		return domain.ErrNotFound
+	}
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return domain.ErrValidation
+	}
+	node.Name = name
 	return nil
 }
 

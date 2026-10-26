@@ -13,6 +13,7 @@ import {
   getAuthToken,
   fetchNodeStatus,
   claimNode,
+  updateNodeName,
   CloudNodeStatus,
   UserAccount,
 } from "../lib/api-client";
@@ -38,6 +39,12 @@ export default function EdgeLibraryModal({
   const [claiming, setClaiming] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  // Node Name Editing State
+  const [nodeName, setNodeName] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newNameInput, setNewNameInput] = useState("");
+  const [updatingName, setUpdatingName] = useState(false);
 
   // Lock body scroll and register Escape key listener while modal is open
   useEffect(() => {
@@ -77,9 +84,32 @@ export default function EdgeLibraryModal({
       }
       if (statusResult.status === "fulfilled") {
         setNodeStatus(statusResult.value);
+        const name = statusResult.value.node_name || "home-rtx-4060";
+        setNodeName(name);
+        setNewNameInput(name);
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveNodeName = async () => {
+    const trimmed = newNameInput.trim();
+    if (!trimmed) return;
+    setUpdatingName(true);
+    setError(null);
+    try {
+      const res = await updateNodeName("898ea0c7-f7a3-48e8-ba59-b378a219f9ee", trimmed);
+      setNodeName(res.node_name);
+      setIsEditingName(false);
+      if (nodeStatus) {
+        setNodeStatus({ ...nodeStatus, node_name: res.node_name });
+      }
+      if (onChanged) onChanged();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to rename node");
+    } finally {
+      setUpdatingName(false);
     }
   };
 
@@ -243,27 +273,118 @@ export default function EdgeLibraryModal({
             <div
               style={{
                 marginBottom: "1rem",
-                padding: "0.55rem 0.85rem",
+                padding: "0.65rem 0.95rem",
                 borderRadius: "var(--radius-md)",
-                background: "rgba(16, 185, 129, 0.1)",
+                background: "rgba(16, 185, 129, 0.08)",
                 border: "1px solid rgba(16, 185, 129, 0.25)",
                 display: "flex",
                 alignItems: "center",
-                gap: "0.5rem",
-                fontSize: "0.8rem",
-                color: "var(--accent-green)",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "0.75rem",
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              <span>
-                {claimSuccess || (
-                  <>
-                    Edge node is linked to your account <strong>@{currentUser.username}</strong>. All catalog uploads belong to you.
-                  </>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent-green)" }}>
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span style={{ fontSize: "0.82rem", color: "var(--text-main)" }}>
+                  Edge node is linked to <strong>@{currentUser.username}</strong>
+                </span>
+                <span style={{ color: "var(--text-dim)", fontSize: "0.8rem" }}>•</span>
+
+                {isEditingName ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSaveNodeName();
+                    }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                  >
+                    <input
+                      type="text"
+                      value={newNameInput}
+                      onChange={(e) => setNewNameInput(e.target.value)}
+                      placeholder="e.g. anish-laptop"
+                      autoFocus
+                      maxLength={64}
+                      style={{
+                        padding: "0.25rem 0.55rem",
+                        fontSize: "0.8rem",
+                        borderRadius: "var(--radius-sm)",
+                        border: "1px solid var(--accent-gold)",
+                        background: "var(--bg-main)",
+                        color: "var(--text-main)",
+                        outline: "none",
+                        width: "140px",
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={updatingName || !newNameInput.trim()}
+                      className="nav-btn primary"
+                      style={{ padding: "0.25rem 0.6rem", fontSize: "0.75rem" }}
+                    >
+                      {updatingName ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingName(false);
+                        setNewNameInput(nodeName);
+                      }}
+                      className="nav-btn ghost"
+                      style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem" }}
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                    <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>Node Name:</span>
+                    <span
+                      style={{
+                        fontSize: "0.82rem",
+                        color: "var(--accent-gold)",
+                        fontFamily: "monospace",
+                        background: "rgba(245, 158, 11, 0.12)",
+                        padding: "0.15rem 0.45rem",
+                        borderRadius: "4px",
+                        border: "1px solid rgba(245, 158, 11, 0.25)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {nodeName || "home-rtx-4060"}
+                    </span>
+                  </div>
                 )}
-              </span>
+              </div>
+
+              {!isEditingName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewNameInput(nodeName);
+                    setIsEditingName(true);
+                  }}
+                  className="nav-btn ghost"
+                  style={{
+                    padding: "0.25rem 0.65rem",
+                    fontSize: "0.75rem",
+                    borderColor: "rgba(245, 158, 11, 0.35)",
+                    color: "var(--accent-gold)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  <span>Edit Node Name</span>
+                </button>
+              )}
             </div>
           )
         ) : (
