@@ -145,6 +145,9 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.Handle("PUT /v1/nodes/{id}/media/{mid}/manifest", nodeAuth(http.HandlerFunc(s.handleUpsertManifest)))
 	mux.Handle("DELETE /v1/nodes/{id}/media/{mid}/manifest", nodeAuth(http.HandlerFunc(s.handleDeleteManifest)))
 
+	// Node Status & Liveness (Public for Web UI, Dev Console, HUD & Invariant Checks)
+	mux.HandleFunc("GET /v1/nodes/{id}/status", s.handleGetNodeStatus)
+
 	// Catalog Search (Public)
 	mux.HandleFunc("GET /v1/catalog", s.handleGetCatalog)
 
@@ -545,6 +548,50 @@ func (s *Server) handleNodeHeartbeat(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func (s *Server) handleGetNodeStatus(w http.ResponseWriter, r *http.Request) {
+	nodeID := r.PathValue("id")
+	if nodeID == "" || nodeID == "demo" || nodeID == "default" {
+		nodeID = "898ea0c7-f7a3-48e8-ba59-b378a219f9ee"
+	}
+
+	isOnline := false
+	var hb *contracts.Heartbeat
+	if s.heartbeatStore != nil {
+		var err error
+		var exists bool
+		hb, exists, err = s.heartbeatStore.GetHeartbeat(r.Context(), nodeID)
+		if err == nil && exists && hb != nil {
+			isOnline = true
+		}
+	}
+
+	nvenc := false
+	activeStreams := 0
+	version := "0.1.0"
+	var lastHeartbeat time.Time
+	if isOnline && hb != nil {
+		if hb.GPUCaps != nil {
+			nvenc = hb.GPUCaps.NVENC
+		}
+		activeStreams = hb.ActiveStreams
+		version = hb.Version
+		lastHeartbeat = hb.SentAt
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"node_id":        nodeID,
+		"status":         map[bool]string{true: "online", false: "offline"}[isOnline],
+		"is_online":      isOnline,
+		"active_streams": activeStreams,
+		"max_streams":    10,
+		"nvenc_enabled":  nvenc,
+		"version":        version,
+		"last_heartbeat": lastHeartbeat,
+	})
 }
 
 type playbackResponse struct {

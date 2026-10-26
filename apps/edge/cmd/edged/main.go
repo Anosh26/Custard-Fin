@@ -61,7 +61,9 @@ func main() {
 	scanService := app.NewScanService(fileScanner, prober, hasher, mediaRepo, logger)
 
 	// 4. Initialize Cloud Manifest Syncer (with demo fallback credentials)
-	cloudURL := getEnv("EDGE_CLOUD_URL", "http://localhost:8080")
+	cloudURL := getEnv("EDGE_CLOUD_URL", getEnv("EDGE_CLOUD_API_URL", "http://localhost:8080"))
+	cloudURL = strings.TrimSuffix(cloudURL, "/")
+	cloudURL = strings.TrimSuffix(cloudURL, "/v1")
 	nodeID := getEnv("EDGE_NODE_ID", "898ea0c7-f7a3-48e8-ba59-b378a219f9ee")
 	nodeToken := getEnv("EDGE_NODE_TOKEN", "1c94b7b8fd38a97cd634b4894358fc1feed28f3a180a104aa0b83f9710190de2")
 	ffmpegBin := getEnv("EDGE_FFMPEG_BIN", "ffmpeg")

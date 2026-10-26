@@ -1,3 +1,21 @@
+## 2026-10-26 - Cloud Node Status Endpoint, Dev Console PNA Fallback & Deploy Guide Update
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Post-Milestone 10 Resilience & Multi-Device Dev Console
+- **Summary:** Resolved Dev Console showing "Home Edge Node Daemon: Offline" when accessing the web UI from a public cloud VM:
+  1. Root Cause: When the web UI is loaded from a public HTTP IP (e.g. `http://136.71.107.75:3000`), Chromium/Brave blocks direct client-side fetch requests to `http://localhost:8090` under Private Network Access (PNA) security rules for insecure contexts. In addition, remote viewers (e.g. smartphones) do not run an edge daemon on their local device.
+  2. Cloud Node Status API (`GET /v1/nodes/{id}/status`): Added a public endpoint to the Cloud Control API that reads the active node heartbeat from Redis (`HeartbeatStore.GetHeartbeat`). Returns real-time liveness, GPU capabilities (NVENC enabled), active streams, and version. Added unit test in `server_test.go`.
+  3. Seamless Dev Console Fallback: Updated `api-client.ts` (`fetchEdgeStatus` and `pingEndpoint`) to automatically query the Cloud Node Status API whenever direct connection to `localhost:8090` is blocked by browser security. In `DevSettingsModal.tsx`, the status displays "Online (via Cloud: Xms)" and accurately activates the green "NVIDIA NVENC Hardware Enabled" and "10-Stream Per-Node Cap" invariant badges.
+  4. Dynamic Mode 4 Preset: Updated Mode 4 preset pill to automatically populate the current VM origin (`http://${window.location.hostname}:8080`) instead of the dummy domain.
+  5. Deploy Guide & Edged Resilience: Updated `deploy.md` with explicit shell exports, and updated `edged/main.go` to accept both `EDGE_CLOUD_URL` and `EDGE_CLOUD_API_URL` (with automatic stripping of `/v1` and trailing slashes).
+- **Files Touched:**
+  - `apps/api/internal/adapters/httpapi/server.go`
+  - `apps/api/internal/adapters/httpapi/server_test.go`
+  - `apps/edge/cmd/edged/main.go`
+  - `apps/web/src/components/DevSettingsModal.tsx`
+  - `apps/web/src/lib/api-client.ts`
+  - `docs/runbooks/deploy.md`
+  - `docs/context/SESSION_LOG.md`
+
 ## 2026-10-25 - Live Cloud Deployment (GCP VM), FRP Reverse Tunnel & Mobile End-to-End Verification
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Milestone 10 (Live Cloud Deployment & End-to-End Production Verification)

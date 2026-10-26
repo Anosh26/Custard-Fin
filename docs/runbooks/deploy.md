@@ -172,8 +172,8 @@ On your local home PC/laptop where your media library is located, configure the 
 Set the following environment variables for `edged`:
 
 ```ini
-# Address of your newly deployed GCP Cloud VM
-EDGE_CLOUD_API_URL=http://<GCP_EXTERNAL_IP>/v1
+# Address of your newly deployed GCP Cloud VM (port 8080 for API, or port 80 if Caddy is running)
+EDGE_CLOUD_URL=http://<GCP_EXTERNAL_IP>:8080
 
 # Enable FRP Reverse Tunnel for remote stream playback
 EDGE_FRP_ENABLED=true
@@ -185,6 +185,18 @@ EDGE_FRP_AUTH_TOKEN=custardfin_demo_frp_token
 EDGE_MEDIA_DIR=./media
 EDGE_TRANSCODE_DIR=./transcoded
 EDGE_DB_PATH=./data/edge.db
+```
+
+Or export them directly in your shell:
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+export EDGE_CLOUD_URL="http://<GCP_EXTERNAL_IP>:8080"
+export EDGE_FRP_ENABLED="true"
+export EDGE_FRP_SERVER_ADDR="<GCP_EXTERNAL_IP>"
+export EDGE_FRP_SERVER_PORT="7000"
+export EDGE_FRP_AUTH_TOKEN="custardfin_demo_frp_token"
+
+go run ./apps/edge/cmd/edged
 ```
 
 ### 4.2 Run the Edge Node

@@ -830,7 +830,35 @@ func TestServer_Node_Heartbeat(t *testing.T) {
 		t.Errorf("expected catalog item to report is_node_online = true")
 	}
 
-	// Subtest 8: Simulated HeartbeatStore error -> 500
+	// Subtest 8: Query GET /v1/nodes/{id}/status public endpoint
+	heartbeatStore.SimulateErr = nil
+	statusURL := fmt.Sprintf("/v1/nodes/%s/status", nodeRes.NodeID)
+	req = httptest.NewRequest(http.MethodGet, statusURL, nil)
+	w = httptest.NewRecorder()
+	server.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for node status, got %d", w.Code)
+	}
+	var nodeStatus struct {
+		NodeID        string `json:"node_id"`
+		IsOnline      bool   `json:"is_online"`
+		NVENCEnabled  bool   `json:"nvenc_enabled"`
+		ActiveStreams int    `json:"active_streams"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &nodeStatus); err != nil {
+		t.Fatalf("failed to decode node status response: %v", err)
+	}
+	if !nodeStatus.IsOnline {
+		t.Errorf("expected nodeStatus.IsOnline to be true")
+	}
+	if !nodeStatus.NVENCEnabled {
+		t.Errorf("expected nodeStatus.NVENCEnabled to be true")
+	}
+	if nodeStatus.ActiveStreams != 3 {
+		t.Errorf("expected ActiveStreams = 3, got %d", nodeStatus.ActiveStreams)
+	}
+
+	// Subtest 9: Simulated HeartbeatStore error -> 500
 	heartbeatStore.SimulateErr = fmt.Errorf("storage failure")
 	req = httptest.NewRequest(http.MethodPost, hbURL, bytes.NewBufferString(validPayload))
 	req.Header.Set("X-Node-Token", nodeRes.NodeToken)

@@ -26,7 +26,7 @@ export default function DevSettingsModal({
   const [apiUrl, setApiUrl] = useState("");
   const [edgeUrl, setEdgeUrl] = useState("");
   const [cloudPing, setCloudPing] = useState<{ ok: boolean; latencyMs: number } | null>(null);
-  const [edgePing, setEdgePing] = useState<{ ok: boolean; latencyMs: number } | null>(null);
+  const [edgePing, setEdgePing] = useState<{ ok: boolean; latencyMs: number; viaCloud?: boolean } | null>(null);
   const [edgeStatus, setEdgeStatus] = useState<EdgeNodeStatus | null>(null);
   const [isPinging, setIsPinging] = useState(false);
   const [simMessage, setSimMessage] = useState<string | null>(null);
@@ -191,7 +191,12 @@ export default function DevSettingsModal({
           </button>
           <button
             className="preset-pill"
-            onClick={() => handlePreset("https://demo.custardfin.com", "http://localhost:8090")}
+            onClick={() => {
+              const cloudEndpoint = typeof window !== "undefined"
+                ? `${window.location.protocol}//${window.location.hostname}:8080`
+                : "http://136.71.107.75:8080";
+              handlePreset(cloudEndpoint, "http://localhost:8090");
+            }}
           >
             Mode 4: Live Cloud VM
           </button>
@@ -230,7 +235,11 @@ export default function DevSettingsModal({
               <div className="status-indicator">
                 <span className={`status-dot ${edgePing?.ok ? "online" : ""}`} />
                 <span style={{ fontSize: "0.75rem", color: edgePing?.ok ? "var(--accent-emerald)" : "var(--accent-red)" }}>
-                  {edgePing?.ok ? `Online (${edgePing.latencyMs}ms)` : "Offline"}
+                  {edgePing?.ok
+                    ? edgePing.viaCloud
+                      ? `Online (via Cloud: ${edgePing.latencyMs}ms)`
+                      : `Online (${edgePing.latencyMs}ms)`
+                    : "Offline"}
                 </span>
               </div>
             </div>
