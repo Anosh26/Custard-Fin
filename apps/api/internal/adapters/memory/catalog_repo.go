@@ -57,7 +57,7 @@ func (r *InMemoryCatalogRepository) DeleteManifest(ctx context.Context, nodeID, 
 	return nil
 }
 
-func (r *InMemoryCatalogRepository) Search(ctx context.Context, query string, limit, offset int) ([]*domain.CatalogItem, int, error) {
+func (r *InMemoryCatalogRepository) Search(ctx context.Context, query string, limit, offset int, allowedNodeIDs []string) ([]*domain.CatalogItem, int, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -65,11 +65,16 @@ func (r *InMemoryCatalogRepository) Search(ctx context.Context, query string, li
 		return nil, 0, r.SimulateErr
 	}
 
+	allowedNodes := make(map[string]bool)
+	for _, nid := range allowedNodeIDs {
+		allowedNodes[nid] = true
+	}
+
 	query = strings.ToLower(strings.TrimSpace(query))
 	var matched []*domain.CatalogItem
 
 	for _, item := range r.items {
-		if !item.IsPublic {
+		if !item.IsPublic && !allowedNodes[item.NodeID] {
 			continue
 		}
 		if query == "" || strings.Contains(strings.ToLower(item.Title), query) || strings.Contains(strings.ToLower(item.Description), query) {

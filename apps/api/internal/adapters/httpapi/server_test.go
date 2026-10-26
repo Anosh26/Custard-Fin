@@ -1104,3 +1104,227 @@ func TestServer_GetMediaThumbnail_OriginShield(t *testing.T) {
 	}
 }
 
+func TestServer_PrivateCatalogAndPlayback_Ownership(t *testing.T) {
+	fakeJPEG := []byte("\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x01\x00\x60\x00\x60\x00\x00\xFF\xDB\x00\x43\x00")
+	mockPull := &mockTunnelPuller{
+		content: map[string][]byte{
+			"thumb.jpg": fakeJPEG,
+		},
+		contentType: map[string]string{
+			"thumb.jpg": "image/jpeg",
+		},
+	}
+
+	server, userRepo, nodeRepo, catalogRepo, heartbeatStore, _ := setupTestServerFull(t, nil, mockPull)
+	ctx := context.Background()
+
+	// 1. Setup Owner and Intruder users
+	owner, _ := domain.NewUser("alice", "hashed_pwd_alice")
+	_ = userRepo.Create(ctx, owner)
+
+	intruder, _ := domain.NewUser("bob", "hashed_pwd_bob")
+	_ = userRepo.Create(ctx, intruder)
+
+	// Setup Node for Owner
+	node, _ := domain.NewNode(owner.ID, "alice-home", "hashed_node_token", "frp_secret")
+	node.ID = "node-alice-001"
+	_ = nodeRepo.Create(ctx, node)
+
+	// Record heartbeat for node so it's online
+	_ = heartbeatStore.RecordHeartbeat(ctx, &contracts.Heartbeat{
+		NodeID:  node.ID,
+		SentAt:  time.Now().UTC(),
+		Version: "0.1.0",
+	}, 10*time.Minute)
+
+	// Setup Public & Private media for Owner
+	publicMedia := &domain.CatalogItem{
+		MediaID:     "media-pub-1",
+		NodeID:      node.ID,
+		Title:       "Public Sintel",
+		DurationS:   100,
+		ContentHash: "hash-pub",
+		IsPublic:    true,
+		UpdatedAt:   time.Now().UTC(),
+	}
+	_ = catalogRepo.UpsertManifest(ctx, publicMedia)
+
+	privateMedia := &domain.CatalogItem{
+		MediaID:     "media-priv-1",
+		NodeID:      node.ID,
+		Title:       "Private Family Video",
+		DurationS:   50,
+		ContentHash: "hash-priv",
+		IsPublic:    false,
+		UpdatedAt:   time.Now().UTC(),
+	}
+	_ = catalogRepo.UpsertManifest(ctx, privateMedia)
+
+	// Create JWT tokens
+	tokenSvc, _ := auth.NewJWTService([]byte("test-secret-key-at-least-32-bytes-long!"))
+	ownerToken, _ := tokenSvc.GenerateToken(owner.ID, owner.Username, 24*time.Hour)
+	intruderToken, _ := tokenSvc.GenerateToken(intruder.ID, intruder.Username, 24*time.Hour)
+
+	// --- A. GET /v1/auth/me tests ---
+	// Unauthenticated
+	reqMeUnauth := httptest.NewRequest(http.MethodGet, "/v1/auth/me", nil)
+	wMeUnauth := httptest.NewRecorder()
+	server.ServeHTTP(wMeUnauth, reqMeUnauth)
+	if wMeUnauth.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for unauthenticated /v1/auth/me, got %d", wMeUnauth.Code)
+	}
+
+	// Authenticated as Alice
+	reqMeAuth := httptest.NewRequest(http.MethodGet, "/v1/auth/me", nil)
+	reqMeAuth.Header.Set("Authorization", "Bearer "+ownerToken)
+	wMeAuth := httptest.NewRecorder()
+	server.ServeHTTP(wMeAuth, reqMeAuth)
+	if wMeAuth.Code != http.StatusOK {
+		t.Fatalf("expected 200 for authenticated /v1/auth/me, got %d", wMeAuth.Code)
+	}
+	var meRes map[string]string
+	_ = json.Unmarshal(wMeAuth.Body.Bytes(), &meRes)
+	if meRes["username"] != "alice" || meRes["user_id"] != owner.ID {
+		t.Errorf("expected alice info in me response, got %+v", meRes)
+	}
+
+	// --- B. Catalog Search visibility ---
+	// 1. Unauthenticated viewer -> only sees Public
+	reqCatUnauth := httptest.NewRequest(http.MethodGet, "/v1/catalog", nil)
+	wCatUnauth := httptest.NewRecorder()
+	server.ServeHTTP(wCatUnauth, reqCatUnauth)
+	if wCatUnauth.Code != http.StatusOK {
+		t.Fatalf("expected 200 for public catalog search, got %d", wCatUnauth.Code)
+	}
+	var catResUnauth struct {
+		Items []struct {
+			MediaID          string `json:"media_id"`
+			IsPublic         bool   `json:"is_public"`
+			UploaderUsername string `json:"uploader_username"`
+			NodeName         string `json:"node_name"`
+		} `json:"items"`
+		Total int `json:"total"`
+	}
+	_ = json.Unmarshal(wCatUnauth.Body.Bytes(), &catResUnauth)
+	if catResUnauth.Total != 1 || catResUnauth.Items[0].MediaID != "media-pub-1" {
+		t.Errorf("expected unauth viewer to only see 1 public media, got total=%d", catResUnauth.Total)
+	}
+
+	// 2. Intruder viewer (Bob) -> only sees Public
+	reqCatBob := httptest.NewRequest(http.MethodGet, "/v1/catalog", nil)
+	reqCatBob.Header.Set("Authorization", "Bearer "+intruderToken)
+	wCatBob := httptest.NewRecorder()
+	server.ServeHTTP(wCatBob, reqCatBob)
+	var catResBob struct {
+		Total int `json:"total"`
+	}
+	_ = json.Unmarshal(wCatBob.Body.Bytes(), &catResBob)
+	if catResBob.Total != 1 {
+		t.Errorf("expected intruder to only see 1 public media, got %d", catResBob.Total)
+	}
+
+	// 3. Owner viewer (Alice) -> sees both Public AND Private!
+	reqCatAlice := httptest.NewRequest(http.MethodGet, "/v1/catalog", nil)
+	reqCatAlice.Header.Set("Authorization", "Bearer "+ownerToken)
+	wCatAlice := httptest.NewRecorder()
+	server.ServeHTTP(wCatAlice, reqCatAlice)
+	var catResAlice struct {
+		Items []struct {
+			MediaID          string `json:"media_id"`
+			IsPublic         bool   `json:"is_public"`
+			UploaderUsername string `json:"uploader_username"`
+			NodeName         string `json:"node_name"`
+		} `json:"items"`
+		Total int `json:"total"`
+	}
+	_ = json.Unmarshal(wCatAlice.Body.Bytes(), &catResAlice)
+	if catResAlice.Total != 2 {
+		t.Fatalf("expected owner Alice to see 2 media items (public + private), got %d", catResAlice.Total)
+	}
+	hasPrivate := false
+	for _, it := range catResAlice.Items {
+		if it.MediaID == "media-priv-1" && !it.IsPublic {
+			hasPrivate = true
+			if it.UploaderUsername != "alice" || it.NodeName != "alice-home" {
+				t.Errorf("expected uploader alice and node alice-home, got uploader=%q node=%q", it.UploaderUsername, it.NodeName)
+			}
+		}
+	}
+	if !hasPrivate {
+		t.Errorf("expected private media-priv-1 to be present for Alice")
+	}
+
+	// --- C. Private Playback Authorization ---
+	// 1. Unauthenticated remote viewer accessing private media -> 403 Forbidden
+	reqPlayUnauth := httptest.NewRequest(http.MethodGet, "/v1/media/media-priv-1/playback", nil)
+	wPlayUnauth := httptest.NewRecorder()
+	server.ServeHTTP(wPlayUnauth, reqPlayUnauth)
+	if wPlayUnauth.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden for unauth remote private playback, got %d", wPlayUnauth.Code)
+	}
+
+	// 2. Intruder remote viewer (Bob) accessing private media -> 403 Forbidden
+	reqPlayBob := httptest.NewRequest(http.MethodGet, "/v1/media/media-priv-1/playback", nil)
+	reqPlayBob.Header.Set("Authorization", "Bearer "+intruderToken)
+	wPlayBob := httptest.NewRecorder()
+	server.ServeHTTP(wPlayBob, reqPlayBob)
+	if wPlayBob.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden for intruder remote private playback, got %d", wPlayBob.Code)
+	}
+
+	// 3. Direct LAN viewer accessing private media -> 200 OK (local subnet owner)
+	reqPlayLAN := httptest.NewRequest(http.MethodGet, "/v1/media/media-priv-1/playback?lan=true", nil)
+	wPlayLAN := httptest.NewRecorder()
+	server.ServeHTTP(wPlayLAN, reqPlayLAN)
+	if wPlayLAN.Code != http.StatusOK {
+		t.Errorf("expected 200 OK for direct LAN private playback, got %d", wPlayLAN.Code)
+	}
+
+	// 4. Owner remote viewer (Alice) accessing private media -> 200 OK with stream URL and uploader info
+	reqPlayAlice := httptest.NewRequest(http.MethodGet, "/v1/media/media-priv-1/playback", nil)
+	reqPlayAlice.Header.Set("Authorization", "Bearer "+ownerToken)
+	wPlayAlice := httptest.NewRecorder()
+	server.ServeHTTP(wPlayAlice, reqPlayAlice)
+	if wPlayAlice.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for owner remote private playback, got %d: %s", wPlayAlice.Code, wPlayAlice.Body.String())
+	}
+	var playRes struct {
+		StreamURL        string `json:"stream_url"`
+		RouteType        string `json:"route_type"`
+		UploaderUsername string `json:"uploader_username"`
+		NodeName         string `json:"node_name"`
+		IsPublic         bool   `json:"is_public"`
+	}
+	_ = json.Unmarshal(wPlayAlice.Body.Bytes(), &playRes)
+	if playRes.UploaderUsername != "alice" || playRes.NodeName != "alice-home" || playRes.IsPublic {
+		t.Errorf("playback response metadata mismatch: %+v", playRes)
+	}
+
+	// --- D. Private Thumbnail Authorization ---
+	// 1. Unauthenticated viewer -> 403 Forbidden
+	reqThumbUnauth := httptest.NewRequest(http.MethodGet, "/v1/media/media-priv-1/thumbnail", nil)
+	wThumbUnauth := httptest.NewRecorder()
+	server.ServeHTTP(wThumbUnauth, reqThumbUnauth)
+	if wThumbUnauth.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden for unauthenticated private thumbnail, got %d", wThumbUnauth.Code)
+	}
+
+	// 2. Owner viewer with Authorization header -> 200 OK
+	reqThumbAlice := httptest.NewRequest(http.MethodGet, "/v1/media/media-priv-1/thumbnail", nil)
+	reqThumbAlice.Header.Set("Authorization", "Bearer "+ownerToken)
+	wThumbAlice := httptest.NewRecorder()
+	server.ServeHTTP(wThumbAlice, reqThumbAlice)
+	if wThumbAlice.Code != http.StatusOK {
+		t.Errorf("expected 200 OK for owner private thumbnail with auth header, got %d: %s", wThumbAlice.Code, wThumbAlice.Body.String())
+	}
+
+	// 3. Owner viewer with ?token= query parameter -> 200 OK (for img tags)
+	reqThumbToken := httptest.NewRequest(http.MethodGet, "/v1/media/media-priv-1/thumbnail?token="+ownerToken, nil)
+	wThumbToken := httptest.NewRecorder()
+	server.ServeHTTP(wThumbToken, reqThumbToken)
+	if wThumbToken.Code != http.StatusOK {
+		t.Errorf("expected 200 OK for owner private thumbnail with query token, got %d: %s", wThumbToken.Code, wThumbToken.Body.String())
+	}
+}
+
+

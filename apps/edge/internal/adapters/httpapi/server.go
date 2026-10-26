@@ -375,24 +375,17 @@ func (s *Server) handleTogglePublic(w http.ResponseWriter, r *http.Request) {
 	}
 	media.IsPublic = req.IsPublic
 
-	// If syncer is configured, sync to Cloud API
+	// If syncer is configured, sync manifest to Cloud API with updated privacy status
 	if s.syncer != nil {
-		if req.IsPublic {
-			// Provide renditions (1080p, 720p, 480p) conforming to Invariant 6
-			renditions := []contracts.Rendition{
-				{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
-				{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},
-				{Resolution: "480p", BitrateBps: 1200000, PlaylistPath: "480p.m3u8", ChunkDurationS: 4},
-			}
-			if err := s.syncer.SyncManifest(r.Context(), media, renditions); err != nil {
-				s.logger.Error("cloud manifest sync error", "id", id, "err", err)
-				writeJSON(w, http.StatusBadGateway, map[string]string{"error": fmt.Sprintf("Saved locally, but cloud sync failed: %v", err)})
-				return
-			}
-		} else {
-			if err := s.syncer.UnsyncManifest(r.Context(), id); err != nil {
-				s.logger.Error("cloud manifest unsync error", "id", id, "err", err)
-			}
+		renditions := []contracts.Rendition{
+			{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
+			{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},
+			{Resolution: "480p", BitrateBps: 1200000, PlaylistPath: "480p.m3u8", ChunkDurationS: 4},
+		}
+		if err := s.syncer.SyncManifest(r.Context(), media, renditions); err != nil {
+			s.logger.Error("cloud manifest sync error", "id", id, "err", err)
+			writeJSON(w, http.StatusBadGateway, map[string]string{"error": fmt.Sprintf("Saved locally, but cloud sync failed: %v", err)})
+			return
 		}
 	}
 

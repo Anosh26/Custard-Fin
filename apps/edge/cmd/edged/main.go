@@ -147,8 +147,8 @@ func main() {
 						}
 					}
 
-					// Sync to cloud catalog ONLY if marked Public (respect user privacy setting - Invariant 1!)
-					if syncer != nil && m.IsPublic {
+					// Sync to cloud catalog (conveys current public/private status so owner can view private items)
+					if syncer != nil {
 						renditions := []contracts.Rendition{
 							{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
 							{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},
@@ -157,7 +157,7 @@ func main() {
 						if err := syncer.SyncManifest(ctx, m, renditions); err != nil {
 							slog.Warn("syncing media manifest to cloud catalog failed", "title", m.Title, "err", err)
 						} else {
-							slog.Info("manifest synced to cloud catalog", "title", m.Title, "id", m.ID)
+							slog.Info("manifest synced to cloud catalog", "title", m.Title, "id", m.ID, "public", m.IsPublic)
 						}
 					}
 				}

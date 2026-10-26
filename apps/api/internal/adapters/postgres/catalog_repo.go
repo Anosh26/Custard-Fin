@@ -101,7 +101,7 @@ func (r *CatalogRepository) DeleteManifest(ctx context.Context, nodeID, mediaID 
 	return nil
 }
 
-func (r *CatalogRepository) Search(ctx context.Context, query string, limit, offset int) ([]*domain.CatalogItem, int, error) {
+func (r *CatalogRepository) Search(ctx context.Context, query string, limit, offset int, allowedNodeIDs []string) ([]*domain.CatalogItem, int, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -115,29 +115,58 @@ func (r *CatalogRepository) Search(ctx context.Context, query string, limit, off
 	var countArgs []interface{}
 	var searchArgs []interface{}
 
-	if query == "" {
-		countSQL = `SELECT COUNT(*) FROM catalog_items WHERE is_public = TRUE`
-		searchSQL = `
-		SELECT media_id, node_id, title, description, duration_s, content_hash, is_public, manifest_json, created_at, updated_at
-		FROM catalog_items
-		WHERE is_public = TRUE
-		ORDER BY created_at DESC
-		LIMIT $1 OFFSET $2
-		`
-		searchArgs = []interface{}{limit, offset}
-	} else {
-		likePattern := "%" + query + "%"
-		countSQL = `SELECT COUNT(*) FROM catalog_items WHERE is_public = TRUE AND (title ILIKE $1 OR description ILIKE $1)`
-		countArgs = []interface{}{likePattern}
+	if len(allowedNodeIDs) == 0 {
+		if query == "" {
+			countSQL = `SELECT COUNT(*) FROM catalog_items WHERE is_public = TRUE`
+			searchSQL = `
+			SELECT media_id, node_id, title, description, duration_s, content_hash, is_public, manifest_json, created_at, updated_at
+			FROM catalog_items
+			WHERE is_public = TRUE
+			ORDER BY created_at DESC
+			LIMIT $1 OFFSET $2
+			`
+			searchArgs = []interface{}{limit, offset}
+		} else {
+			likePattern := "%" + query + "%"
+			countSQL = `SELECT COUNT(*) FROM catalog_items WHERE is_public = TRUE AND (title ILIKE $1 OR description ILIKE $1)`
+			countArgs = []interface{}{likePattern}
 
-		searchSQL = `
-		SELECT media_id, node_id, title, description, duration_s, content_hash, is_public, manifest_json, created_at, updated_at
-		FROM catalog_items
-		WHERE is_public = TRUE AND (title ILIKE $1 OR description ILIKE $1)
-		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3
-		`
-		searchArgs = []interface{}{likePattern, limit, offset}
+			searchSQL = `
+			SELECT media_id, node_id, title, description, duration_s, content_hash, is_public, manifest_json, created_at, updated_at
+			FROM catalog_items
+			WHERE is_public = TRUE AND (title ILIKE $1 OR description ILIKE $1)
+			ORDER BY created_at DESC
+			LIMIT $2 OFFSET $3
+			`
+			searchArgs = []interface{}{likePattern, limit, offset}
+		}
+	} else {
+		if query == "" {
+			countSQL = `SELECT COUNT(*) FROM catalog_items WHERE is_public = TRUE OR node_id = ANY($1)`
+			countArgs = []interface{}{allowedNodeIDs}
+
+			searchSQL = `
+			SELECT media_id, node_id, title, description, duration_s, content_hash, is_public, manifest_json, created_at, updated_at
+			FROM catalog_items
+			WHERE is_public = TRUE OR node_id = ANY($1)
+			ORDER BY created_at DESC
+			LIMIT $2 OFFSET $3
+			`
+			searchArgs = []interface{}{allowedNodeIDs, limit, offset}
+		} else {
+			likePattern := "%" + query + "%"
+			countSQL = `SELECT COUNT(*) FROM catalog_items WHERE (is_public = TRUE OR node_id = ANY($2)) AND (title ILIKE $1 OR description ILIKE $1)`
+			countArgs = []interface{}{likePattern, allowedNodeIDs}
+
+			searchSQL = `
+			SELECT media_id, node_id, title, description, duration_s, content_hash, is_public, manifest_json, created_at, updated_at
+			FROM catalog_items
+			WHERE (is_public = TRUE OR node_id = ANY($2)) AND (title ILIKE $1 OR description ILIKE $1)
+			ORDER BY created_at DESC
+			LIMIT $3 OFFSET $4
+			`
+			searchArgs = []interface{}{likePattern, allowedNodeIDs, limit, offset}
+		}
 	}
 
 	var total int

@@ -135,6 +135,7 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	// Auth
 	mux.HandleFunc("POST /v1/auth/register", s.handleRegister)
 	mux.HandleFunc("POST /v1/auth/login", s.handleLogin)
+	mux.HandleFunc("GET /v1/auth/me", s.handleGetMe)
 
 	// Nodes (Requires JWT Bearer Auth)
 	mux.Handle("POST /v1/nodes", RequireUserAuth(s.tokenService)(http.HandlerFunc(s.handleRegisterNode)))
@@ -225,6 +226,8 @@ type authResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
 	ExpiresIn   int    `json:"expires_in"`
+	UserID      string `json:"user_id"`
+	Username    string `json:"username"`
 }
 
 func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -272,6 +275,8 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		AccessToken: token,
 		TokenType:   "Bearer",
 		ExpiresIn:   3600,
+		UserID:      user.ID,
+		Username:    user.Username,
 	})
 }
 
@@ -305,6 +310,41 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		AccessToken: token,
 		TokenType:   "Bearer",
 		ExpiresIn:   3600,
+		UserID:      user.ID,
+		Username:    user.Username,
+	})
+}
+
+func (s *Server) handleGetMe(w http.ResponseWriter, r *http.Request) {
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		writeError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Missing authorization header")
+		return
+	}
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	claims, err := s.tokenService.ValidateToken(token)
+	if err != nil || claims == nil {
+		writeError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid token")
+		return
+	}
+	user, err := s.userRepo.FindByID(r.Context(), claims.UserID)
+	if err != nil || user == nil {
+		writeError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
+
+	var nodes []*domain.Node
+	if s.nodeRepo != nil {
+		nodes, _ = s.nodeRepo.ListByUserID(r.Context(), user.ID)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"id":       user.ID,
+		"user_id":  user.ID,
+		"username": user.Username,
+		"nodes":    nodes,
 	})
 }
 
@@ -448,13 +488,16 @@ func (s *Server) handleDeleteManifest(w http.ResponseWriter, r *http.Request) {
 }
 
 type catalogItemResponse struct {
-	MediaID      string `json:"media_id"`
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	DurationS    int    `json:"duration_s"`
-	NodeID       string `json:"node_id"`
-	IsNodeOnline bool   `json:"is_node_online"`
-	UpdatedAt    string `json:"updated_at"`
+	MediaID          string `json:"media_id"`
+	Title            string `json:"title"`
+	Description      string `json:"description"`
+	DurationS        int    `json:"duration_s"`
+	NodeID           string `json:"node_id"`
+	NodeName         string `json:"node_name,omitempty"`
+	UploaderUsername string `json:"uploader_username,omitempty"`
+	IsPublic         bool   `json:"is_public"`
+	IsNodeOnline     bool   `json:"is_node_online"`
+	UpdatedAt        string `json:"updated_at"`
 }
 
 type catalogListResponse struct {
@@ -477,7 +520,19 @@ func (s *Server) handleGetCatalog(w http.ResponseWriter, r *http.Request) {
 		offset = o
 	}
 
-	items, total, err := s.catalogRepo.Search(r.Context(), q, limit, offset)
+	// Authenticated user resolution for private videos
+	var allowedNodeIDs []string
+	if claims := s.extractUserClaims(r); claims != nil {
+		if s.nodeRepo != nil {
+			if nodes, err := s.nodeRepo.ListByUserID(r.Context(), claims.UserID); err == nil {
+				for _, n := range nodes {
+					allowedNodeIDs = append(allowedNodeIDs, n.ID)
+				}
+			}
+		}
+	}
+
+	items, total, err := s.catalogRepo.Search(r.Context(), q, limit, offset, allowedNodeIDs)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to query catalog")
 		return
@@ -495,16 +550,42 @@ func (s *Server) handleGetCatalog(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	nodeCache := make(map[string]*domain.Node)
+	userCache := make(map[string]*domain.User)
+
 	resItems := make([]catalogItemResponse, 0, len(items))
 	for _, it := range items {
+		node, ok := nodeCache[it.NodeID]
+		if !ok && s.nodeRepo != nil {
+			node, _ = s.nodeRepo.FindByID(r.Context(), it.NodeID)
+			nodeCache[it.NodeID] = node
+		}
+
+		var uploaderName string
+		var nodeName string
+		if node != nil {
+			nodeName = node.Name
+			user, ok := userCache[node.UserID]
+			if !ok && s.userRepo != nil {
+				user, _ = s.userRepo.FindByID(r.Context(), node.UserID)
+				userCache[node.UserID] = user
+			}
+			if user != nil {
+				uploaderName = user.Username
+			}
+		}
+
 		resItems = append(resItems, catalogItemResponse{
-			MediaID:      it.MediaID,
-			Title:        it.Title,
-			Description:  it.Description,
-			DurationS:    it.DurationS,
-			NodeID:       it.NodeID,
-			IsNodeOnline: onlineMap[it.NodeID],
-			UpdatedAt:    it.UpdatedAt.Format(time.RFC3339),
+			MediaID:          it.MediaID,
+			Title:            it.Title,
+			Description:      it.Description,
+			DurationS:        it.DurationS,
+			NodeID:           it.NodeID,
+			NodeName:         nodeName,
+			UploaderUsername: uploaderName,
+			IsPublic:         it.IsPublic,
+			IsNodeOnline:     onlineMap[it.NodeID],
+			UpdatedAt:        it.UpdatedAt.Format(time.RFC3339),
 		})
 	}
 
@@ -598,9 +679,35 @@ func (s *Server) handleGetNodeStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 type playbackResponse struct {
-	StreamURL string `json:"stream_url"`
-	RouteType string `json:"route_type"`
-	ExpiresAt string `json:"expires_at"`
+	StreamURL        string `json:"stream_url"`
+	RouteType        string `json:"route_type"`
+	ExpiresAt        string `json:"expires_at"`
+	MediaID          string `json:"media_id,omitempty"`
+	Title            string `json:"title,omitempty"`
+	UploaderUsername string `json:"uploader_username,omitempty"`
+	NodeName         string `json:"node_name,omitempty"`
+	IsPublic         bool   `json:"is_public"`
+}
+
+func (s *Server) extractUserClaims(r *http.Request) *ports.Claims {
+	if s.tokenService == nil {
+		return nil
+	}
+	authHeader := r.Header.Get("Authorization")
+	token := ""
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
+	} else if qToken := r.URL.Query().Get("token"); qToken != "" {
+		token = qToken
+	}
+	if token == "" {
+		return nil
+	}
+	claims, err := s.tokenService.ValidateToken(token)
+	if err != nil {
+		return nil
+	}
+	return claims
 }
 
 func isDirectLAN(r *http.Request) bool {
@@ -613,14 +720,23 @@ func isDirectLAN(r *http.Request) bool {
 	return false
 }
 
-func writePlaybackResponse(w http.ResponseWriter, streamURL, routeType string, expiresAt time.Time) {
+func writePlaybackResponse(w http.ResponseWriter, streamURL, routeType string, expiresAt time.Time, item *domain.CatalogItem, uploaderUsername, nodeName string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(playbackResponse{
-		StreamURL: streamURL,
-		RouteType: routeType,
-		ExpiresAt: expiresAt.UTC().Format(time.RFC3339),
-	})
+	res := playbackResponse{
+		StreamURL:        streamURL,
+		RouteType:        routeType,
+		ExpiresAt:        expiresAt.UTC().Format(time.RFC3339),
+		IsPublic:         true,
+		UploaderUsername: uploaderUsername,
+		NodeName:         nodeName,
+	}
+	if item != nil {
+		res.MediaID = item.MediaID
+		res.Title = item.Title
+		res.IsPublic = item.IsPublic
+	}
+	_ = json.NewEncoder(w).Encode(res)
 }
 
 func (s *Server) handleGetMediaThumbnail(w http.ResponseWriter, r *http.Request) {
@@ -638,6 +754,22 @@ func (s *Server) handleGetMediaThumbnail(w http.ResponseWriter, r *http.Request)
 		}
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve media")
 		return
+	}
+
+	// Privacy check: if not public and not direct LAN, only the node owner can access
+	if !item.IsPublic && !isDirectLAN(r) {
+		claims := s.extractUserClaims(r)
+		if claims == nil {
+			writeError(w, http.StatusForbidden, "FORBIDDEN", "This media thumbnail is private and requires owner authentication")
+			return
+		}
+		if s.nodeRepo != nil {
+			node, err := s.nodeRepo.FindByID(r.Context(), item.NodeID)
+			if err != nil || node == nil || node.UserID != claims.UserID {
+				writeError(w, http.StatusForbidden, "FORBIDDEN", "You do not have permission to view this thumbnail")
+				return
+			}
+		}
 	}
 
 	cacheKey := fmt.Sprintf("%s/%s/thumb.jpg", item.NodeID, item.MediaID)
@@ -704,10 +836,39 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Resolve node owner and names
+	var uploaderUsername string
+	var nodeName string
+	var nodeOwnerUserID string
+	if s.nodeRepo != nil {
+		if node, err := s.nodeRepo.FindByID(r.Context(), item.NodeID); err == nil && node != nil {
+			nodeName = node.Name
+			nodeOwnerUserID = node.UserID
+			if s.userRepo != nil {
+				if user, err := s.userRepo.FindByID(r.Context(), node.UserID); err == nil && user != nil {
+					uploaderUsername = user.Username
+				}
+			}
+		}
+	}
+
+	// Privacy check: if not public and not direct LAN, only the node owner can access
+	if !item.IsPublic && !isDirectLAN(r) {
+		claims := s.extractUserClaims(r)
+		if claims == nil {
+			writeError(w, http.StatusForbidden, "FORBIDDEN", "This media is private and requires owner authentication")
+			return
+		}
+		if nodeOwnerUserID != "" && claims.UserID != nodeOwnerUserID {
+			writeError(w, http.StatusForbidden, "FORBIDDEN", "You do not have permission to view this private media")
+			return
+		}
+	}
+
 	// 1. Direct LAN Detection:
 	if isDirectLAN(r) {
-		streamURL := fmt.Sprintf("http://localhost:8088/stream/%s/master.m3u8", item.MediaID)
-		writePlaybackResponse(w, streamURL, "direct_lan", time.Now().Add(1*time.Hour))
+		streamURL := fmt.Sprintf("http://localhost:8090/stream/%s/master.m3u8", item.MediaID)
+		writePlaybackResponse(w, streamURL, "direct_lan", time.Now().Add(1*time.Hour), item, uploaderUsername, nodeName)
 		return
 	}
 
@@ -745,7 +906,7 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 		expiresAt := time.Now().Add(1 * time.Hour)
 		sigQuery := contracts.SignChunkURL(s.cfg.SigningSecret, item.NodeID, item.MediaID, "master.m3u8", expiresAt)
 		streamURL := fmt.Sprintf("%s/v1/stream/%s/%s/master.m3u8?%s", baseURL, item.NodeID, item.MediaID, sigQuery)
-		writePlaybackResponse(w, streamURL, "cache_only", expiresAt)
+		writePlaybackResponse(w, streamURL, "cache_only", expiresAt, item, uploaderUsername, nodeName)
 		return
 	}
 
@@ -759,7 +920,7 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 	expiresAt := time.Now().Add(1 * time.Hour)
 	sigQuery := contracts.SignChunkURL(s.cfg.SigningSecret, item.NodeID, item.MediaID, "master.m3u8", expiresAt)
 	streamURL := fmt.Sprintf("%s/v1/stream/%s/%s/master.m3u8?%s", baseURL, item.NodeID, item.MediaID, sigQuery)
-	writePlaybackResponse(w, streamURL, "origin_shield", expiresAt)
+	writePlaybackResponse(w, streamURL, "origin_shield", expiresAt, item, uploaderUsername, nodeName)
 }
 
 func (s *Server) resolveBaseURL(r *http.Request) string {

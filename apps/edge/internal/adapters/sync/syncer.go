@@ -62,7 +62,7 @@ func (s *HTTPManifestSyncer) SyncManifest(ctx context.Context, media *domain.Med
 		DurationS:     media.DurationS,
 		ContentHash:   media.ContentHash,
 		Renditions:    renditions,
-		IsPublic:      true,
+		IsPublic:      media.IsPublic,
 		UpdatedAt:     time.Now().UTC(),
 	}
 

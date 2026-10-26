@@ -30,8 +30,15 @@
   - Modal Viewport Portaling (`ModalPortal.tsx`) to avoid CSS `backdrop-filter` clipping.
   - OpenXML PowerPoint presentation (`docs/presentation/CustardFin_Presentation.pptx`), OpenXML dump (`presentation.xml`), and interactive web slides (`docs/presentation/index.html`) with pastel palette and animated custard mascot.
 
+- **User Accounts & Private Video Ownership**:
+  - Cloud API (`apps/api`): Added `/v1/auth/me`, enriched auth responses with `user_id` and `username`. Catalog search now accepts `allowedNodeIDs` permitting owners to discover both public and private items.
+  - Strict privacy enforcement: `/v1/media/{id}/playback` and `/v1/media/{id}/thumbnail` strictly require direct LAN or authenticated node owner credentials for private items; unauthorized callers receive HTTP 403 Forbidden.
+  - Enriched catalog and playback responses with `uploader_username`, `node_name`, and `is_public`.
+  - Edge Node (`apps/edge`): `HTTPManifestSyncer` transmits actual `media.IsPublic` state; private toggle syncs lightweight manifest with `is_public: false` instead of un-syncing/deleting, keeping the owner aware on the Cloud.
+  - Web UI (`apps/web`): Created `AuthModal` (Sign In / Register / 1-click Quick Demo Login as `@demo`), added user account button in `NavbarClientControls`, created `CatalogFeed` and `WatchClient` components showing `@username • node_name` and `🔒 Private (Only You)` badges with immediate token awareness. Added direct "Watch" links in `EdgeLibraryModal`.
+
 ## In Progress
-- Final demonstration rehearsal and viva preparation.
+- Live cloud deployment and evaluation of user accounts and private video visibility.
 
 ## Blocked
 - None.

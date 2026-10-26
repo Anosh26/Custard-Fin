@@ -134,7 +134,7 @@ func TestInMemoryCatalogRepository(t *testing.T) {
 	}
 
 	// Search matching query
-	results, total, err := repo.Search(ctx, "sintel", 10, 0)
+	results, total, err := repo.Search(ctx, "sintel", 10, 0, nil)
 	if err != nil {
 		t.Fatalf("search error: %v", err)
 	}
@@ -143,12 +143,51 @@ func TestInMemoryCatalogRepository(t *testing.T) {
 	}
 
 	// Search non-matching query
-	results, total, err = repo.Search(ctx, "nonexistent", 10, 0)
+	results, total, err = repo.Search(ctx, "nonexistent", 10, 0, nil)
 	if err != nil {
 		t.Fatalf("search error: %v", err)
 	}
 	if total != 0 || len(results) != 0 {
 		t.Errorf("expected 0 results, got total=%d len=%d", total, len(results))
+	}
+
+	// Test private item filtering
+	privItem, err := domain.NewCatalogItem(
+		"media-priv",
+		"node-priv",
+		"Private Video",
+		"Private video description",
+		30,
+		"hash-priv",
+		false,
+		[]byte(`{"schema_version":"1.0"}`),
+		[]domain.Rendition{
+			{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
+		},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error creating private catalog item: %v", err)
+	}
+	if err := repo.UpsertManifest(ctx, privItem); err != nil {
+		t.Fatalf("failed to upsert private manifest: %v", err)
+	}
+
+	// Unauthenticated / public search should not find private video
+	results, total, err = repo.Search(ctx, "Private", 10, 0, nil)
+	if err != nil {
+		t.Fatalf("search error: %v", err)
+	}
+	if total != 0 || len(results) != 0 {
+		t.Errorf("expected 0 results for public search of private video, got %d", total)
+	}
+
+	// Search with node-priv in allowedNodeIDs should find private video
+	results, total, err = repo.Search(ctx, "Private", 10, 0, []string{"node-priv"})
+	if err != nil {
+		t.Fatalf("search error: %v", err)
+	}
+	if total != 1 || len(results) != 1 {
+		t.Errorf("expected 1 result when allowedNodeIDs contains node-priv, got total=%d", total)
 	}
 
 	// Delete
@@ -187,7 +226,7 @@ func TestInMemoryRepositories_SimulatedErrors(t *testing.T) {
 
 	catRepo := memory.NewInMemoryCatalogRepository()
 	catRepo.SimulateErr = simErr
-	if _, _, err := catRepo.Search(ctx, "", 10, 0); !errors.Is(err, simErr) {
+	if _, _, err := catRepo.Search(ctx, "", 10, 0, nil); !errors.Is(err, simErr) {
 		t.Errorf("expected simulated error, got %v", err)
 	}
 	_ = time.Now()

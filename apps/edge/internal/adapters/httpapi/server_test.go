@@ -527,8 +527,12 @@ func TestServer_TogglePublic_Endpoint(t *testing.T) {
 	if wFalse.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK for toggle public false, got %d: %s", wFalse.Code, wFalse.Body.String())
 	}
-	if !syncer.unsynced[m.ID] {
-		t.Errorf("expected syncer.UnsyncManifest to be called for media %s", m.ID)
+	if !syncer.synced[m.ID] {
+		t.Errorf("expected syncer.SyncManifest to be called with private status for media %s", m.ID)
+	}
+	updatedM, _ := mediaRepo.FindByID(ctx, m.ID)
+	if updatedM == nil || updatedM.IsPublic {
+		t.Errorf("expected media %s to be private in database", m.ID)
 	}
 
 	// 3. Non-existent media -> 404

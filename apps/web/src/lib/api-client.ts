@@ -4,6 +4,9 @@ export interface CatalogItem {
   description: string;
   duration_s: number;
   node_id: string;
+  node_name?: string;
+  uploader_username?: string;
+  is_public: boolean;
   is_node_online: boolean;
   updated_at: string;
 }
@@ -17,6 +20,16 @@ export interface PlaybackResponse {
   stream_url: string;
   route_type: "direct_lan" | "origin_shield" | "cache_only";
   expires_at: string;
+  media_id?: string;
+  title?: string;
+  uploader_username?: string;
+  node_name?: string;
+  is_public?: boolean;
+}
+
+export interface UserAccount {
+  user_id: string;
+  username: string;
 }
 
 export interface EdgeMediaItem {
@@ -41,6 +54,135 @@ export interface EdgeNodeStatus {
   active_streams: number;
   max_streams: number;
   nvenc_enabled: boolean;
+}
+
+export function getAuthToken(): string | null {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("custardfin_jwt_token");
+  }
+  return null;
+}
+
+export function setAuthToken(token: string | null) {
+  if (typeof window !== "undefined") {
+    if (token) {
+      localStorage.setItem("custardfin_jwt_token", token);
+    } else {
+      localStorage.removeItem("custardfin_jwt_token");
+    }
+  }
+}
+
+export function getCurrentUser(): UserAccount | null {
+  if (typeof window !== "undefined") {
+    const raw = localStorage.getItem("custardfin_user");
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+export function setCurrentUser(user: UserAccount | null) {
+  if (typeof window !== "undefined") {
+    if (user) {
+      localStorage.setItem("custardfin_user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("custardfin_user");
+    }
+  }
+}
+
+export async function loginUser(
+  username: string,
+  password: string
+): Promise<{ token: string; user_id: string; username: string }> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/v1/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Invalid username or password");
+  }
+  const data = await res.json();
+  setAuthToken(data.token);
+  setCurrentUser({ user_id: data.user_id, username: data.username });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("custardfin_auth_change"));
+  }
+  return data;
+}
+
+export async function registerUser(
+  username: string,
+  password: string
+): Promise<{ token: string; user_id: string; username: string }> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/v1/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Registration failed");
+  }
+  const data = await res.json();
+  setAuthToken(data.token);
+  setCurrentUser({ user_id: data.user_id, username: data.username });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("custardfin_auth_change"));
+  }
+  return data;
+}
+
+export function logoutUser() {
+  setAuthToken(null);
+  setCurrentUser(null);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("custardfin_auth_change"));
+  }
+}
+
+export async function fetchCurrentUser(): Promise<UserAccount | null> {
+  const token = getAuthToken();
+  if (!token) return null;
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      logoutUser();
+      return null;
+    }
+    const data = await res.json();
+    const user: UserAccount = {
+      user_id: data.user_id || data.id,
+      username: data.username,
+    };
+    setCurrentUser(user);
+    return user;
+  } catch {
+    return getCurrentUser();
+  }
+}
+
+export function getThumbnailUrl(mediaId: string): string {
+  const baseUrl = getApiBaseUrl();
+  const token = getAuthToken();
+  if (token) {
+    return `${baseUrl}/v1/media/${mediaId}/thumbnail?token=${encodeURIComponent(token)}`;
+  }
+  return `${baseUrl}/v1/media/${mediaId}/thumbnail`;
 }
 
 export function getApiBaseUrl(): string {
@@ -83,8 +225,15 @@ export async function fetchCatalog(
   params.set("limit", limit.toString());
   params.set("offset", offset.toString());
 
+  const headers: Record<string, string> = {};
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${baseUrl}/v1/catalog?${params.toString()}`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
@@ -98,11 +247,21 @@ export async function fetchPlayback(
   mediaId: string
 ): Promise<PlaybackResponse> {
   const baseUrl = getApiBaseUrl();
+  const headers: Record<string, string> = {};
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${baseUrl}/v1/media/${mediaId}/playback`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
+    if (res.status === 403) {
+      throw new Error("Private video: requires owner sign-in to watch");
+    }
     if (res.status === 429) {
       throw new Error("Node is busy (capacity limit exceeded: 10 active streams)");
     }

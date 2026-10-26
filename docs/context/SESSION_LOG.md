@@ -1,3 +1,46 @@
+## 2026-10-26 - User Accounts & Private Video Ownership System
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Post-Milestone 10 User Identity & Private Video Access Control
+- **Summary:** Implemented comprehensive user accounts, uploader attribution across catalog cards and player view, and resolved private video access control so owners can see and watch their own private videos:
+  1. Root Cause of Private Video Bug: `HTTPManifestSyncer` in `apps/edge` had hardcoded `IsPublic: true`. When toggled to Private, `handleTogglePublic` called `UnsyncManifest`, deleting the catalog item from Cloud PostgreSQL entirely. Furthermore, the Cloud API `Search` query strictly filtered `WHERE is_public = TRUE`, leaving no mechanism for an owner to view or stream their private items remotely.
+  2. Cloud API Access Control & Enriched Catalog:
+     - Updated `ports.CatalogRepository` and PostgreSQL/InMemory adapters to accept `allowedNodeIDs []string`. If a request provides a valid JWT Bearer token, the API queries `nodeRepo.ListByUserID` and injects `(is_public = TRUE OR node_id = ANY($nodeIDs))`. Public and unauthorized users continue seeing only public videos.
+     - Added `GET /v1/auth/me` and returned `user_id` and `username` in auth responses (`/v1/auth/register`, `/v1/auth/login`).
+     - Added strict privacy checks in `handleGetPlayback` and `handleGetMediaThumbnail`: private media requires direct LAN or owner JWT matching `node.UserID`; unauthorized remote users receive HTTP 403 Forbidden.
+     - Enriched `catalogItemResponse` and `playbackResponse` with `uploader_username`, `node_name`, and `is_public`.
+     - Added unit test `TestServer_PrivateCatalogAndPlayback_Ownership` in `apps/api/internal/adapters/httpapi/server_test.go` verifying 10 authorization scenarios.
+  3. Edge Daemon Manifest Sync:
+     - Updated `HTTPManifestSyncer.SyncManifest` to transmit `media.IsPublic`.
+     - Updated `handleTogglePublic` to sync manifests with `is_public` (both true and false) rather than deleting records, keeping the Cloud aware of private media for the authenticated owner.
+     - Updated `edged` scan loop to sync all media with their respective `is_public` status.
+  4. Next.js Web UI:
+     - Created `AuthModal.tsx`: Sign In / Create Account / 1-click "Quick Demo Login (as @demo)" (auto-logins as demo/demo1234 pre-seeded user), with session management and dispatch of `custardfin_auth_change` events.
+     - Updated `NavbarClientControls.tsx` to display `@username` pill when authenticated and `Sign In` when unauthenticated.
+     - Created `CatalogFeed.tsx`: Dynamically fetches user-accessible catalog (including private items) using the client JWT token, renders `@username • node_name`, and displays a `🔒 Private` badge on private titles.
+     - Created `WatchClient.tsx`: Authorizes playback stream using client token, shows uploader metadata and owner verification banner, and provides 1-click "Sign In to Unlock" for private videos if viewed while logged out.
+     - Added direct "▶ Watch" links to each row in `EdgeLibraryModal.tsx`.
+- **Files Touched:**
+  - `apps/api/internal/ports/catalog_repository.go`
+  - `apps/api/internal/adapters/memory/catalog_repo.go`
+  - `apps/api/internal/adapters/memory/memory_test.go`
+  - `apps/api/internal/adapters/postgres/catalog_repo.go`
+  - `apps/api/internal/adapters/httpapi/server.go`
+  - `apps/api/internal/adapters/httpapi/server_test.go`
+  - `apps/edge/internal/adapters/sync/syncer.go`
+  - `apps/edge/internal/adapters/httpapi/server.go`
+  - `apps/edge/internal/adapters/httpapi/server_test.go`
+  - `apps/edge/cmd/edged/main.go`
+  - `apps/web/src/lib/api-client.ts`
+  - `apps/web/src/components/AuthModal.tsx`
+  - `apps/web/src/components/NavbarClientControls.tsx`
+  - `apps/web/src/components/CatalogFeed.tsx`
+  - `apps/web/src/components/WatchClient.tsx`
+  - `apps/web/src/components/EdgeLibraryModal.tsx`
+  - `apps/web/src/app/page.tsx`
+  - `apps/web/src/app/watch/[id]/page.tsx`
+  - `docs/context/STATE.md`
+  - `docs/context/SESSION_LOG.md`
+
 ## 2026-10-26 - Interactive Edge Runner Script (Smart Cloud IP Prompt & Caching)
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Post-Milestone 10 Developer Experience & Viva Automation
