@@ -78,19 +78,6 @@ export default function AuthModal({
     }
   };
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await loginUser("demo", "demo1234");
-      onClose();
-      if (onSuccess) onSuccess();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Demo login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = () => {
     logoutUser();
@@ -378,30 +365,6 @@ export default function AuthModal({
                       : mode === "login"
                       ? "Sign In to Cloud API"
                       : "Create Account"}
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={handleDemoLogin}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem",
-                      borderRadius: "var(--radius-sm)",
-                      border: "1px dashed rgba(245, 158, 11, 0.4)",
-                      background: "rgba(245, 158, 11, 0.08)",
-                      color: "var(--accent-gold)",
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "0.4rem",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <span>⚡ Quick Demo Login (as @demo)</span>
                   </button>
                 </div>
               </form>

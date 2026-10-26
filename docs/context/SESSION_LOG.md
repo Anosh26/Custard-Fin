@@ -1,11 +1,13 @@
-## 2026-10-26 - Edge Node Claiming, Transcode Readiness & Playback Auto-Recovery
+## 2026-10-26 - Edge Node Claiming, Transcode Readiness & Demo Account Removal
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
-- **Summary:** Resolved 3 interconnected issues reported during live multi-user testing:
+- **Summary:** Resolved 3 interconnected issues reported during live multi-user testing, and purged the legacy demo account:
   1. Node Ownership Binding: The demo edge node (`898ea0c7-f7a3-48e8-ba59-b378a219f9ee`) was pre-seeded under `@demo`. Added `POST /v1/nodes/{id}/claim` to `apps/api` allowing an authenticated user (e.g. `@anish`) to claim the edge node. Updated `nodes.user_id = anish.ID`, dynamically re-attributing all videos to `@anish` in the Community Catalog.
-  2. Edge Library Modal Attribution UI: Added node ownership check in `EdgeLibraryModal.tsx`. If the node belongs to another user (or demo), a prominent "Link to @anish" button claims the node in 1 click and updates the catalog feed immediately.
+  2. Edge Library Modal Attribution UI: Added node ownership check in `EdgeLibraryModal.tsx`. If the node belongs to another user (or demo), a prominent "Link to @anish" button claims the node in 1 click and updates the catalog feed immediately. If authentication is expired, it seamlessly triggers `AuthModal`.
   3. Transcoding Race Condition Fix: Large videos (e.g., Cyberpunk, 29 mins) were syncing manifests to Cloud PostgreSQL *before* FFmpeg finished generating `master.m3u8` and HLS renditions, causing 404 network errors when viewers attempted to stream immediately. Updated `edged/main.go` and `server.go` to generate crisp poster thumbnails immediately and ONLY sync media manifests once `master.m3u8` is confirmed to exist on disk.
   4. Player Auto-Recovery: Updated `Player.tsx` to automatically re-poll manifests during edge warm-up (`manifestLoadError`) with a user-friendly status message ("Stream warming up on home edge node. Retrying...") and recreated HLS instances cleanly on manual retry.
+  5. Demo Account Purged: Removed demo account pre-seeding and the "Quick Demo Login" button in `AuthModal.tsx`. In `apid/main.go`, on startup any nodes owned by `@demo` are automatically re-assigned to the registered user and `DELETE FROM users WHERE username = 'demo'` permanently purges the demo user from PostgreSQL.
 - **Files Touched:**
+  - `apps/api/cmd/apid/main.go`
   - `apps/api/internal/ports/node_repository.go`
   - `apps/api/internal/adapters/memory/node_repo.go`
   - `apps/api/internal/adapters/postgres/node_repo.go`
@@ -14,6 +16,7 @@
   - `apps/edge/cmd/edged/main.go`
   - `apps/edge/internal/adapters/httpapi/server.go`
   - `apps/web/src/lib/api-client.ts`
+  - `apps/web/src/components/AuthModal.tsx`
   - `apps/web/src/components/EdgeLibraryModal.tsx`
   - `apps/web/src/components/Player.tsx`
   - `docs/context/STATE.md`

@@ -17,6 +17,7 @@ import (
 	tunnelAdapter "github.com/anosh26/custardfin/apps/api/internal/adapters/tunnel"
 	"github.com/anosh26/custardfin/apps/api/internal/domain"
 	"github.com/anosh26/custardfin/apps/api/internal/ports"
+	"github.com/jackc/pgx/v5/pgxpool"
 	redisClient "github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -52,6 +53,7 @@ func main() {
 		userRepo    ports.UserRepository
 		nodeRepo    ports.NodeRepository
 		catalogRepo ports.CatalogRepository
+		pgPool      *pgxpool.Pool
 	)
 
 	if dbURL == "memory" || dbURL == "none" || dbURL == "" {
@@ -60,7 +62,8 @@ func main() {
 		nodeRepo = memory.NewInMemoryNodeRepository()
 		catalogRepo = memory.NewInMemoryCatalogRepository()
 	} else {
-		pgPool, err := postgres.Connect(ctx, dbURL)
+		var err error
+		pgPool, err = postgres.Connect(ctx, dbURL)
 		if err != nil && dbURL == defaultDBURL {
 			// Fallback check to port 5432
 			fallbackURL := "postgres://custard:custard_secret@127.0.0.1:5432/custardfin?sslmode=disable"
@@ -88,37 +91,42 @@ func main() {
 		}
 	}
 
-	// Pre-seed default demo user and node (for local dev, tests, and presentations)
+	// Ensure edge node registration exists and remove legacy demo account
 	const (
-		demoUserID    = "usr-demo-00000000000000000000"
-		demoNodeID    = "898ea0c7-f7a3-48e8-ba59-b378a219f9ee"
-		demoNodeToken = "1c94b7b8fd38a97cd634b4894358fc1feed28f3a180a104aa0b83f9710190de2"
-		demoFrpToken  = "frp_secret_demo_123456"
+		defaultNodeID    = "898ea0c7-f7a3-48e8-ba59-b378a219f9ee"
+		defaultNodeToken = "1c94b7b8fd38a97cd634b4894358fc1feed28f3a180a104aa0b83f9710190de2"
+		defaultFrpToken  = "frp_secret_demo_123456"
 	)
 
-	if _, err := userRepo.FindByID(ctx, demoUserID); err != nil {
-		demoPassHash, _ := hasher.HashPassword("demo1234")
-		_ = userRepo.Create(ctx, &domain.User{
-			ID:           demoUserID,
-			Username:     "demo",
-			PasswordHash: demoPassHash,
-			CreatedAt:    time.Now().UTC(),
-			UpdatedAt:    time.Now().UTC(),
-		})
-	}
+	if pgPool != nil {
+		// 1. Find the primary registered user (e.g. anish)
+		var primaryUserID string
+		_ = pgPool.QueryRow(ctx, "SELECT id FROM users WHERE username != 'demo' ORDER BY created_at ASC LIMIT 1").Scan(&primaryUserID)
 
-	if _, err := nodeRepo.FindByID(ctx, demoNodeID); err != nil {
-		tokenHash := domain.HashNodeToken(demoNodeToken)
-		_ = nodeRepo.Create(ctx, &domain.Node{
-			ID:            demoNodeID,
-			UserID:        demoUserID,
-			Name:          "home-rtx-4060",
-			NodeTokenHash: tokenHash,
-			FrpAuthToken:  demoFrpToken,
-			CreatedAt:     time.Now().UTC(),
-			UpdatedAt:     time.Now().UTC(),
-		})
-		slog.Info("pre-seeded development demo node", "node_id", demoNodeID)
+		if primaryUserID != "" {
+			// Migrate any nodes still tagged under demo user
+			_, _ = pgPool.Exec(ctx, "UPDATE nodes SET user_id = $1 WHERE user_id = 'usr-demo-00000000000000000000' OR user_id IN (SELECT id FROM users WHERE username = 'demo')", primaryUserID)
+			// Permanently delete demo user account
+			_, _ = pgPool.Exec(ctx, "DELETE FROM users WHERE username = 'demo'")
+			slog.Info("migrated edge nodes to primary user and permanently purged demo account", "user_id", primaryUserID)
+		}
+
+		// Ensure default edge node is registered under primary user
+		if primaryUserID != "" {
+			if _, err := nodeRepo.FindByID(ctx, defaultNodeID); err != nil {
+				tokenHash := domain.HashNodeToken(defaultNodeToken)
+				_ = nodeRepo.Create(ctx, &domain.Node{
+					ID:            defaultNodeID,
+					UserID:        primaryUserID,
+					Name:          "home-rtx-4060",
+					NodeTokenHash: tokenHash,
+					FrpAuthToken:  defaultFrpToken,
+					CreatedAt:     time.Now().UTC(),
+					UpdatedAt:     time.Now().UTC(),
+				})
+				slog.Info("registered default edge node under primary user", "node_id", defaultNodeID, "user_id", primaryUserID)
+			}
+		}
 	}
 
 	// 4. Initialize Redis Heartbeat Store (Invariant 5) with In-Memory fallback
