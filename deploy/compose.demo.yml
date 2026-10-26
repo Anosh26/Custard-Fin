@@ -62,7 +62,7 @@ services:
   api:
     build:
       context: ..
-      dockerfile: apps/api/Dockerfile
+      dockerfile: apps/api/Dockerfile.dev
     container_name: custardfin-api
     restart: unless-stopped
     environment:
@@ -94,7 +94,7 @@ services:
   web:
     build:
       context: ..
-      dockerfile: apps/web/Dockerfile
+      dockerfile: apps/web/Dockerfile.dev
     container_name: custardfin-web
     restart: unless-stopped
     environment:

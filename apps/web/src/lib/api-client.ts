@@ -160,6 +160,17 @@ export async function toggleMediaPublic(mediaId: string, isPublic: boolean): Pro
   if (!res.ok) throw new Error(`Failed updating public status: ${res.statusText}`);
 }
 
+export async function deleteEdgeMedia(mediaId: string, deleteFile = true): Promise<void> {
+  const edgeUrl = getEdgeBaseUrl();
+  const res = await fetch(`${edgeUrl}/api/media/${mediaId}?delete_file=${deleteFile}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Failed deleting media: ${res.statusText}`);
+  }
+}
+
 export async function uploadEdgeMedia(
   file: File,
   onProgress?: (percent: number) => void

@@ -1,0 +1,23 @@
+# Fast development container for CustardFin Cloud API (apid)
+# Uses layer caching for Go modules and runs via 'go run ./cmd/apid'
+# Skips the slow 320s+ static link production build.
+FROM golang:1.26-alpine
+
+WORKDIR /build
+RUN apk --no-cache add ca-certificates git curl tzdata
+
+# Cache go modules download with layer caching
+COPY go.work ./
+COPY libs/contracts/go.mod ./libs/contracts/
+COPY apps/api/go.mod apps/api/go.sum ./apps/api/
+RUN cd apps/api && GOWORK=off go mod download
+
+# Copy application source code
+COPY libs/contracts ./libs/contracts
+COPY apps/api ./apps/api
+
+WORKDIR /build/apps/api
+
+EXPOSE 8080
+
+CMD ["go", "run", "./cmd/apid"]

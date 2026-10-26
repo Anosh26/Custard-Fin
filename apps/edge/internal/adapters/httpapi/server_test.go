@@ -600,3 +600,72 @@ func TestServer_ActiveStreamsTracker(t *testing.T) {
 		t.Fatalf("expected still 2 active streams for repeated requests, got %d", n)
 	}
 }
+
+func TestServer_DeleteMedia(t *testing.T) {
+	tempDir := t.TempDir()
+	sourceFile := filepath.Join(tempDir, "video_to_delete.mp4")
+	_ = os.WriteFile(sourceFile, []byte("fake-mp4-data"), 0644)
+
+	transcodeDir := filepath.Join(tempDir, "transcoded")
+	m, _ := domain.NewMedia(sourceFile, 1000, time.Now(), "hash_del_test", 60, 1280, 720, "h264", "aac")
+
+	mediaTranscodeDir := filepath.Join(transcodeDir, m.ID)
+	_ = os.MkdirAll(mediaTranscodeDir, 0755)
+	_ = os.WriteFile(filepath.Join(mediaTranscodeDir, "master.m3u8"), []byte("#EXTM3U"), 0644)
+
+	mediaRepo := &FakeMediaRepo{
+		items: map[string]*domain.Media{
+			m.ID: m,
+		},
+	}
+	syncer := &FakeSyncer{
+		synced:   map[string]bool{m.ID: true},
+		unsynced: make(map[string]bool),
+	}
+
+	cfg := Config{
+		Addr:         ":0",
+		NodeID:       "test-node",
+		TranscodeDir: transcodeDir,
+	}
+	server := NewServer(cfg, mediaRepo, nil, syncer, nil)
+
+	// 1. Delete media with ?delete_file=true
+	req := httptest.NewRequest(http.MethodDelete, "/api/media/"+m.ID+"?delete_file=true", nil)
+	w := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// Verify SQLite repo deleted it
+	remaining, err := mediaRepo.FindByID(context.Background(), m.ID)
+	if err != nil || remaining != nil {
+		t.Errorf("expected media to be deleted from repo, found: %v", remaining)
+	}
+
+	// Verify cloud unsyncer was called
+	if !syncer.unsynced[m.ID] {
+		t.Errorf("expected syncer.UnsyncManifest to be called for %s", m.ID)
+	}
+
+	// Verify transcoded directory was purged
+	if _, err := os.Stat(mediaTranscodeDir); !os.IsNotExist(err) {
+		t.Errorf("expected transcoded dir to be removed, but still exists")
+	}
+
+	// Verify physical source file was deleted
+	if _, err := os.Stat(sourceFile); !os.IsNotExist(err) {
+		t.Errorf("expected source video file to be removed from disk, but still exists")
+	}
+
+	// 2. Subsequent DELETE returns 404
+	req404 := httptest.NewRequest(http.MethodDelete, "/api/media/"+m.ID, nil)
+	w404 := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(w404, req404)
+	if w404.Code != http.StatusNotFound {
+		t.Errorf("expected 404 on deleting non-existent media, got %d", w404.Code)
+	}
+}
+

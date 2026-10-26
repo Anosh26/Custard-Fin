@@ -1,0 +1,21 @@
+# Fast development container for CustardFin Next.js Web UI
+# Skips the slow 270s+ production build ('npm run build') entirely.
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Cache node modules installation
+COPY apps/web/package.json apps/web/package-lock.json ./
+RUN npm ci
+
+# Copy application source code
+COPY apps/web/ ./
+
+ENV NODE_ENV=development
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"]

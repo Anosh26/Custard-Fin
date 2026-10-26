@@ -109,6 +109,18 @@ func main() {
 			mediaList, err := mediaRepo.List(ctx)
 			if err == nil {
 				for _, m := range mediaList {
+					// 1. Check if source media file still exists on disk.
+					// If missing, prune from edge database, clean up transcoded artifacts, and unsync from cloud!
+					if _, statErr := os.Stat(m.Path); statErr != nil && os.IsNotExist(statErr) {
+						slog.Warn("source media file no longer exists, pruning from library and cloud catalog", "title", m.Title, "path", m.Path, "id", m.ID)
+						if syncer != nil {
+							_ = syncer.UnsyncManifest(ctx, m.ID)
+						}
+						_ = os.RemoveAll(filepath.Join(transcodeDir, m.ID))
+						_ = mediaRepo.Delete(ctx, m.ID)
+						continue
+					}
+
 					outDir := filepath.Join(transcodeDir, m.ID)
 					masterPath := filepath.Join(outDir, "master.m3u8")
 					if _, err := os.Stat(masterPath); os.IsNotExist(err) {
@@ -135,10 +147,8 @@ func main() {
 						}
 					}
 
-					// Ensure media items are set to public and synced to cloud catalog
-					if syncer != nil {
-						_ = mediaRepo.SetPublic(ctx, m.ID, true)
-						m.IsPublic = true
+					// Sync to cloud catalog ONLY if marked Public (respect user privacy setting - Invariant 1!)
+					if syncer != nil && m.IsPublic {
 						renditions := []contracts.Rendition{
 							{Resolution: "1080p", BitrateBps: 5000000, PlaylistPath: "1080p.m3u8", ChunkDurationS: 4},
 							{Resolution: "720p", BitrateBps: 2800000, PlaylistPath: "720p.m3u8", ChunkDurationS: 4},

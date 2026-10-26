@@ -84,6 +84,7 @@ func NewServer(cfg Config, mediaRepo ports.MediaRepository, watchRepo ports.Watc
 	mux.HandleFunc("GET /api/status", s.handleStatus)
 	mux.HandleFunc("GET /api/media", s.handleListMedia)
 	mux.HandleFunc("GET /api/media/{id}", s.handleGetMedia)
+	mux.HandleFunc("DELETE /api/media/{id}", s.handleDeleteMedia)
 	mux.HandleFunc("PUT /api/media/{id}/public", s.handleTogglePublic)
 	mux.HandleFunc("POST /api/media/upload", s.handleUploadMedia)
 	mux.HandleFunc("POST /api/media/scan", s.handleScanMedia)
@@ -401,6 +402,57 @@ func (s *Server) handleTogglePublic(w http.ResponseWriter, r *http.Request) {
 		"media_id":  id,
 		"is_public": req.IsPublic,
 		"status":    "updated",
+	})
+}
+
+func (s *Server) handleDeleteMedia(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing media id"})
+		return
+	}
+
+	media, err := s.mediaRepo.FindByID(r.Context(), id)
+	if err != nil || media == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Media not found"})
+		return
+	}
+
+	// 1. Unsync from Cloud API (removes from community catalog immediately)
+	if s.syncer != nil {
+		if err := s.syncer.UnsyncManifest(r.Context(), id); err != nil {
+			s.logger.Warn("cloud manifest unsync on delete warning", "id", id, "err", err)
+		}
+	}
+
+	// 2. Remove transcoded directory and HLS chunks from edge disk
+	transcodedFolder := filepath.Join(s.transcodeDir, id)
+	_ = os.RemoveAll(transcodedFolder)
+
+	// 3. Remove physical source media file if requested via ?delete_file=true
+	if r.URL.Query().Get("delete_file") == "true" {
+		if _, statErr := os.Stat(media.Path); statErr == nil {
+			if err := os.Remove(media.Path); err != nil {
+				s.logger.Warn("failed to delete physical media file", "path", media.Path, "err", err)
+			} else {
+				s.logger.Info("deleted physical media file from edge disk", "path", media.Path)
+			}
+		}
+	}
+
+	// 4. Delete record from local SQLite repository (cascades to watch_progress)
+	if err := s.mediaRepo.Delete(r.Context(), id); err != nil {
+		s.logger.Error("failed deleting media from database", "id", id, "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to delete media from edge database"})
+		return
+	}
+
+	s.logger.Info("media removed from library and unsynced from cloud", "id", id, "title", media.Title)
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"media_id": id,
+		"status":   "deleted",
+		"title":    media.Title,
 	})
 }
 

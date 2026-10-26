@@ -716,6 +716,34 @@ video {
   background: var(--accent-emerald);
 }
 
+/* Item Action Delete Button */
+.btn-delete-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-item:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-delete-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Presets & Dev Cards */
 .preset-pill {
   background: rgba(255, 255, 255, 0.05);
