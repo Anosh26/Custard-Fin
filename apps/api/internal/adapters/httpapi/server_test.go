@@ -1039,3 +1039,68 @@ func TestServer_FirstChunkPrefetchOnPlayback(t *testing.T) {
 		t.Errorf("unexpected prefetch params: node=%s, media=%s, path=%s", mockPf.triggeredNode, mockPf.triggeredMedia, mockPf.triggeredPath)
 	}
 }
+
+func TestServer_GetMediaThumbnail_OriginShield(t *testing.T) {
+	nodeID := "11111111-1111-1111-1111-111111111111"
+	mediaID := "22222222-2222-2222-2222-222222222222"
+	fakeJPEG := []byte("\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xFF\xDB\x00C\x00")
+
+	mockPull := &mockTunnelPuller{
+		content: map[string][]byte{
+			"thumb.jpg": fakeJPEG,
+		},
+		contentType: map[string]string{
+			"thumb.jpg": "image/jpeg",
+		},
+	}
+
+	server, _, _, catalogRepo, _, _ := setupTestServerFull(t, nil, mockPull)
+
+	// Setup catalog media
+	_ = catalogRepo.UpsertManifest(context.Background(), &domain.CatalogItem{
+		MediaID:     mediaID,
+		NodeID:      nodeID,
+		Title:       "Thumbnail Test Video",
+		DurationS:   60,
+		ContentHash: "hash-thumb",
+		IsPublic:    true,
+		UpdatedAt:   time.Now().UTC(),
+	})
+
+	// 1. First request -> Cache MISS, pulled from edge
+	req1 := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/media/%s/thumbnail", mediaID), nil)
+	w1 := httptest.NewRecorder()
+	server.ServeHTTP(w1, req1)
+
+	if w1.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for thumbnail MISS, got %d: %s", w1.Code, w1.Body.String())
+	}
+	if w1.Header().Get("X-Cache") != "MISS" {
+		t.Errorf("expected X-Cache: MISS, got %q", w1.Header().Get("X-Cache"))
+	}
+	if w1.Header().Get("Content-Type") != "image/jpeg" {
+		t.Errorf("expected Content-Type: image/jpeg, got %q", w1.Header().Get("Content-Type"))
+	}
+	if !bytes.Equal(w1.Body.Bytes(), fakeJPEG) {
+		t.Errorf("thumbnail body mismatch")
+	}
+	if len(mockPull.pulledPaths) != 1 {
+		t.Fatalf("expected puller to be called once, got %d", len(mockPull.pulledPaths))
+	}
+
+	// 2. Second request -> Cache HIT, served from Origin Shield cache without pulling edge
+	req2 := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/media/%s/thumbnail", mediaID), nil)
+	w2 := httptest.NewRecorder()
+	server.ServeHTTP(w2, req2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for thumbnail HIT, got %d: %s", w2.Code, w2.Body.String())
+	}
+	if w2.Header().Get("X-Cache") != "HIT" {
+		t.Errorf("expected X-Cache: HIT, got %q", w2.Header().Get("X-Cache"))
+	}
+	if len(mockPull.pulledPaths) != 1 {
+		t.Fatalf("expected puller NOT to be called again, still got %d calls", len(mockPull.pulledPaths))
+	}
+}
+

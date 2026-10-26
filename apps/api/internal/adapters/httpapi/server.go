@@ -154,6 +154,9 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	// Playback Route Resolution (Public)
 	mux.HandleFunc("GET /v1/media/{id}/playback", s.handleGetPlayback)
 
+	// Thumbnail Poster Image (Public via Origin Shield Pull-Through Cache - Invariant 1, 7)
+	mux.HandleFunc("GET /v1/media/{id}/thumbnail", s.handleGetMediaThumbnail)
+
 	// Origin Shield Stream & HLS Chunk Pull-Through (Signed URLs - Invariant 9)
 	mux.HandleFunc("GET /v1/stream/{node_id}/{media_id}/{chunk_path...}", s.handleStreamChunk)
 }
@@ -618,6 +621,70 @@ func writePlaybackResponse(w http.ResponseWriter, streamURL, routeType string, e
 		RouteType: routeType,
 		ExpiresAt: expiresAt.UTC().Format(time.RFC3339),
 	})
+}
+
+func (s *Server) handleGetMediaThumbnail(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Media ID is required")
+		return
+	}
+
+	item, err := s.catalogRepo.FindByMediaID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "NOT_FOUND", "Media not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve media")
+		return
+	}
+
+	cacheKey := fmt.Sprintf("%s/%s/thumb.jpg", item.NodeID, item.MediaID)
+
+	// 1. Check Origin Shield S3 Cache (Invariant 7)
+	if s.chunkCache != nil {
+		cachedItem, err := s.chunkCache.Get(r.Context(), cacheKey)
+		if err == nil && cachedItem != nil {
+			defer cachedItem.Body.Close()
+			w.Header().Set("Content-Type", "image/jpeg")
+			w.Header().Set("Cache-Control", "public, max-age=86400")
+			w.Header().Set("X-Cache", "HIT")
+			_, _ = io.Copy(w, cachedItem.Body)
+			return
+		}
+	}
+
+	// 2. Cache Miss: Pull once from Home Edge over FRP reverse tunnel (Invariant 2, 7)
+	if s.tunnelPuller == nil {
+		writeError(w, http.StatusServiceUnavailable, "TUNNEL_UNAVAILABLE", "Tunnel puller not configured")
+		return
+	}
+
+	body, _, _, err := s.tunnelPuller.PullChunk(r.Context(), item.NodeID, item.MediaID, "thumb.jpg")
+	if err != nil {
+		s.logger.Debug("thumbnail not available on edge node", "media_id", id, "node_id", item.NodeID, "err", err)
+		writeError(w, http.StatusNotFound, "THUMBNAIL_NOT_FOUND", "Thumbnail not found on edge")
+		return
+	}
+	defer body.Close()
+
+	thumbData, err := io.ReadAll(body)
+	if err != nil || len(thumbData) == 0 {
+		writeError(w, http.StatusBadGateway, "EDGE_ERROR", "Failed to read thumbnail payload from edge")
+		return
+	}
+
+	// 3. Populate S3 Origin Shield Cache (Uploads once from home edge!)
+	if s.chunkCache != nil {
+		_ = s.chunkCache.Put(r.Context(), cacheKey, bytes.NewReader(thumbData), int64(len(thumbData)), "image/jpeg")
+	}
+
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("X-Cache", "MISS")
+	w.Header().Set("Content-Length", strconv.Itoa(len(thumbData)))
+	_, _ = w.Write(thumbData)
 }
 
 func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {

@@ -127,7 +127,7 @@ export default async function WatchPage({ params }: WatchPageProps) {
         </div>
       ) : playback ? (
         <div>
-          <Player streamUrl={playback.stream_url} />
+          <Player streamUrl={playback.stream_url} poster={`/v1/media/${id}/thumbnail`} />
 
           <div
             style={{

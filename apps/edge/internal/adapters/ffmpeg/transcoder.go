@@ -216,11 +216,41 @@ func (t *SubprocessTranscoder) Transcode(ctx context.Context, job ports.Transcod
 		return nil, fmt.Errorf("failed generating master playlist: %w", err)
 	}
 
+	// Generate crisp 640x360 poster thumbnail (thumb.jpg)
+	thumbPath := filepath.Join(job.OutputDir, "thumb.jpg")
+	if err := t.GenerateThumbnail(ctx, job.InputPath, thumbPath); err != nil {
+		t.logger.Warn("thumbnail generation failed", "err", err, "input", job.InputPath)
+	}
+
 	return &ports.TranscodeResult{
 		MasterPlaylistPath: masterPath,
+		ThumbnailPath:      thumbPath,
 		Renditions:         contractsRenditions,
 		UsedEncoder:        usedEncoder,
 	}, nil
+}
+
+// GenerateThumbnail extracts a 640x360 JPEG poster frame from the media input.
+func (t *SubprocessTranscoder) GenerateThumbnail(ctx context.Context, inputPath, outputPath string) error {
+	scaleFilter := "scale=640:360:force_original_aspect_ratio=decrease,pad=640:360:(ow-iw)/2:(oh-ih)/2"
+	args := []string{
+		"-y",
+		"-ss", "00:00:01",
+		"-i", inputPath,
+		"-vframes", "1",
+		"-q:v", "2",
+		"-vf", scaleFilter,
+		outputPath,
+	}
+
+	cmd := exec.CommandContext(ctx, t.ffmpegPath, args...)
+	if err := cmd.Run(); err != nil {
+		// Fallback to offset 0s if media is shorter than 1 second
+		args[2] = "00:00:00"
+		cmdFallback := exec.CommandContext(ctx, t.ffmpegPath, args...)
+		return cmdFallback.Run()
+	}
+	return nil
 }
 
 func (t *SubprocessTranscoder) encodeRendition(

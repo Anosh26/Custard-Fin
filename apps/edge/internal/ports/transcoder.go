@@ -28,6 +28,7 @@ type TranscodeJob struct {
 // TranscodeResult returns details about the completed HLS renditions.
 type TranscodeResult struct {
 	MasterPlaylistPath string
+	ThumbnailPath      string
 	Renditions         []contracts.Rendition
 	UsedEncoder        string
 }
@@ -36,4 +37,5 @@ type TranscodeResult struct {
 type Transcoder interface {
 	ProbeEncoder(ctx context.Context) (string, error)
 	Transcode(ctx context.Context, job TranscodeJob) (*TranscodeResult, error)
+	GenerateThumbnail(ctx context.Context, inputPath, outputPath string) error
 }

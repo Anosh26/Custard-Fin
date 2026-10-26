@@ -101,6 +101,12 @@ export default async function HomePage({ searchParams }: PageProps) {
               className="video-card"
             >
               <div className="card-thumbnail">
+                <img
+                  src={`/v1/media/${item.media_id}/thumbnail`}
+                  alt={item.title}
+                  className="card-thumb-img"
+                  loading="lazy"
+                />
                 <div className="card-play-overlay">
                   <svg
                     width="22"

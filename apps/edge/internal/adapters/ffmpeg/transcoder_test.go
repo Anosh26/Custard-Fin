@@ -259,3 +259,36 @@ func TestSubprocessTranscoder_ExplicitCPU(t *testing.T) {
 		t.Errorf("expected used encoder 'libx264', got %q", result.UsedEncoder)
 	}
 }
+
+func TestSubprocessTranscoder_GenerateThumbnail(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg not found, skipping thumbnail test")
+	}
+
+	tempDir := t.TempDir()
+	sourceVideo := filepath.Join(tempDir, "source_thumb.mp4")
+	thumbPath := filepath.Join(tempDir, "thumb.jpg")
+
+	cmd := exec.Command("ffmpeg", "-y",
+		"-f", "lavfi", "-i", "testsrc=duration=2:size=320x240:rate=30",
+		"-c:v", "libx264",
+		sourceVideo,
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("failed generating test clip: %v (%s)", err, string(out))
+	}
+
+	tc := NewSubprocessTranscoder("", nil)
+	if err := tc.GenerateThumbnail(context.Background(), sourceVideo, thumbPath); err != nil {
+		t.Fatalf("GenerateThumbnail failed: %v", err)
+	}
+
+	info, err := os.Stat(thumbPath)
+	if err != nil {
+		t.Fatalf("thumb.jpg was not created: %v", err)
+	}
+	if info.Size() == 0 {
+		t.Error("thumb.jpg is empty (0 bytes)")
+	}
+}
+

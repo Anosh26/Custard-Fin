@@ -221,6 +221,15 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "video/mp2t")
 		// Immutable 4-second chunk segments can be cached indefinitely
 		w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
+	case ".jpg", ".jpeg":
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+	case ".png":
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+	case ".webp":
+		w.Header().Set("Content-Type", "image/webp")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
 	}
 
 	w.Header().Set("Accept-Ranges", "bytes")

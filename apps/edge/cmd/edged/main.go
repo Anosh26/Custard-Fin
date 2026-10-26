@@ -125,6 +125,16 @@ func main() {
 						}
 					}
 
+					// Ensure crisp 640x360 poster thumbnail (thumb.jpg) exists for catalog cards
+					thumbPath := filepath.Join(outDir, "thumb.jpg")
+					if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
+						if err := transcoder.GenerateThumbnail(ctx, m.Path, thumbPath); err != nil {
+							slog.Warn("generating thumbnail failed", "title", m.Title, "err", err)
+						} else {
+							slog.Info("thumbnail generated for media", "title", m.Title, "id", m.ID)
+						}
+					}
+
 					// Ensure media items are set to public and synced to cloud catalog
 					if syncer != nil {
 						_ = mediaRepo.SetPublic(ctx, m.ID, true)
