@@ -48,8 +48,22 @@ export default function Player({ streamUrl, title, poster }: PlayerProps) {
       hlsRef.current = hls;
 
       let effectiveUrl = streamUrl;
-      if (typeof window !== "undefined" && effectiveUrl.includes("localhost:8080") && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-        effectiveUrl = effectiveUrl.replace("http://localhost:8080", window.location.origin);
+      if (typeof window !== "undefined") {
+        try {
+          const parsed = new URL(effectiveUrl);
+          if (parsed.hostname !== window.location.hostname && !parsed.hostname.startsWith("192.168.")) {
+            parsed.protocol = window.location.protocol;
+            parsed.hostname = window.location.hostname;
+            if (!window.location.port || window.location.port === "80" || window.location.port === "443") {
+              parsed.port = "";
+            } else if (window.location.port === "3000") {
+              parsed.port = "8080";
+            }
+            effectiveUrl = parsed.toString();
+          }
+        } catch {
+          // fallback to raw streamUrl
+        }
       }
       hls.loadSource(effectiveUrl);
       hls.attachMedia(video);

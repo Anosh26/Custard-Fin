@@ -67,7 +67,7 @@ services:
     restart: unless-stopped
     environment:
       API_ADDR: ":8080"
-      API_BASE_URL: "${API_BASE_URL:-http://34.132.188.14:8080}"
+      API_BASE_URL: "${API_BASE_URL:-}"
       TUNNEL_BASE_URL: "${TUNNEL_BASE_URL:-http://frps:8000}"
       DATABASE_URL: "postgres://${POSTGRES_USER:-custard}:${POSTGRES_PASSWORD:-custard_secret}@postgres:5432/${POSTGRES_DB:-custardfin}?sslmode=disable"
       REDIS_ADDR: "redis:6379"

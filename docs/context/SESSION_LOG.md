@@ -1,3 +1,17 @@
+## 2026-10-26 - Dynamic Hostname Resolution for Playback Stream URLs & Player Client Rewriting
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Milestone 10 Production Hardening (Cloud VM IP Migration)
+- **Summary:** Resolved infinite buffering on video playback after VM restart and external IP change (`34.132.188.14` -> `136.71.107.75`):
+  1. Root Cause: `deploy/compose.demo.yml` contained a hardcoded fallback default `API_BASE_URL: "${API_BASE_URL:-http://34.132.188.14:8080}"`. When `GET /v1/media/{id}/playback` was invoked on the new VM, the API generated signed stream URLs pointing to the old dead IP address (`34.132.188.14:8080`). In addition, `Player.tsx` only replaced `localhost:8080`, allowing the old dead IP to be fetched by the browser.
+  2. Dynamic Server Base URL Resolution: Added `resolveBaseURL(r *http.Request)` to `apps/api/internal/adapters/httpapi/server.go`. It dynamically infers the base URL from the incoming HTTP request (`r.Host` and `X-Forwarded-Proto`), ensuring stream URLs always match the exact host and port the client is connected to (port 80 via Caddy, port 8080 directly, or custom domains).
+  3. Resilient Client-Side Hostname Normalization: Updated `apps/web/src/components/Player.tsx` to compare `parsed.hostname` with `window.location.hostname`. If they differ (e.g. stale Docker env or IP change), it rewrites the stream URL to route through the current origin.
+  4. Docker Compose Cleanup: Removed the hardcoded old IP default from `deploy/compose.demo.yml`.
+- **Files Touched:**
+  - `apps/api/internal/adapters/httpapi/server.go`
+  - `apps/web/src/components/Player.tsx`
+  - `deploy/compose.demo.yml`
+  - `docs/context/SESSION_LOG.md`
+
 ## 2026-10-26 - Cloud Node Status Endpoint, Dev Console PNA Fallback & Deploy Guide Update
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Post-Milestone 10 Resilience & Multi-Device Dev Console

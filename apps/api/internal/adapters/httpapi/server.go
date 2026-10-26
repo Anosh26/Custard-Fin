@@ -674,10 +674,10 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusServiceUnavailable, "NODE_OFFLINE", "Home edge node is currently offline and media is not cached")
 			return
 		}
-		// Serve cached chunks only (FR-7)
+		baseURL := s.resolveBaseURL(r)
 		expiresAt := time.Now().Add(1 * time.Hour)
 		sigQuery := contracts.SignChunkURL(s.cfg.SigningSecret, item.NodeID, item.MediaID, "master.m3u8", expiresAt)
-		streamURL := fmt.Sprintf("%s/v1/stream/%s/%s/master.m3u8?%s", s.cfg.BaseURL, item.NodeID, item.MediaID, sigQuery)
+		streamURL := fmt.Sprintf("%s/v1/stream/%s/%s/master.m3u8?%s", baseURL, item.NodeID, item.MediaID, sigQuery)
 		writePlaybackResponse(w, streamURL, "cache_only", expiresAt)
 		return
 	}
@@ -688,10 +688,25 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 		s.prefetcher.TriggerPrefetch(r.Context(), item.NodeID, item.MediaID, "1080p/segment_000.ts")
 	}
 
+	baseURL := s.resolveBaseURL(r)
 	expiresAt := time.Now().Add(1 * time.Hour)
 	sigQuery := contracts.SignChunkURL(s.cfg.SigningSecret, item.NodeID, item.MediaID, "master.m3u8", expiresAt)
-	streamURL := fmt.Sprintf("%s/v1/stream/%s/%s/master.m3u8?%s", s.cfg.BaseURL, item.NodeID, item.MediaID, sigQuery)
+	streamURL := fmt.Sprintf("%s/v1/stream/%s/%s/master.m3u8?%s", baseURL, item.NodeID, item.MediaID, sigQuery)
 	writePlaybackResponse(w, streamURL, "origin_shield", expiresAt)
+}
+
+func (s *Server) resolveBaseURL(r *http.Request) string {
+	if r != nil && r.Host != "" {
+		proto := "http"
+		if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+			proto = "https"
+		}
+		return fmt.Sprintf("%s://%s", proto, r.Host)
+	}
+	if s.cfg.BaseURL != "" {
+		return strings.TrimRight(s.cfg.BaseURL, "/")
+	}
+	return "http://localhost:8080"
 }
 
 func (s *Server) handleStreamChunk(w http.ResponseWriter, r *http.Request) {
