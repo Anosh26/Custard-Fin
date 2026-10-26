@@ -28,7 +28,7 @@
   - Edge ingestion API (`/api/media/upload`, `/api/media/scan`, `/api/media/generate-sample`).
   - Next.js UI Modals: `AddVideoModal`, `EdgeLibraryModal`, `DevSettingsModal`, and Player "Stats for Nerds" HUD.
   - Modal Viewport Portaling (`ModalPortal.tsx`) to avoid CSS `backdrop-filter` clipping.
-  - OpenXML PowerPoint presentation (`docs/presentation/CustardFin_Presentation.pptx`), OpenXML dump (`presentation.xml`), and interactive web slides (`docs/presentation/index.html`) with pastel palette and animated custard mascot.
+  - Complete 8-slide presentation suite across OpenXML PowerPoint (`docs/presentation/CustardFin_Presentation.pptx`), OpenXML dump (`docs/presentation/presentation.xml`), generator script (`scripts/generate_presentation.py`), and interactive HTML5 web deck (`docs/presentation/index.html`) with hardware-agnostic universal GPU/CPU wording, GCP setup, and per-slide custard mascot animations.
 
 - **User Accounts, Edge Node Claiming & Playback Resilience**:
   - Cloud API (`apps/api`): Added `POST /v1/nodes/{id}/claim` allowing authenticated users (e.g. `@anish`) to claim / bind their edge node, instantly re-attributing catalog uploads and granting private video visibility. Added `owner_username` and `owner_user_id` to `GET /v1/nodes/{id}/status`. Fixed prefetch segment name typo to `1080p/segment_0000.ts`.
