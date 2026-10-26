@@ -187,7 +187,18 @@ EDGE_TRANSCODE_DIR=./transcoded
 EDGE_DB_PATH=./data/edge.db
 ```
 
-Or export them directly in your shell:
+### 4.2 Run the Edge Node (Interactive Launcher)
+The easiest way to run the edge daemon is using the interactive launcher script. It prompts for your GCP External IP (remembering your last input so you can simply press **Enter**), verifies cloud API health, sets all tunnel and cloud URLs, and launches `edged`:
+
+```bash
+# Using Makefile (Linux / macOS / Windows PowerShell)
+make run-edge
+
+# Or directly:
+./scripts/run-edge.sh
+```
+
+Alternatively, you can manually export the variables in your shell:
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 export EDGE_CLOUD_URL="http://<GCP_EXTERNAL_IP>:8080"
@@ -198,11 +209,6 @@ export EDGE_FRP_AUTH_TOKEN="custardfin_demo_frp_token"
 
 go run ./apps/edge/cmd/edged
 ```
-
-### 4.2 Run the Edge Node
-```bash
-# Seed demo video fixtures if not already present
-make seed
 
 # Run edge daemon
 go run ./apps/edge/cmd/edged

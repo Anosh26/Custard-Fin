@@ -43,3 +43,4 @@ transcoded/
 .idea/
 .DS_Store
 Thumbs.db
+.last_cloud_ip

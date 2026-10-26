@@ -1,3 +1,19 @@
+## 2026-10-26 - Interactive Edge Runner Script (Smart Cloud IP Prompt & Caching)
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Post-Milestone 10 Developer Experience & Viva Automation
+- **Summary:** Built an interactive edge daemon launcher script eliminating manual `.env` file editing and terminal `export` commands:
+  1. `scripts/run-edge.sh` (Bash) & `scripts/run-edge.ps1` (PowerShell): Prompts user for the cloud VM external IP on startup (e.g. `Enter Cloud VM External IP [Press Enter for 136.71.107.75]: `). Remembers the last input in `.last_cloud_ip` so pressing Enter reuses the active IP.
+  2. Input Sanitization & Preflight: Automatically strips `http://`, `https://`, trailing slashes, and ports if pasted. Performs an instant preflight health check against `${CLOUD_IP}:8080/healthz` to confirm the cloud API is responding before starting the edge daemon.
+  3. Environment Configuration & Launch: Automatically sets `PATH` (with `~/.local/bin` for `frpc`), `EDGE_CLOUD_URL`, `EDGE_FRP_SERVER_ADDR`, `EDGE_FRP_SERVER_PORT`, `EDGE_FRP_AUTH_TOKEN`, and `EDGE_ADDR`, then executes `go run ./apps/edge/cmd/edged`.
+  4. Automation & Docs: Added `make run-edge` to `Makefile`, added `.last_cloud_ip` to `.gitignore`, and updated `docs/runbooks/deploy.md`.
+- **Files Touched:**
+  - `scripts/run-edge.sh` (new)
+  - `scripts/run-edge.ps1` (new)
+  - `Makefile`
+  - `.gitignore`
+  - `docs/runbooks/deploy.md`
+  - `docs/context/SESSION_LOG.md`
+
 ## 2026-10-26 - Dynamic Hostname Resolution for Playback Stream URLs & Player Client Rewriting
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Milestone 10 Production Hardening (Cloud VM IP Migration)

@@ -1,4 +1,4 @@
-.PHONY: help dev-up dev-down floci-up floci-down demo-up demo-down demo-check seed bench load-test test lint fmt
+.PHONY: help dev-up dev-down floci-up floci-down demo-up demo-down demo-check seed bench load-test test lint fmt run-edge
 
 help:
 	@echo "CustardFin Development Targets:"
@@ -9,6 +9,7 @@ help:
 	@echo "  make demo-up    - Run stack with demo profile and Caddy"
 	@echo "  make demo-down  - Stop demo stack"
 	@echo "  make demo-check - Run health checks on all active components"
+	@echo "  make run-edge   - Interactive Edge daemon launcher (prompts for Cloud IP)"
 	@echo "  make seed       - Seed media fixtures for testing and demo"
 	@echo "  make bench      - Run GPU vs CPU transcoding benchmark"
 	@echo "  make load-test  - Run 10-viewer load and admission simulation"
@@ -47,6 +48,9 @@ bench:
 
 load-test:
 	@bash scripts/load-10-viewers.sh || powershell -ExecutionPolicy Bypass -File scripts/load-10-viewers.ps1
+
+run-edge:
+	@bash scripts/run-edge.sh || powershell -ExecutionPolicy Bypass -File scripts/run-edge.ps1
 
 test:
 	go test -v ./libs/contracts/... ./apps/edge/... ./apps/api/...
