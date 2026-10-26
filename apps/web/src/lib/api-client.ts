@@ -176,13 +176,9 @@ export async function fetchCurrentUser(): Promise<UserAccount | null> {
   }
 }
 
-export function getThumbnailUrl(mediaId: string): string {
-  const baseUrl = getApiBaseUrl();
-  const token = getAuthToken();
-  if (token) {
-    return `${baseUrl}/v1/media/${mediaId}/thumbnail?token=${encodeURIComponent(token)}`;
-  }
-  return `${baseUrl}/v1/media/${mediaId}/thumbnail`;
+export function getThumbnailUrl(mediaId: string, token?: string | null): string {
+  const query = token ? `?token=${encodeURIComponent(token)}` : "";
+  return `/v1/media/${mediaId}/thumbnail${query}`;
 }
 
 export function getApiBaseUrl(): string {

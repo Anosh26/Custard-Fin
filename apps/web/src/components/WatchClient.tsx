@@ -193,7 +193,7 @@ export default function WatchClient({
         </div>
       ) : playback ? (
         <div>
-          <Player streamUrl={playback.stream_url} poster={getThumbnailUrl(mediaId)} />
+          <Player streamUrl={playback.stream_url} poster={getThumbnailUrl(mediaId, getAuthToken())} />
 
           <div
             style={{

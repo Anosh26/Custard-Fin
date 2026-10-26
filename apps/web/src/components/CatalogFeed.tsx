@@ -24,6 +24,7 @@ export default function CatalogFeed({
   const [items, setItems] = useState<CatalogItem[]>(initialItems);
   const [total, setTotal] = useState<number>(initialTotal);
   const [loading, setLoading] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
 
   const loadCatalog = async () => {
     try {
@@ -39,12 +40,15 @@ export default function CatalogFeed({
   };
 
   useEffect(() => {
+    const token = getAuthToken();
+    setAuthToken(token);
     // If the client has an auth token, re-fetch to load private items immediately
-    if (getAuthToken()) {
+    if (token) {
       loadCatalog();
     }
 
     const handleAuthChange = () => {
+      setAuthToken(getAuthToken());
       loadCatalog();
     };
 
@@ -93,7 +97,7 @@ export default function CatalogFeed({
         >
           <div className="card-thumbnail">
             <img
-              src={getThumbnailUrl(item.media_id)}
+              src={getThumbnailUrl(item.media_id, authToken)}
               alt={item.title}
               className="card-thumb-img"
               loading="lazy"
