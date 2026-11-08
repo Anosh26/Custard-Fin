@@ -21,6 +21,12 @@
     "version": {
       "type": "string"
     },
+    "lan_addr": {
+      "type": "string"
+    },
+    "public_ip": {
+      "type": "string"
+    },
     "gpu_caps": {
       "type": "object",
       "properties": {

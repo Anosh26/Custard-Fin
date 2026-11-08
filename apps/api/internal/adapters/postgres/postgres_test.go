@@ -66,4 +66,3 @@ func TestConnect_LivePostgresIfAvailable(t *testing.T) {
 	}
 	t.Log("no local postgres container reachable, skipping live verification")
 }
-

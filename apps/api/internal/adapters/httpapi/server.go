@@ -719,6 +719,11 @@ func (s *Server) handleNodeHeartbeat(w http.ResponseWriter, r *http.Request) {
 	}
 	hb.NodeID = nodeID
 
+	// Record the edge node's public IP address as seen by the cloud tier
+	if hb.PublicIP == "" {
+		hb.PublicIP = extractClientIP(r)
+	}
+
 	if err := hb.Validate(); err != nil {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
 		return
@@ -758,6 +763,7 @@ func (s *Server) handleGetNodeStatus(w http.ResponseWriter, r *http.Request) {
 	activeStreams := 0
 	version := "0.1.0"
 	var lastHeartbeat time.Time
+	var lanAddr string
 	if isOnline && hb != nil {
 		if hb.GPUCaps != nil {
 			nvenc = hb.GPUCaps.NVENC
@@ -765,6 +771,7 @@ func (s *Server) handleGetNodeStatus(w http.ResponseWriter, r *http.Request) {
 		activeStreams = hb.ActiveStreams
 		version = hb.Version
 		lastHeartbeat = hb.SentAt
+		lanAddr = hb.LanAddr
 	}
 
 	var ownerUserID string
@@ -796,6 +803,7 @@ func (s *Server) handleGetNodeStatus(w http.ResponseWriter, r *http.Request) {
 		"nvenc_enabled":  nvenc,
 		"version":        version,
 		"last_heartbeat": lastHeartbeat,
+		"lan_addr":       lanAddr,
 		"owner_user_id":  ownerUserID,
 		"owner_username": ownerUsername,
 	})
@@ -833,14 +841,90 @@ func (s *Server) extractUserClaims(r *http.Request) *ports.Claims {
 	return claims
 }
 
-func isDirectLAN(r *http.Request) bool {
-	if r.URL.Query().Get("lan") == "true" {
-		return true
+func extractClientIP(r *http.Request) string {
+	if r == nil {
+		return ""
 	}
-	if r.Header.Get("X-Playback-Mode") == "direct_lan" {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		parts := strings.Split(xff, ",")
+		if len(parts) > 0 {
+			ip := strings.TrimSpace(parts[0])
+			if ip != "" {
+				return ip
+			}
+		}
+	}
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return strings.TrimSpace(xri)
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil && host != "" {
+		return host
+	}
+	return r.RemoteAddr
+}
+
+func isPrivateIP(ipStr string) bool {
+	ip := net.ParseIP(strings.TrimSpace(ipStr))
+	if ip == nil {
+		return false
+	}
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() {
 		return true
 	}
 	return false
+}
+
+func isSameSubnetOrLAN(r *http.Request, hb *contracts.Heartbeat) bool {
+	if r == nil {
+		return false
+	}
+	// Explicit query parameter or header controls
+	if r.URL.Query().Get("lan") == "true" || r.Header.Get("X-Playback-Mode") == "direct_lan" {
+		return true
+	}
+	if r.URL.Query().Get("lan") == "false" || r.Header.Get("X-Playback-Mode") == "origin_shield" || r.Header.Get("X-Playback-Mode") == "remote" {
+		return false
+	}
+
+	clientIP := extractClientIP(r)
+	if clientIP == "" {
+		return false
+	}
+
+	// Case 1: Client connects from a local / private network address (127.0.0.1, 192.168.x.x, 10.x.x.x)
+	if isPrivateIP(clientIP) && (r.URL.Query().Get("lan") == "true" || (hb != nil && hb.LanAddr != "")) {
+		return true
+	}
+
+	// Case 2: Client's public IP matches the edge node's public IP (both behind same home router / ISP CGNAT)
+	if hb != nil && hb.PublicIP != "" && hb.PublicIP == clientIP {
+		return true
+	}
+
+	return false
+}
+
+func isDirectLAN(r *http.Request) bool {
+	return isSameSubnetOrLAN(r, nil)
+}
+
+func resolveLANBase(r *http.Request, hb *contracts.Heartbeat) string {
+	var lanHost string
+	if hb != nil && hb.LanAddr != "" {
+		lanHost = hb.LanAddr
+	} else if r != nil && r.URL.Query().Get("edge_host") != "" {
+		lanHost = r.URL.Query().Get("edge_host")
+	} else if r != nil && r.Header.Get("X-Edge-Host") != "" {
+		lanHost = r.Header.Get("X-Edge-Host")
+	} else {
+		lanHost = "localhost:8090"
+	}
+
+	if strings.HasPrefix(lanHost, "http://") || strings.HasPrefix(lanHost, "https://") {
+		return strings.TrimRight(lanHost, "/")
+	}
+	return "http://" + strings.TrimRight(lanHost, "/")
 }
 
 func writePlaybackResponse(w http.ResponseWriter, streamURL, routeType string, expiresAt time.Time, item *domain.CatalogItem, uploaderUsername, nodeName string) {
@@ -975,8 +1059,27 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Check node liveness and active stream capacity from Redis HeartbeatStore
+	var nodeOnline bool = true
+	var hb *contracts.Heartbeat
+	if s.heartbeatStore != nil {
+		h, online, err := s.heartbeatStore.GetHeartbeat(r.Context(), item.NodeID)
+		if err != nil {
+			s.logger.Error("failed checking node liveness", "node_id", item.NodeID, "err", err)
+			writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to check node status")
+			return
+		}
+		nodeOnline = online
+		hb = h
+		if online && hb != nil && hb.ActiveStreams >= contracts.MaxConcurrentStreamsPerNode {
+			w.Header().Set("Retry-After", "30")
+			writeError(w, http.StatusTooManyRequests, "NODE_BUSY", "Node capacity limit exceeded (10 active streams)")
+			return
+		}
+	}
+
 	// Privacy check: if not public and not direct LAN, only the node owner can access
-	if !item.IsPublic && !isDirectLAN(r) {
+	if !item.IsPublic && !isSameSubnetOrLAN(r, hb) {
 		claims := s.extractUserClaims(r)
 		if claims == nil {
 			writeError(w, http.StatusForbidden, "FORBIDDEN", "This media is private and requires owner authentication")
@@ -989,30 +1092,15 @@ func (s *Server) handleGetPlayback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 1. Direct LAN Detection:
-	if isDirectLAN(r) {
-		streamURL := fmt.Sprintf("http://localhost:8090/stream/%s/master.m3u8", item.MediaID)
+	// Viewer is on the same local subnet / home router NAT, or explicit LAN mode requested (FR-6)
+	if isSameSubnetOrLAN(r, hb) {
+		lanBase := resolveLANBase(r, hb)
+		streamURL := fmt.Sprintf("%s/stream/%s/master.m3u8", lanBase, item.MediaID)
 		writePlaybackResponse(w, streamURL, "direct_lan", time.Now().Add(1*time.Hour), item, uploaderUsername, nodeName)
 		return
 	}
 
 	// 2. Play Decision Tree: Remote viewer
-	// Check node liveness and active stream capacity from Redis HeartbeatStore
-	var nodeOnline bool = true
-	if s.heartbeatStore != nil {
-		hb, online, err := s.heartbeatStore.GetHeartbeat(r.Context(), item.NodeID)
-		if err != nil {
-			s.logger.Error("failed checking node liveness", "node_id", item.NodeID, "err", err)
-			writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to check node status")
-			return
-		}
-		nodeOnline = online
-		if online && hb != nil && hb.ActiveStreams >= contracts.MaxConcurrentStreamsPerNode {
-			w.Header().Set("Retry-After", "30")
-			writeError(w, http.StatusTooManyRequests, "NODE_BUSY", "Node capacity limit exceeded (10 active streams)")
-			return
-		}
-	}
-
 	// 3. Offline handling: Check if master playlist exists in cache (FR-7)
 	masterKey := fmt.Sprintf("%s/%s/master.m3u8", item.NodeID, item.MediaID)
 	cached := false

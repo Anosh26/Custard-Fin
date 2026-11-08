@@ -34,6 +34,7 @@ type Config struct {
 	TranscodeDir string
 	MediaDir     string
 	NodeID       string
+	LanAddr      string
 }
 
 // Server provides the local HTTP streaming and metadata API for the home edge daemon.
@@ -45,6 +46,7 @@ type Server struct {
 	transcodeDir string
 	mediaDir     string
 	nodeID       string
+	lanAddr      string
 	scanService  *app.ScanService
 	transcoder   ports.Transcoder
 	logger       *slog.Logger
@@ -75,11 +77,15 @@ func NewServer(cfg Config, mediaRepo ports.MediaRepository, watchRepo ports.Watc
 		transcodeDir: filepath.Clean(cfg.TranscodeDir),
 		mediaDir:     filepath.Clean(cfg.MediaDir),
 		nodeID:       cfg.NodeID,
+		lanAddr:      cfg.LanAddr,
 		logger:       logger,
 		sessions:     make(map[string]time.Time),
 	}
 
 	mux := http.NewServeMux()
+	// Mini-Jellyfin standalone web player (Offline direct LAN)
+	mux.HandleFunc("GET /{$}", s.handleIndex)
+	mux.HandleFunc("GET /index.html", s.handleIndex)
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
 	mux.HandleFunc("GET /api/status", s.handleStatus)
 	mux.HandleFunc("GET /api/media", s.handleListMedia)
@@ -136,6 +142,12 @@ func (s *Server) Addr() string {
 func (s *Server) Shutdown(ctx context.Context) error {
 	s.logger.Info("edge local streaming server shutting down")
 	return s.httpServer.Shutdown(ctx)
+}
+
+func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(MiniJellyfinHTML))
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
@@ -316,7 +328,6 @@ func (s *Server) withCORS(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
 
 // Middleware: Logging
 func (s *Server) withLogging(next http.Handler) http.Handler {
@@ -501,6 +512,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		"active_streams": s.ActiveStreams(),
 		"max_streams":    10,
 		"nvenc_enabled":  hasNVENC,
+		"lan_addr":       s.lanAddr,
 	})
 }
 
@@ -714,4 +726,3 @@ func (s *Server) handleGenerateSample(w http.ResponseWriter, r *http.Request) {
 		"message":  "Sample clip synthesized, transcoded to 4s HLS, and published to community catalog!",
 	})
 }
-

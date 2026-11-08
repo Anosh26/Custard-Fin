@@ -35,6 +35,12 @@
   - Edge Node Daemon (`apps/edge`): Modified `edged/main.go` and `server.go` to generate crisp poster thumbnails immediately and ONLY sync media manifests to the Cloud catalog once `master.m3u8` is confirmed on disk, preventing catalog publishing during in-flight encoding.
   - Web UI (`apps/web`): Added `claimNode` and `fetchNodeStatus` in `api-client.ts`; added node ownership banner and 1-click `Link to @username` button in `EdgeLibraryModal.tsx`. Enhanced `Player.tsx` with automatic re-polling during stream warm-up and resilient retry handling.
 
+- **Direct Local LAN Streaming & Standalone Mini-Jellyfin (FR-3, FR-6)**:
+  - Embedded Standalone Web UI (`apps/edge`): Added responsive, zero-cloud single-page web application served on `GET /` of `edged` (:8090). Any Wi-Fi device can stream directly with < 5ms delay, browse local library, and save watch history without contacting the cloud tier.
+  - Dynamic LAN IP Detection & Reporting: `edged` detects primary outbound LAN IPv4 address (or `EDGE_LAN_ADDR`) and transmits `lan_addr` in 15s heartbeats.
+  - Cloud API Intelligent Stream Router: Automatically routes viewers on the same home network (matching public NAT IP or private network) to `http://<node-lan-ip>:8090/stream/...` instead of hardcoded `localhost:8090`, eliminating cloud hops and WAN bandwidth for local viewers.
+  - Web UI Integration: Local Edge Library links directly with `?lan=true` and surfaces 1-click shortcut to `:8090` standalone player.
+
 ## In Progress
 - Final verification of node claiming, uploader attribution, and large video playback on GCP VM.
 

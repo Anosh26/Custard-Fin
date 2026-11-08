@@ -120,4 +120,3 @@ func (r *InMemoryNodeRepository) UpdateName(ctx context.Context, nodeID, name st
 	node.Name = name
 	return nil
 }
-

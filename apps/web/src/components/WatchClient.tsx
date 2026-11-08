@@ -30,7 +30,8 @@ export default function WatchClient({
   const resolvePlayback = async () => {
     setLoading(true);
     try {
-      const data = await fetchPlayback(mediaId);
+      const isLan = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("lan") === "true";
+      const data = await fetchPlayback(mediaId, isLan);
       setPlayback(data);
       setError(null);
     } catch (err: unknown) {

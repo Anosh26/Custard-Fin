@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -82,12 +84,16 @@ func main() {
 		slog.Warn("EDGE_NODE_ID or EDGE_NODE_TOKEN not set; running in standalone mode")
 	}
 
-	// 5. Initialize and Start Local HTTP Streaming Server
+	// 5. Initialize and Start Local HTTP Streaming Server & Mini-Jellyfin UI
+	lanAddr := detectLANAddress(listenAddr)
+	slog.Info("edge network interfaces resolved", "lan_addr", lanAddr)
+
 	httpServer := httpapi.NewServer(httpapi.Config{
 		Addr:         listenAddr,
 		TranscodeDir: transcodeDir,
 		MediaDir:     mediaDir,
 		NodeID:       nodeID,
+		LanAddr:      lanAddr,
 	}, mediaRepo, watchRepo, syncer, logger)
 	httpServer.SetScanService(scanService)
 	httpServer.SetTranscoder(transcoder)
@@ -96,7 +102,7 @@ func main() {
 		slog.Error("failed starting edge local http server", "err", err)
 		os.Exit(1)
 	}
-
+	slog.Info("mini-jellyfin local web player ready", "url", fmt.Sprintf("http://%s", lanAddr))
 
 	// 5. Run initial media library scan and auto-transcoding in background
 	if _, err := os.Stat(mediaDir); err == nil {
@@ -239,6 +245,7 @@ func main() {
 			NodeID:        nodeID,
 			NodeToken:     nodeToken,
 			Version:       "0.1.0",
+			LanAddr:       lanAddr,
 			Interval:      time.Duration(heartbeatIntervalSec) * time.Second,
 			GPUCaps:       gpuCaps,
 			StreamTracker: httpServer,
@@ -291,4 +298,58 @@ func getEnv(key, defaultVal string) string {
 		return val
 	}
 	return defaultVal
+}
+
+// detectLANAddress resolves the primary non-loopback LAN IPv4 address and port for the node.
+func detectLANAddress(listenAddr string) string {
+	customLAN := getEnv("EDGE_LAN_ADDR", getEnv("EDGE_LAN_IP", ""))
+	port := "8090"
+	parts := strings.Split(listenAddr, ":")
+	if len(parts) > 1 && parts[len(parts)-1] != "" {
+		port = parts[len(parts)-1]
+	}
+
+	if customLAN != "" {
+		if !strings.Contains(customLAN, ":") {
+			return net.JoinHostPort(customLAN, port)
+		}
+		return customLAN
+	}
+
+	// 1. Try UDP routing probe to determine primary outbound interface (no packets sent)
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err == nil {
+		defer conn.Close()
+		if localAddr, ok := conn.LocalAddr().(*net.UDPAddr); ok && localAddr.IP != nil && !localAddr.IP.IsLoopback() {
+			return net.JoinHostPort(localAddr.IP.String(), port)
+		}
+	}
+
+	// 2. Fall back to scanning local network interfaces for non-loopback IPv4
+	ifaces, err := net.Interfaces()
+	if err == nil {
+		for _, iface := range ifaces {
+			if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+				continue
+			}
+			addrs, err := iface.Addrs()
+			if err != nil {
+				continue
+			}
+			for _, addr := range addrs {
+				var ip net.IP
+				switch v := addr.(type) {
+				case *net.IPNet:
+					ip = v.IP
+				case *net.IPAddr:
+					ip = v.IP
+				}
+				if ip != nil && !ip.IsLoopback() && ip.To4() != nil {
+					return net.JoinHostPort(ip.String(), port)
+				}
+			}
+		}
+	}
+
+	return net.JoinHostPort("127.0.0.1", port)
 }

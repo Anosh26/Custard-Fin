@@ -32,6 +32,7 @@ type Config struct {
 	NodeID        string
 	NodeToken     string
 	Version       string
+	LanAddr       string
 	Interval      time.Duration
 	GPUCaps       *contracts.GPUCapabilities
 	StreamTracker ports.StreamTracker
@@ -103,6 +104,7 @@ func (w *Worker) SendHeartbeat(ctx context.Context, hb *contracts.Heartbeat) err
 			NodeID:        w.cfg.NodeID,
 			SentAt:        time.Now().UTC(),
 			Version:       w.cfg.Version,
+			LanAddr:       w.cfg.LanAddr,
 			GPUCaps:       w.cfg.GPUCaps,
 			ActiveStreams: activeStreams,
 		}

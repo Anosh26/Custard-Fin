@@ -14,6 +14,7 @@ import {
   fetchNodeStatus,
   claimNode,
   updateNodeName,
+  getEdgeBaseUrl,
   CloudNodeStatus,
   UserAccount,
 } from "../lib/api-client";
@@ -231,9 +232,32 @@ export default function EdgeLibraryModal({
               </p>
             </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
-            &times;
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <a
+              href={getEdgeBaseUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                padding: "0.4rem 0.75rem",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "0.78rem",
+                fontWeight: 600,
+                background: "rgba(99, 102, 241, 0.15)",
+                color: "var(--accent-purple)",
+                border: "1px solid rgba(99, 102, 241, 0.35)",
+                textDecoration: "none",
+              }}
+              title="Open standalone Mini-Jellyfin offline web player (:8090)"
+            >
+              <span>⚡ Standalone Player (:8090)</span>
+            </a>
+            <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
+              &times;
+            </button>
+          </div>
         </div>
 
         {/* Node Ownership & Attribution Banner */}
@@ -471,7 +495,7 @@ export default function EdgeLibraryModal({
                     <td style={{ textAlign: "right" }}>
                       <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
                         <a
-                          href={`/watch/${item.id}`}
+                          href={`/watch/${item.id}?lan=true`}
                           style={{
                             display: "inline-flex",
                             alignItems: "center",

@@ -143,4 +143,3 @@ func (r *NodeRepository) UpdateName(ctx context.Context, nodeID, name string) er
 	}
 	return nil
 }
-

@@ -1,3 +1,47 @@
+## 2026-11-08 - Direct Local LAN Streaming & Standalone Mini-Jellyfin UI (FR-3, FR-6)
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Milestone 10 Verification & Invariant Hardening (FR-3, FR-6)
+- **Summary:** Resolved the issue where local devices on the same network could not stream videos directly without calling the cloud or encountered connection refused errors due to hardcoded localhost:
+  1. Embedded Standalone Mini-Jellyfin Web Player (`apps/edge`):
+     - Created `apps/edge/internal/adapters/httpapi/embedded_ui.go` providing a zero-dependency, self-contained single-page web app served on `GET /` and `GET /index.html` of `edged` (:8090).
+     - Allows any device on the local network (smartphones, laptops, tablets, smart TVs) to navigate to `http://<edge-ip>:8090/` and browse all local media from SQLite, view poster thumbnails, stream 4-second pre-encoded HLS renditions with quality selection, trigger library scans, upload videos, and persist private watch history completely offline without contacting the cloud API, PostgreSQL, Redis, or the FRP tunnel.
+     - Added unit test `TestServer_MiniJellyfinIndex` in `apps/edge/internal/adapters/httpapi/server_test.go`.
+  2. Dynamic LAN Address Detection & Heartbeat Reporting:
+     - Updated `libs/contracts/heartbeat.go` and `libs/contracts/schemas/heartbeat.json` to include optional `lan_addr` and `public_ip` fields.
+     - In `apps/edge/cmd/edged/main.go`, implemented `detectLANAddress` to resolve the primary non-loopback IPv4 network interface or read `EDGE_LAN_ADDR`.
+     - In `apps/edge/internal/adapters/heartbeat/worker.go`, transmitted `lan_addr` in 15-second heartbeat pings to the Cloud API.
+     - Exposed `lan_addr` in `GET /api/status`.
+  3. Cloud API Stream Router (Dual-Path Decision Tree):
+     - In `apps/api/internal/adapters/httpapi/server.go`, recorded the edge node's public IP (`extractClientIP`) in `handleNodeHeartbeat`.
+     - Implemented `isSameSubnetOrLAN(r, hb)` to detect when a viewer is on the same local subnet or sharing the same public NAT IP (same home router/Wi-Fi) as the edge node.
+     - Replaced hardcoded `localhost:8090` in `handleGetPlayback` with `resolveLANBase(r, hb)`, generating direct LAN URLs `http://<node-lan-ip>:8090/stream/{id}/master.m3u8` for local clients.
+     - Added comprehensive unit tests in `apps/api/internal/adapters/httpapi/server_test.go` verifying dynamic LAN address routing and automatic same-public-IP detection.
+  4. Web UI Client Integration (`apps/web`):
+     - Updated `getEdgeBaseUrl` in `api-client.ts` to automatically default to `${window.location.hostname}:8090` when browsing on non-localhost clients (e.g. phones on local Wi-Fi).
+     - Updated `fetchPlayback` in `api-client.ts` to transmit `edge_host` and support `forceLan`.
+     - Updated `Player.tsx` to preserve port 8090 on direct LAN streams and rewrite host to LAN IP when accessed from external devices.
+     - Added 1-click "⚡ Standalone Player (:8090)" link in `EdgeLibraryModal.tsx` and updated local library watch buttons to include `?lan=true`.
+     - Passed `tsc --noEmit` and verified production build with `npm run build`.
+- **Files Touched:**
+  - `libs/contracts/heartbeat.go`
+  - `libs/contracts/heartbeat_test.go`
+  - `libs/contracts/schemas/heartbeat.json`
+  - `apps/edge/internal/adapters/httpapi/embedded_ui.go`
+  - `apps/edge/internal/adapters/httpapi/server.go`
+  - `apps/edge/internal/adapters/httpapi/server_test.go`
+  - `apps/edge/internal/adapters/heartbeat/worker.go`
+  - `apps/edge/cmd/edged/main.go`
+  - `apps/edge/bin/edged.exe`
+  - `apps/api/internal/adapters/httpapi/server.go`
+  - `apps/api/internal/adapters/httpapi/server_test.go`
+  - `apps/web/src/lib/api-client.ts`
+  - `apps/web/src/components/Player.tsx`
+  - `apps/web/src/components/WatchClient.tsx`
+  - `apps/web/src/components/EdgeLibraryModal.tsx`
+  - `apps/web/src/app/watch/[id]/page.tsx`
+  - `docs/context/STATE.md`
+  - `docs/context/SESSION_LOG.md`
+
 ## 2026-10-26 - 1-Click "Edit Node Name" in My Library Modal
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Summary:** Added 1-click inline editing of the Edge Node Name in the My Library modal, backed by persistent Cloud API routes and database storage:

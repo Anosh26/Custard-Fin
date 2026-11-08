@@ -21,6 +21,8 @@ type Heartbeat struct {
 	NodeID        string           `json:"node_id"`
 	SentAt        time.Time        `json:"sent_at"`
 	Version       string           `json:"version"`
+	LanAddr       string           `json:"lan_addr,omitempty"`
+	PublicIP      string           `json:"public_ip,omitempty"`
 	GPUCaps       *GPUCapabilities `json:"gpu_caps,omitempty"`
 	ActiveStreams int              `json:"active_streams"`
 }

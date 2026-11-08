@@ -444,6 +444,52 @@ func TestServer_Playback(t *testing.T) {
 		t.Errorf("expected direct_lan route type, got %s", pbResLAN.RouteType)
 	}
 
+	// 3c. Direct LAN with node LanAddr reported in Heartbeat
+	lanHb := contracts.Heartbeat{
+		NodeID:        nodeID,
+		SentAt:        time.Now().UTC(),
+		Version:       "1.0.0",
+		LanAddr:       "192.168.1.88:8090",
+		PublicIP:      "203.0.113.42",
+		ActiveStreams: 1,
+	}
+	if err := heartbeatStore.RecordHeartbeat(context.Background(), &lanHb, 30*time.Second); err != nil {
+		t.Fatalf("failed to record LAN heartbeat: %v", err)
+	}
+
+	// Query with lan=true: verify it uses the reported LanAddr rather than localhost
+	reqLANWithAddr := httptest.NewRequest(http.MethodGet, "/v1/media/"+mediaID+"/playback?lan=true", nil)
+	wLANWithAddr := httptest.NewRecorder()
+	server.ServeHTTP(wLANWithAddr, reqLANWithAddr)
+	if wLANWithAddr.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", wLANWithAddr.Code)
+	}
+	var resLANAddr struct {
+		StreamURL string `json:"stream_url"`
+		RouteType string `json:"route_type"`
+	}
+	_ = json.Unmarshal(wLANWithAddr.Body.Bytes(), &resLANAddr)
+	if !strings.Contains(resLANAddr.StreamURL, "http://192.168.1.88:8090/stream/") {
+		t.Errorf("expected stream_url to use reported LAN address http://192.168.1.88:8090, got %s", resLANAddr.StreamURL)
+	}
+
+	// Auto-LAN detection: Client has same Public IP as edge node (same Wi-Fi router)
+	reqSameIP := httptest.NewRequest(http.MethodGet, "/v1/media/"+mediaID+"/playback", nil)
+	reqSameIP.Header.Set("X-Forwarded-For", "203.0.113.42")
+	wSameIP := httptest.NewRecorder()
+	server.ServeHTTP(wSameIP, reqSameIP)
+	if wSameIP.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on same-IP auto LAN detection, got %d", wSameIP.Code)
+	}
+	var resSameIP struct {
+		StreamURL string `json:"stream_url"`
+		RouteType string `json:"route_type"`
+	}
+	_ = json.Unmarshal(wSameIP.Body.Bytes(), &resSameIP)
+	if resSameIP.RouteType != "direct_lan" {
+		t.Errorf("expected auto direct_lan when client and node share same public IP, got %s", resSameIP.RouteType)
+	}
+
 	// 4. Invariant 10: Node Busy (ActiveStreams >= 10)
 	busyHb := contracts.Heartbeat{
 		NodeID:        nodeID,
@@ -1483,5 +1529,3 @@ func TestServer_UpdateNodeName(t *testing.T) {
 		t.Errorf("expected repo name 'living-room-htpc', got %s", updatedNodePatch.Name)
 	}
 }
-
-

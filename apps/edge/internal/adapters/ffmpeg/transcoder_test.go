@@ -291,4 +291,3 @@ func TestSubprocessTranscoder_GenerateThumbnail(t *testing.T) {
 		t.Error("thumb.jpg is empty (0 bytes)")
 	}
 }
-

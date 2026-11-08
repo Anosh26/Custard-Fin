@@ -103,10 +103,13 @@ npm install
 npm run dev
 ```
 
-### Step 5: Test Playback
-- Open `http://localhost:3000` in your web browser.
-- Run the GPU benchmark: `powershell -ExecutionPolicy Bypass -File scripts/bench-gpu.ps1` (or `bash scripts/bench-gpu.sh`).
-- Run the 10-viewer load simulation: `powershell -ExecutionPolicy Bypass -File scripts/load-10-viewers.ps1`.
+### Step 5: Test Playback & Standalone Mini-Jellyfin
+- **Community Web App**: Open `http://localhost:3000` in your web browser.
+- **Standalone Mini-Jellyfin (Direct LAN, Zero-Cloud)**:
+  - Open `http://<your-lan-ip>:8090` (or `http://localhost:8090`) directly from any phone, laptop, or smart TV on your local network.
+  - Streams pre-encoded HLS with sub-5ms delay, offline library scanning, and private watch progress saved to SQLite without calling the cloud API!
+- **Run GPU benchmark**: `powershell -ExecutionPolicy Bypass -File scripts/bench-gpu.ps1` (or `bash scripts/bench-gpu.sh`).
+- **Run 10-viewer load simulation**: `powershell -ExecutionPolicy Bypass -File scripts/load-10-viewers.ps1`.
 
 ---
 

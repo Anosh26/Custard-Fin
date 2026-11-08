@@ -204,6 +204,11 @@ export function getEdgeBaseUrl(): string {
   if (typeof window !== "undefined") {
     const saved = localStorage.getItem("custardfin_edge_api_url");
     if (saved && saved.trim()) return saved.trim();
+
+    // If accessing from another device on the same local network, connect directly to the edge daemon at :8090
+    if (window.location.hostname && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      return `${window.location.protocol}//${window.location.hostname}:8090`;
+    }
   }
   return "http://localhost:8090";
 }
@@ -244,7 +249,8 @@ export async function fetchCatalog(
 }
 
 export async function fetchPlayback(
-  mediaId: string
+  mediaId: string,
+  forceLan?: boolean
 ): Promise<PlaybackResponse> {
   const baseUrl = getApiBaseUrl();
   const headers: Record<string, string> = {};
@@ -253,7 +259,17 @@ export async function fetchPlayback(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${baseUrl}/v1/media/${mediaId}/playback`, {
+  const params = new URLSearchParams();
+  if (forceLan || (typeof window !== "undefined" && localStorage.getItem("custardfin_playback_mode") === "direct_lan")) {
+    params.set("lan", "true");
+  }
+  const edgeBase = getEdgeBaseUrl().replace(/^https?:\/\//, "");
+  if (edgeBase) {
+    params.set("edge_host", edgeBase);
+  }
+
+  const queryStr = params.toString() ? `?${params.toString()}` : "";
+  const res = await fetch(`${baseUrl}/v1/media/${mediaId}/playback${queryStr}`, {
     cache: "no-store",
     headers,
   });

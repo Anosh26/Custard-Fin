@@ -11,6 +11,7 @@ func TestHeartbeatValidation_HappyPath(t *testing.T) {
 		NodeID:  "550e8400-e29b-41d4-a716-446655440001",
 		SentAt:  time.Now().UTC(),
 		Version: "0.1.0",
+		LanAddr: "192.168.1.100:8090",
 		GPUCaps: &GPUCapabilities{
 			NVENC: true,
 			QSV:   false,

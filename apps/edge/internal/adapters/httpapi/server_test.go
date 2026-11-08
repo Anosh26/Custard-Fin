@@ -165,6 +165,33 @@ func TestServer_Healthz(t *testing.T) {
 	}
 }
 
+func TestServer_MiniJellyfinIndex(t *testing.T) {
+	server, _, _, _, _ := setupTestServer(t)
+
+	// Test GET /
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200 for root GET /, got %d", w.Code)
+	}
+	if !strings.Contains(w.Header().Get("Content-Type"), "text/html") {
+		t.Errorf("expected Content-Type text/html, got %s", w.Header().Get("Content-Type"))
+	}
+	if !strings.Contains(w.Body.String(), "CustardFin Edge") || !strings.Contains(w.Body.String(), "Direct LAN") {
+		t.Errorf("expected HTML to contain Mini-Jellyfin title, got %s", w.Body.String()[:200])
+	}
+
+	// Test GET /index.html
+	req2 := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+	w2 := httptest.NewRecorder()
+	server.httpServer.Handler.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusOK {
+		t.Fatalf("expected status 200 for /index.html, got %d", w2.Code)
+	}
+}
+
 func TestServer_CORS_Middleware(t *testing.T) {
 	server, _, _, _, _ := setupTestServer(t)
 
@@ -672,4 +699,3 @@ func TestServer_DeleteMedia(t *testing.T) {
 		t.Errorf("expected 404 on deleting non-existent media, got %d", w404.Code)
 	}
 }
-

@@ -51,7 +51,13 @@ export default function Player({ streamUrl, title, poster }: PlayerProps) {
       if (typeof window !== "undefined") {
         try {
           const parsed = new URL(effectiveUrl);
-          if (parsed.hostname !== window.location.hostname && !parsed.hostname.startsWith("192.168.")) {
+          // 1. Direct LAN stream (:8090): if resolved to localhost but viewer is browsing on mobile LAN IP, rewrite host to LAN IP
+          if (parsed.port === "8090") {
+            if ((parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+              parsed.hostname = window.location.hostname;
+              effectiveUrl = parsed.toString();
+            }
+          } else if (parsed.hostname !== window.location.hostname && !parsed.hostname.startsWith("192.168.") && !parsed.hostname.startsWith("10.") && !parsed.hostname.startsWith("172.")) {
             parsed.protocol = window.location.protocol;
             parsed.hostname = window.location.hostname;
             if (!window.location.port || window.location.port === "80" || window.location.port === "443") {
