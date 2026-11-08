@@ -1,0 +1,73 @@
+% ==============================================================================
+% MODULE 00: FRONT MATTER (Title, Declaration, Abstract, Table of Contents)
+% ==============================================================================
+
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    
+    {\Huge \textbf{CustardFin}}\\[0.4cm]
+    {\Large \textbf{A Cost-Optimized Hybrid Edge-Cloud Media Streaming and Community Discovery Platform}}\\[1.0cm]
+    
+    {\LARGE \textbf{Cloud Computing Project Report}}\\[1.2cm]
+    
+    \textit{Submitted in Partial Fulfillment of the Requirements for}\\[0.2cm]
+    \textbf{Master of Computer Applications (MCA)}\\[0.2cm]
+    \textbf{Cloud Computing Laboratory}\\[1.5cm]
+    
+    \textbf{Submitted by:}\\[0.4cm]
+    \begin{tabular}{ll}
+        \textbf{Anish Ghadi} & \quad \textbf{Seat No.:} 25P0320009 \\
+        \textbf{Anosh Chodankar} & \quad \textbf{Seat No.:} 25P0320010 \\
+    \end{tabular}
+    
+    \vfill
+    
+    \textbf{Academic Year 2026--2027}\\[0.2cm]
+    \textbf{Department of Computer Applications}\\[0.2cm]
+    \textbf{University / College of Higher Education}\\[1cm]
+\end{titlepage}
+
+% --- Declaration ---
+\chapter*{Candidate Declaration}
+\addcontentsline{toc}{chapter}{Candidate Declaration}
+
+We hereby declare that the project entitled \textbf{``CustardFin: A Cost-Optimized Hybrid Edge-Cloud Media Streaming and Community Discovery Platform''} submitted by us in partial fulfillment of the requirements for the award of the degree of Master of Computer Applications (MCA) is our own original work. All sources of assistance, libraries, frameworks, and literature utilized have been properly cited and acknowledged.
+
+\vspace{2cm}
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+    \rule{\textwidth}{0.4pt}\\
+    \textbf{Anish Ghadi}\\
+    Seat No.: 25P0320009
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+    \rule{\textwidth}{0.4pt}\\
+    \textbf{Anosh Chodankar}\\
+    Seat No.: 25P0320010
+\end{minipage}
+
+\vfill
+\noindent
+\textbf{Date:} November 2026\\
+\textbf{Place:} Goa, India
+
+% --- Abstract ---
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+Traditional personal media streaming architectures present an intractable trade-off: self-hosted media servers (such as Jellyfin and Plex) trap content on private home local networks behind residential ISP Carrier-Grade Network Address Translation (CGNAT), whereas centralized public video hosting platforms (such as YouTube and AWS S3/CloudFront) impose recurring cloud storage bills, bandwidth egress penalties, and complete loss of video ownership. 
+
+\textbf{CustardFin} solves this challenge by introducing a hybrid edge-cloud video streaming architecture adhering to a strict governing invariant: \textit{video binaries remain permanently on the content owner's home edge machine, while the cloud control tier manages only a lightweight searchable catalog and ephemeral stream coordination}. Marking a video ``Public'' syncs only a $\le 3\text{ KB}$ JSON metadata manifest to a cloud PostgreSQL database without uploading the underlying media binary, achieving approximately \textbf{98\% reduction in cloud operational costs} compared to conventional cloud VOD infrastructure.
+
+The platform implements pre-encoded 4-second HTTP Live Streaming (HLS) with automatic hardware acceleration probing (NVIDIA NVENC with automatic CPU fallback), reducing playback compute to under 3\% CPU utilization. Home edge nodes punch through residential ISP CGNAT via outbound-only Transport Layer Security (TLS) reverse tunnels using Fast Reverse Proxy (FRP), eliminating inbound open router port requirements. To protect constrained residential uplink bandwidth, a cloud-side 24-hour LRU \textit{Origin Shield} object cache serves subsequent viewers after an initial on-demand pull, complemented by dynamic master playlist rewriting (adaptive ladder pruning) and a strict 10-stream remote admission limit. Furthermore, local clients benefit from zero-latency LAN streaming via an embedded, offline-capable Mini-Jellyfin web interface on the home daemon. The entire system is implemented in Go and Next.js utilizing 100\% free and open-source software (FOSS), with multi-topology deployment verified live across local development containers, Floci cloud emulation, and Google Cloud Platform (GCP).
+
+\clearpage
+
+% --- Table of Contents, Figures, Tables ---
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+

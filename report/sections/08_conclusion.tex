@@ -1,0 +1,61 @@
+% ==============================================================================
+% MODULE 08: CONCLUSION AND FUTURE SCOPE
+% ==============================================================================
+
+\chapter{Conclusion and Future Scope}
+\label{chap:conclusion}
+
+The exponential growth of digital multimedia has historically concentrated control within centralized hyperscale cloud providers, burdening creators and institutions with severe recurring storage and egress liabilities. This project, \textbf{CustardFin}, demonstrates that by strategically partitioning computational and storage responsibilities between consumer edge hardware and a lightweight cloud control plane, an open-source video-on-demand and community sharing platform can operate with high reliability, absolute data sovereignty, and near-zero cloud operating costs.
+
+% ------------------------------------------------------------------------------
+\section{Summary of Achievements}
+\label{sec:conclusion_achievements}
+% ------------------------------------------------------------------------------
+
+CustardFin successfully fulfills all core functional requirements (FR-1 through FR-10) established in the Business Requirements Document and rigorously upholds all ten non-negotiable architectural invariants:
+
+\begin{itemize}
+    \item \textbf{Decoupled Zero-Storage Architecture (Invariant 1):} Master video binaries remain permanently on consumer-owned edge drives. The cloud tier persists only lightweight 650-byte JSON metadata manifests, eliminating perpetual cloud object storage liabilities ($100\%$ storage cost reduction).
+    \item \textbf{Residential CGNAT Traversal (Invariant 2):} Home edge nodes connect to the cloud control plane exclusively via outbound TLS 1.3 reverse tunnels (FRP), eliminating the need for open inbound router ports, UPnP, or static public IPv4 allocations.
+    \item \textbf{100\% Free and Open-Source Stack (Invariant 3):} Constructed entirely upon permissively licensed open-source software (Go, PostgreSQL, Redis, MinIO/Floci, FRP, Next.js, and SQLite), completely avoiding proprietary licenses or vendor lock-in.
+    \item \textbf{High-Performance Hardware Transcoding (Invariant 6):} Pre-encoded HLS packaging with strict 4-second Group of Pictures keyframe alignment (\texttt{-g 120}) leverages dedicated NVIDIA NVENC ASICs, delivering $10.74\times$ real-time encoding throughput ($322+\text{ fps}$) while maintaining host CPU utilization under $5\%$, backed by automated CPU fallback.
+    \item \textbf{Origin Shield Bandwidth Protection (Invariant 7):} The ephemeral 24-hour pull-through cache guarantees single-ingest protection across residential broadband uplinks. During automated 10-viewer load simulations, the home node uploaded each hot segment exactly once, offloading $90\%$ of streaming bandwidth to the cache and sustaining high-definition playback on constrained $20\text{ Mbps}$ residential lines.
+    \item \textbf{Absolute Private Data Sovereignty (Invariant 8):} User viewing histories, playback bookmarks, and unshared personal recordings remain strictly within the edge node's local SQLite database.
+    \item \textbf{Cryptographic Token Access Control (Invariant 9):} Streaming segments are guarded by short-lived HMAC-SHA256 signed URLs, preventing unauthenticated scraping and cross-site hotlinking.
+    \item \textbf{Admission Control and Capacity Enforcement (Invariant 10):} The dual-path stream router strictly enforces a 10-stream concurrent remote cap per node, returning graceful \texttt{HTTP 429 Too Many Requests} responses to protect residential networks from upload exhaustion.
+    \item \textbf{Sub-5ms Local LAN Playback:} Proximity-resolved dual-path streaming and the embedded Mini-Jellyfin offline web hub enable direct local network streaming with under $4\text{ ms}$ TTFB, providing full media streaming even during total cloud or ISP outages.
+    \item \textbf{Confirmed 95.89\% Cloud Cost Reduction:} Financial analysis established a monthly operating cost of \rupee~4{,}128.60 (\$49.15) compared to \rupee~1{,}00{,}380.00 (\$1{,}195.00) for conventional centralized cloud architectures, yielding verified savings of over \rupee~34.65 Lakhs (\$41,250) across a 3-year lifecycle for a 100-user community.
+\end{itemize}
+
+% ------------------------------------------------------------------------------
+\section{Limitations of the Current System (Version 1)}
+\label{sec:conclusion_limitations}
+% ------------------------------------------------------------------------------
+
+While CustardFin achieves production-grade functionality for community and self-hosted environments, several architectural boundaries are acknowledged:
+\begin{enumerate}
+    \item \textbf{Centralized Relay VM Dependency:} Although video binaries are not stored in the cloud, remote tunnel traffic for cache-miss chunks transits a single cloud relay instance running \texttt{frps}. If this relay virtual machine suffers network partition, remote playback for uncached chunks stalls until connectivity recovers.
+    \item \textbf{Absence of Edge-to-Edge P2P Swarming:} In Version 1, edge nodes communicate exclusively with the cloud control plane. Direct browser-to-browser WebRTC DataChannel chunk sharing is not yet enabled.
+    \item \textbf{Lack of Hardware Digital Rights Management (DRM):} To preserve open-source software purity and avoid proprietary licensing fees, CustardFin relies on HMAC-SHA256 signed URLs and dynamic HLS chunking rather than hardware-enforced DRM schemes (e.g., Google Widevine Modular or Apple FairPlay).
+    \item \textbf{Browser-Centric Client Experience:} The client interface is currently deployed as a responsive web application for desktop and mobile browsers. Dedicated native applications for smart television platforms (Android TV, Apple tvOS, Roku) are not yet packaged.
+\end{enumerate}
+
+% ------------------------------------------------------------------------------
+\section{Future Research and Engineering Enhancements}
+\label{sec:conclusion_future}
+% ------------------------------------------------------------------------------
+
+The modular, hexagonal design of CustardFin provides a robust foundation for future enhancements:
+\begin{itemize}
+    \item \textbf{Multi-Region Anycast FRP Relays:} Future iterations can deploy geographically dispersed FRP relay servers operating behind BGP Anycast and GeoDNS. Edge nodes will automatically bind to the topologically nearest relay, minimizing global round-trip latency and eliminating single-relay points of failure.
+    \item \textbf{Hybrid WebRTC Peer-Assisted Delivery:} For popular community streams experiencing sudden viewership surges, the Next.js web player can be extended with client-side WebTorrent / WebRTC DataChannel protocols. Concurrent viewers can trade cached HLS segments directly, further reducing cloud egress and relay bandwidth.
+    \item \textbf{Cryptographic Manifest Attestation and Decentralized Moderation:} Manifest exchanges can incorporate public-key cryptography (Ed25519) to verify node ownership and metadata integrity. Community moderation mechanisms (such as web-of-trust reputation scoring) can empower user collectives to curate public catalogs autonomously.
+    \item \textbf{Cross-Platform Native Smart TV Applications:} Leveraging the standardized, versioned OpenAPI 3.0 specification (\texttt{docs/api/openapi.yaml}), native television interfaces built in Flutter or React Native can bring the CustardFin experience to living room displays with seamless direct LAN auto-discovery.
+\end{itemize}
+
+% ------------------------------------------------------------------------------
+\section{Concluding Remarks}
+\label{sec:conclusion_remarks}
+% ------------------------------------------------------------------------------
+
+CustardFin resolves the historic tension between personal media privacy and community content discoverability. By demonstrating that video binaries can remain securely at home while a centralized cloud plane orchestrates discovery, reverse tunneling, and temporary caching, the project establishes a sustainable paradigm for the future of decentralized multimedia systems. This project fulfills the rigorous academic and practical requirements of the MCA Cloud Computing Laboratory curriculum, presenting a fully realized, empirically validated, and economically revolutionary distributed system.

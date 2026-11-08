@@ -1,3 +1,97 @@
+## 2026-11-09 - Indian Rupee (₹) Financial Conversion & Creative Visual Diagram Upgrades
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Final Academic Report Polish & Visual Enhancements
+- **Summary:**
+  1. Complete Currency Conversion to Indian Rupees (₹):
+     - Configured `report/main.tex` with `\usepackage{tfrupee}` and `\DeclareUnicodeCharacter{20B9}{\rupee}` for native symbol rendering in `pdflatex`.
+     - Standardized all financial analysis on baseline exchange rate benchmark `$1.00 USD = ₹84.00 INR`.
+     - Converted Chapter 5 cost comparison matrix, mathematical proofs, and equations: Traditional Cloud VOD = ₹1,00,380.00/mo (₹12.05 Lakhs/yr, 3-Yr TCO ₹36.14 Lakhs) vs CustardFin = ₹4,128.60/mo (₹49,543/yr, 3-Yr TCO ₹1.49 Lakhs); Net Savings = ₹96,251.40/mo (₹11.55 Lakhs/yr saved, 95.89% reduction).
+     - Converted S3 storage (₹1.932/GB-mo), cloud egress (₹7.56/GB), transcode compute (₹1.26/min), and all literature survey comparison costs.
+  2. Overhaul of Generic "Boxes in Boxes" Diagrams into Creative Visual Graphics:
+     - Replaced rectangular flowchart boxes across all 7 figures with custom vector graphics utilizing physical hardware metaphors, speedometers, thermometers, and organic conduits:
+       - `diag_01_nat_traversal.png`: 3D NVMe storage cylinder, server chassis with blinking LEDs, monitor on stand, physical brick firewall with padlock shield (inbound SYN dropped $\times$, outbound TLS pass $\checkmark$), cloud, laptop/phone silhouettes.
+       - `diag_02_architecture_overview.png`: 3D storage cylinders, green NVIDIA GPU ASIC with golden pins (NVENC 322+ fps), film strip with sprocket cuts, server chassis, monitor, firewall shield, cloud contour with database barrels, and remote devices.
+       - `diag_03_ingest_pipeline.png`: Video file icon, SHA-256 binary key, green NVENC chip with active probe, film strip with 4s cuts (GOP g=120), 3D SQLite WAL database cylinder, TV/monitor.
+       - `diag_04_heartbeat_liveness.png`: Active green ECG pulse heartbeat waveform, 15s timer, Redis RAM cylinder, global online beacon vs severed flatline ECG, 30s grace stopwatch, automatic memory eviction trash drop.
+       - `diag_05_dual_path_shield.png`: RTX 4060 PC tower, Stream router code decision, Direct LAN bypass with Smart TV and ₹0.00 egress, Origin Shield S3 LRU cache, 10-viewer fan-out with laptops/smartphones/tablets and 90% uplink saved.
+       - `diag_06_cost_comparison.png`: 3D stacked cost towers in Indian Rupees (₹1,00,380 vs ₹4,129), circular 95.9% savings medallion, and zero-cost checkmarks.
+       - `diag_07_nvenc_benchmark.png`: Tachometer speedometers (322.3 fps vs 33.6 fps), circular CPU donut rings (4.8% vs 96.4%), glass mercury thermometers (61°C / 42W vs 89°C / 95W).
+  3. Clean PDF Recompilation:
+     - Output generated at `report/main.pdf` (62 pages, 2,412,665 bytes, 0 errors, all references cleanly resolved).
+- **Files Touched:**
+  - `report/main.tex`
+  - `report/sections/01_introduction.tex`
+  - `report/sections/02_literature_survey.tex`
+  - `report/sections/03_architecture.tex`
+  - `report/sections/05_cost_analysis.tex`
+  - `report/sections/06_evaluation_testing.tex`
+  - `report/sections/08_conclusion.tex`
+  - `report/figures/diag_01_nat_traversal.png`
+  - `report/figures/diag_02_architecture_overview.png`
+  - `report/figures/diag_03_ingest_pipeline.png`
+  - `report/figures/diag_04_heartbeat_liveness.png`
+  - `report/figures/diag_05_dual_path_shield.png`
+  - `report/figures/diag_06_cost_comparison.png`
+  - `report/figures/diag_07_nvenc_benchmark.png`
+  - `scripts/render_diag1_creative.py`
+  - `scripts/render_diag2_creative.py`
+  - `scripts/render_diag3_creative.py`
+  - `scripts/render_diag4_creative.py`
+  - `scripts/render_diag5_creative.py`
+  - `scripts/render_diag6_rupees.py`
+  - `scripts/render_diag7_creative.py`
+
+## 2026-11-09 - Comprehensive Academic Project Report Generation in Modular LaTeX
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Final Project Report & Academic Deliverable Generation
+- **Summary:**
+  1. Master Configuration & Academic Front Matter:
+     - Configured `report/main.tex` with standard `report` class (12pt, A4 paper, 1in margins), `lmodern`, `microtype`, `tabularx`, `booktabs`, `algorithm`/`algpseudocode`, `listings` with custom JSON syntax highlighting, and `IEEEtran` bibliography.
+     - Authored `report/sections/00_frontmatter.tex` with explicit Title "Cloud Computing Project Report", Candidate credentials strictly using Seat Numbers (Anish Ghadi - Seat No.: 25P0320009; Anosh Chodankar - Seat No.: 25P0320010), Candidate Declaration, Certificate, Acknowledgements, Academic Abstract, ToC, List of Figures, and List of Tables.
+  2. Literature Survey & Background Study (`report/sections/02_literature_survey.tex`):
+     - Comprehensive comparative matrix evaluating Centralized VOD, Self-Hosted Servers, PeerTube, and CustardFin.
+     - In-depth theoretical foundations: H.264/AVC, NVENC dedicated ASIC pipeline, RFC 8216 HLS 4-second chunking with strict GOP keyframe alignment (`-g 120`), and FRP reverse proxy NAT traversal.
+  3. System Architecture & Design (`report/sections/03_architecture.tex`):
+     - Two-tier distributed architecture blueprint, subsystem breakdown of `apps/edge`, `apps/api`, and `apps/web`.
+     - End-to-end sequence diagrams for Local Ingest, 650-byte JSON Manifest Sync, 15s Redis Heartbeat Liveness, and Dual-Path Stream Router with Origin Shield Single Ingest.
+  4. Features & UI Walkthrough with High-Resolution Screenshots (`report/sections/04_features_implementation.tex`):
+     - Technical explanation of FR-1 through FR-10.
+     - Generated 5 high-resolution PNG screenshots via headless Chrome in `scripts/generate_report_screenshots.py` and embedded in report: Community Catalog Feed (`ui_catalog_feed.png`), Player with "Stats for Nerds" HUD (`ui_player_stats.png`), My Edge Library Modal (`ui_edge_library.png`), Standalone Mini-Jellyfin Offline Hub (`ui_mini_jellyfin.png`), and Dev Settings Modal (`ui_dev_settings.png`).
+  5. Cost Analysis & Financial Feasibility (`report/sections/05_cost_analysis.tex`):
+     - Formal mathematical formulation comparing traditional centralized cloud burn rate (\$1,195/mo, \$14,340/yr) against CustardFin (\$49.15/mo, \$589.80/yr).
+     - Mathematical proof of 95.89% cloud cost reduction and 3-year TCO savings of \$41,250+.
+     - Proof of asymptotic $O(1)$ cloud storage scaling.
+  6. Deployment, Testing & Experimental Evaluation (`report/sections/06_evaluation_testing.tex`):
+     - 4 operational deployment profiles (Pure Local, Docker Compose, Floci Lab, GCP Live VM).
+     - NVENC GPU vs CPU benchmarks ($10.74\times$ realtime, 322.3 fps vs 33.6 fps, 91.6% CPU reduction).
+     - 10-viewer load simulation with 90.0% Origin Shield cache hit rate and home uplink preservation proof.
+     - Admission control 10-stream cap verification with HTTP 429 Retry-After: 30.
+  7. Team Contributions & Division of Work (`report/sections/07_contributions.tex`):
+     - Individual detailed breakdown of ownership for Anish Ghadi (Seat No.: 25P0320009) and Anosh Chodankar (Seat No.: 25P0320010).
+     - Detailed 17-row Subsystem Responsibility & Workload Contribution Matrix.
+  8. Conclusion & Future Scope (`report/sections/08_conclusion.tex`):
+     - Verification against all 10 non-negotiable invariants, V1 limitations, and technical roadmap (Anycast FRP, WebRTC mesh, Smart TV clients).
+  9. Clean Compilation:
+     - Output generated at `report/main.pdf` (62 pages, 1,344,810 bytes) with zero LaTeX errors and all cross-references resolved.
+- **Files Touched:**
+  - `report/main.tex`
+  - `report/references.bib`
+  - `report/sections/00_frontmatter.tex`
+  - `report/sections/01_introduction.tex`
+  - `report/sections/02_literature_survey.tex`
+  - `report/sections/03_architecture.tex`
+  - `report/sections/04_features_implementation.tex`
+  - `report/sections/05_cost_analysis.tex`
+  - `report/sections/06_evaluation_testing.tex`
+  - `report/sections/07_contributions.tex`
+  - `report/sections/08_conclusion.tex`
+  - `report/figures/ui_catalog_feed.png`
+  - `report/figures/ui_player_stats.png`
+  - `report/figures/ui_edge_library.png`
+  - `report/figures/ui_mini_jellyfin.png`
+  - `report/figures/ui_dev_settings.png`
+  - `scripts/generate_report_screenshots.py`
+
 ## 2026-11-08 - Direct Local LAN Streaming & Standalone Mini-Jellyfin UI (FR-3, FR-6)
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Milestone 10 Verification & Invariant Hardening (FR-3, FR-6)

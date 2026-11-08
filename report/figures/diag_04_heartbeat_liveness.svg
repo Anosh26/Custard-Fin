@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 500" width="1180" height="500">
+  <defs>
+    <filter id="cSh4" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#0f172a" flood-opacity="0.08" />
+    </filter>
+
+    <linearGradient id="gLiveHdr" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" /><stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="gDeadHdr" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e11d48" /><stop offset="100%" stop-color="#be123c" />
+    </linearGradient>
+
+    <!-- Markers -->
+    <marker id="mGreen4" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#10b981" />
+    </marker>
+    <marker id="mRed4" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#ef4444" />
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .title { font-size: 19px; font-weight: 800; fill: #0f172a; }
+    .subtitle { font-size: 12px; fill: #64748b; }
+    .state-hdr { font-size: 13.5px; font-weight: 800; fill: #ffffff; }
+    .node-t { font-size: 11.5px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .node-d { font-size: 9.5px; fill: #64748b; text-anchor: middle; }
+    .badge { font-size: 9px; font-weight: 800; }
+  </style>
+
+  <!-- Canvas Base -->
+  <rect width="1180" height="500" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+
+  <!-- Header -->
+  <text x="40" y="36" class="title">Distributed Ephemeral Heartbeat &amp; Zero-Polling Liveness State Machine</text>
+  <text x="40" y="54" class="subtitle">Redis TTL expiration automates edge liveness detection without periodic database scanning or background worker CPU overhead</text>
+
+  <!-- ========================================================================= -->
+  <!-- STATE 1: HEALTHY ACTIVE HEARTBEAT (TOP HALF) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(40, 75)" filter="url(#cSh4)">
+    <rect width="1100" height="190" rx="14" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" />
+    <rect width="1100" height="34" rx="14" fill="url(#gLiveHdr)" />
+    <rect y="22" width="1100" height="12" fill="url(#gLiveHdr)" />
+    <text x="24" y="22" class="state-hdr">🟢 STATE 1: Normal Operation — Periodic 15s Heartbeat &amp; Key Renewal</text>
+
+    <!-- Visual 1: Active ECG Pulse & Edge Server -->
+    <g transform="translate(30, 48)">
+      <rect width="210" height="120" rx="8" fill="#ffffff" stroke="#86efac" />
+      <!-- Animated-style ECG Pulse Line -->
+      <path d="M 20 40 L 60 40 L 70 15 L 80 65 L 90 25 L 100 50 L 110 40 L 190 40" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" />
+      <circle cx="90" cy="25" r="4" fill="#047857" />
+      <text x="105" y="80" class="node-t">Edge Daemon (edged)</text>
+      <text x="105" y="95" class="node-d">Fires every 15 seconds</text>
+      <rect x="55" y="102" width="100" height="14" rx="3" fill="#dcfce7" />
+      <text x="105" y="113" font-size="8" font-weight="800" fill="#15803d" text-anchor="middle">ACTIVE HEARTBEAT</text>
+    </g>
+
+    <!-- Arrow 1 -> 2 -->
+    <path d="M 245 108 L 295 108" fill="none" stroke="#10b981" stroke-width="2.5" marker-end="url(#mGreen4)" />
+    <text x="270" y="98" font-size="8.5" font-weight="700" fill="#047857" text-anchor="middle">POST 15s</text>
+
+    <!-- Visual 2: Cloud API Router -->
+    <g transform="translate(305, 48)">
+      <rect width="220" height="120" rx="8" fill="#ffffff" stroke="#e2e8f0" />
+      <!-- Go Router Icon -->
+      <rect x="75" y="15" width="70" height="32" rx="4" fill="#e0f2fe" stroke="#38bdf8" />
+      <text x="110" y="32" font-size="9" font-weight="800" fill="#0369a1" text-anchor="middle">GO API ROUTER</text>
+      <text x="110" y="42" font-size="7.5" fill="#0284c7" text-anchor="middle">JWT Verified</text>
+      <text x="110" y="80" class="node-t">Cloud API (apid)</text>
+      <text x="110" y="95" class="node-d">Parses streams &amp; LAN IP</text>
+      <rect x="45" y="102" width="130" height="14" rx="3" fill="#f1f5f9" />
+      <text x="110" y="113" font-size="8" font-weight="700" fill="#475569" text-anchor="middle">SETEX KEY TTL=45s</text>
+    </g>
+
+    <!-- Arrow 2 -> 3 -->
+    <path d="M 530 108 L 580 108" fill="none" stroke="#10b981" stroke-width="2.5" marker-end="url(#mGreen4)" />
+
+    <!-- Visual 3: Redis RAM Cylinder with Key Renewal -->
+    <g transform="translate(590, 48)">
+      <rect width="220" height="120" rx="8" fill="#ffffff" stroke="#fde047" />
+      <!-- Redis Cylinder -->
+      <path d="M 80 18 L 80 42 A 25 8 0 0 0 130 42 L 130 18 Z" fill="#fef9c3" stroke="#f59e0b" stroke-width="1.2" />
+      <ellipse cx="105" cy="18" rx="25" ry="8" fill="#fde047" stroke="#f59e0b" stroke-width="1.2" />
+      <text x="105" y="32" font-size="8" font-weight="800" fill="#92400e" text-anchor="middle">REDIS</text>
+      <text x="110" y="80" class="node-t">heartbeat:{node_id}</text>
+      <text x="110" y="95" class="node-d">TTL = 45s (30s Grace)</text>
+      <rect x="50" y="102" width="120" height="14" rx="3" fill="#fef3c7" />
+      <text x="110" y="113" font-size="8" font-weight="800" fill="#b45309" text-anchor="middle">KEY ACTIVE IN RAM</text>
+    </g>
+
+    <!-- Arrow 3 -> 4 -->
+    <path d="M 815 108 L 865 108" fill="none" stroke="#10b981" stroke-width="2.5" marker-end="url(#mGreen4)" />
+
+    <!-- Visual 4: Global Catalog Discovery State -->
+    <g transform="translate(875, 48)">
+      <rect width="195" height="120" rx="8" fill="#ffffff" stroke="#86efac" />
+      <circle cx="97.5" cy="30" r="14" fill="#dcfce7" />
+      <text x="97.5" y="35" font-size="14" text-anchor="middle">🟢</text>
+      <text x="97.5" y="80" class="node-t">Status: ONLINE</text>
+      <text x="97.5" y="95" class="node-d">EXISTS query &lt; 0.8 ms</text>
+      <rect x="25" y="102" width="145" height="14" rx="3" fill="#dcfce7" />
+      <text x="97.5" y="113" font-size="8" font-weight="800" fill="#065f46" text-anchor="middle">VISIBLE IN PUBLIC CATALOG</text>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- STATE 2: DISCONNECT / NETWORK DROP FLATLINE (BOTTOM HALF) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(40, 280)" filter="url(#cSh4)">
+    <rect width="1100" height="190" rx="14" fill="#fff5f5" stroke="#fecaca" stroke-width="1.5" />
+    <rect width="1100" height="34" rx="14" fill="url(#gDeadHdr)" />
+    <rect y="22" width="1100" height="12" fill="url(#gDeadHdr)" />
+    <text x="24" y="22" class="state-hdr">🔴 STATE 2: Disconnect Event — Zero-CPU Memory Expiry &amp; Catalog Protection</text>
+
+    <!-- Visual 1: Severed Connection / Flatline ECG -->
+    <g transform="translate(30, 48)">
+      <rect width="210" height="120" rx="8" fill="#ffffff" stroke="#fca5a5" />
+      <!-- Flatline ECG Pulse Line -->
+      <line x1="20" y1="40" x2="190" y2="40" stroke="#ef4444" stroke-width="3" stroke-linecap="round" stroke-dasharray="8,4" />
+      <circle cx="105" cy="40" r="5" fill="#b91c1c" />
+      <text x="105" y="80" class="node-t">Power Loss / Net Cut</text>
+      <text x="105" y="95" class="node-d">Heartbeat beacon halts</text>
+      <rect x="55" y="102" width="100" height="14" rx="3" fill="#fee2e2" />
+      <text x="105" y="113" font-size="8" font-weight="800" fill="#991b1b" text-anchor="middle">SIGNAL SEVERED</text>
+    </g>
+
+    <!-- Arrow 1 -> 2 -->
+    <path d="M 245 108 L 295 108" fill="none" stroke="#ef4444" stroke-width="2.5" marker-end="url(#mRed4)" />
+    <text x="270" y="98" font-size="8.5" font-weight="700" fill="#b91c1c" text-anchor="middle">No Pings</text>
+
+    <!-- Visual 2: 30s Grace Countdown Window -->
+    <g transform="translate(305, 48)">
+      <rect width="220" height="120" rx="8" fill="#ffffff" stroke="#e2e8f0" />
+      <!-- Stopwatch / Hourglass -->
+      <circle cx="110" cy="30" r="16" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" />
+      <line x1="110" y1="30" x2="110" y2="20" stroke="#0f172a" stroke-width="2" />
+      <line x1="110" y1="30" x2="118" y2="30" stroke="#0f172a" stroke-width="2" />
+      <text x="110" y="80" class="node-t">30s Grace Window</text>
+      <text x="110" y="95" class="node-d">Tolerates residential jitter</text>
+      <rect x="45" y="102" width="130" height="14" rx="3" fill="#f1f5f9" />
+      <text x="110" y="113" font-size="8" font-weight="700" fill="#475569" text-anchor="middle">2 MISSED PINGS ALLOWED</text>
+    </g>
+
+    <!-- Arrow 2 -> 3 -->
+    <path d="M 530 108 L 580 108" fill="none" stroke="#ef4444" stroke-width="2.5" marker-end="url(#mRed4)" />
+
+    <!-- Visual 3: Automatic Memory Eviction (Trash Drop) -->
+    <g transform="translate(590, 48)">
+      <rect width="220" height="120" rx="8" fill="#ffffff" stroke="#fca5a5" />
+      <!-- Trashcan / Eviction Graphic -->
+      <circle cx="110" cy="30" r="14" fill="#fee2e2" />
+      <text x="110" y="35" font-size="14" text-anchor="middle">🗑️</text>
+      <text x="110" y="80" class="node-t">Automatic Key Eviction</text>
+      <text x="110" y="95" class="node-d">Redis TTL reaches 00:00</text>
+      <rect x="45" y="102" width="130" height="14" rx="3" fill="#fee2e2" />
+      <text x="110" y="113" font-size="8" font-weight="800" fill="#991b1b" text-anchor="middle">0 CPU WORKER / 0 DB SCAN</text>
+    </g>
+
+    <!-- Arrow 3 -> 4 -->
+    <path d="M 815 108 L 865 108" fill="none" stroke="#ef4444" stroke-width="2.5" marker-end="url(#mRed4)" />
+
+    <!-- Visual 4: Fail-Safe Playback Guard -->
+    <g transform="translate(875, 48)">
+      <rect width="195" height="120" rx="8" fill="#ffffff" stroke="#fca5a5" />
+      <circle cx="97.5" cy="30" r="14" fill="#fee2e2" />
+      <text x="97.5" y="35" font-size="14" text-anchor="middle">🔴</text>
+      <text x="97.5" y="80" class="node-t">Status: OFFLINE</text>
+      <text x="97.5" y="95" class="node-d">EXISTS returns 0</text>
+      <rect x="25" y="102" width="145" height="14" rx="3" fill="#fee2e2" />
+      <text x="97.5" y="113" font-size="8" font-weight="800" fill="#991b1b" text-anchor="middle">SERVE CACHE OR HTTP 503</text>
+    </g>
+  </g>
+
+</svg>

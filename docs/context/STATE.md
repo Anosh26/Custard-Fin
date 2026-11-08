@@ -41,16 +41,30 @@
   - Cloud API Intelligent Stream Router: Automatically routes viewers on the same home network (matching public NAT IP or private network) to `http://<node-lan-ip>:8090/stream/...` instead of hardcoded `localhost:8090`, eliminating cloud hops and WAN bandwidth for local viewers.
   - Web UI Integration: Local Edge Library links directly with `?lan=true` and surfaces 1-click shortcut to `:8090` standalone player.
 
+- **Comprehensive Academic Project Report (`report/`)**:
+  - Authored a 62-page publication-grade LaTeX project report explicitly titled "Cloud Computing Project Report" formatted with IEEEtran bibliography and standard academic front matter.
+  - Strictly specified student identification by Seat Numbers: Anish Ghadi (Seat No.: 25P0320009) and Anosh Chodankar (Seat No.: 25P0320010).
+  - Fully converted all economic figures, mathematical proofs, and comparison tables to Indian Rupees (₹) with baseline benchmark $1.00 USD = ₹84.00 INR (e.g. Traditional Cloud: ₹1,00,380.00/mo vs CustardFin: ₹4,128.60/mo; 95.89% savings; ₹11.55 Lakhs/yr saved).
+  - Replaced generic nested boxes across all diagrams with custom creative visual metaphors:
+    - Diag 1: NAT Traversal with 3D NVMe cylinder, server chassis, and brick firewall with padlock shield.
+    - Diag 2: Two-tier architecture with NVIDIA GPU chip (NVENC), film strips, and cloud database barrels.
+    - Diag 3: Automated ingest with SHA-256 binary key, GPU probe, 4s GOP film strip, and SQLite WAL cylinder.
+    - Diag 4: Heartbeat liveness with active pulsing green ECG waveform vs severed flatline and 30s grace stopwatch.
+    - Diag 5: Dual-path proximity routing with Smart TV LAN bypass (₹0.00 egress) and Origin Shield S3 cache fan-out (90% uplink saved).
+    - Diag 6: Economic cost comparison with 3D stacked cost towers in INR (₹1,00,380 vs ₹4,129) and 95.9% savings medallion.
+    - Diag 7: Hardware acceleration benchmarks with tachometer speedometers (322 fps vs 33 fps), donut rings, and mercury thermometers.
+  - Successfully compiled to `report/main.pdf` (62 pages, 2.41 MB) with zero syntax errors and all references resolved.
+
 ## In Progress
-- Final verification of node claiming, uploader attribution, and large video playback on GCP VM.
+- Final rehearsal and submission of `report/main.pdf`.
 
 ## Blocked
 - None.
 
 ## Next 3 Tasks
-1. Conduct mock viva rehearsal covering architecture diagrams, Play Decision logic, and Origin Shield proofs.
-2. Demonstrate live hardware-accelerated streaming on GCP VM (`34.132.188.14`) and local edge node during final evaluation.
-3. Review Q&A cheat sheet in `docs/runbooks/demo.md` for team members Anish Ghadi & Anosh Chodankar.
+1. Deliver `report/main.pdf` and LaTeX source files to evaluation committee.
+2. Conduct mock viva rehearsal covering architecture diagrams, Play Decision logic, and Origin Shield proofs.
+3. Demonstrate live hardware-accelerated streaming on GCP VM (`34.132.188.14`) and local edge node during final evaluation.
 
 ## Decisions Resolved
 - **Cache store:** MinIO retained as baseline S3-compatible Origin Shield; Floci emulator fully integrated as MIT open-source option (`deploy/floci/`).

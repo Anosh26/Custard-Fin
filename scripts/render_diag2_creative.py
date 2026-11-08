@@ -1,0 +1,360 @@
+import os
+import subprocess
+
+fig_dir = r"C:\Users\Anosh\Documents\Notes\Projects\Cloud_Computing\sem_end\Custard Fin\report\figures"
+os.makedirs(fig_dir, exist_ok=True)
+chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+svg_diag_02_creative = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 620" width="1180" height="620">
+  <defs>
+    <!-- Soft Ambient Shadows -->
+    <filter id="softGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.08" />
+    </filter>
+    <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.1" />
+    </filter>
+
+    <!-- Gradients -->
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0f9ff" /><stop offset="100%" stop-color="#e0f2fe" />
+    </linearGradient>
+    <linearGradient id="homeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#faf5ff" /><stop offset="100%" stop-color="#f3e8ff" />
+    </linearGradient>
+    <linearGradient id="gpuGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" /><stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="dbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" /><stop offset="100%" stop-color="#4338ca" />
+    </linearGradient>
+    <linearGradient id="serverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155" /><stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" /><stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="firewallGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e" /><stop offset="100%" stop-color="#be123c" />
+    </linearGradient>
+
+    <!-- Markers -->
+    <marker id="mGreen" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#10b981" />
+    </marker>
+    <marker id="mIndigo" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#6366f1" />
+    </marker>
+    <marker id="mBlue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#0284c7" />
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .title { font-size: 19px; font-weight: 800; fill: #0f172a; }
+    .subtitle { font-size: 12px; fill: #64748b; }
+    .zone-title { font-size: 13px; font-weight: 800; }
+    .node-label { font-size: 11px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .node-sub { font-size: 9.5px; fill: #64748b; text-anchor: middle; }
+    .chip-text { font-size: 8.5px; font-weight: 800; fill: #ffffff; text-anchor: middle; }
+    .flow-label { font-size: 9.5px; font-weight: 700; }
+  </style>
+
+  <!-- Background Base -->
+  <rect width="1180" height="620" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+  
+  <!-- Header Title -->
+  <text x="40" y="36" class="title">CustardFin Two-Tier System Architecture Blueprint</text>
+  <text x="40" y="54" class="subtitle">Decentralized Home Edge Media Plane (Left) bridged via Outbound TLS 1.3 Tunnel to Cloud Control Plane (Right)</text>
+
+  <!-- ========================================================================= -->
+  <!-- ZONE 1: HOME EDGE NETWORK (LEFT HALF) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(36, 75)">
+    <!-- Zone Boundary Pill -->
+    <rect width="520" height="505" rx="16" fill="url(#homeGrad)" stroke="#d8b4fe" stroke-width="1.5" stroke-dasharray="6,4" />
+    <rect x="20" y="16" width="230" height="26" rx="13" fill="#7c3aed" filter="url(#badgeShadow)" />
+    <text x="135" y="33" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">🏠 HOME EDGE DOMAIN (LAN)</text>
+    <text x="260" y="33" font-size="10" fill="#6b21a8" font-weight="600">Subnet: 192.168.1.0/24</text>
+
+    <!-- 1. Master Video Storage (3D Cylindrical Storage) -->
+    <g transform="translate(40, 70)" filter="url(#softGlow)">
+      <!-- Cylinder Body -->
+      <path d="M 10 25 L 10 75 A 40 14 0 0 0 90 75 L 90 25 Z" fill="#ffffff" stroke="#6366f1" stroke-width="1.5" />
+      <path d="M 10 50 A 40 14 0 0 0 90 50" fill="none" stroke="#c7d2fe" stroke-width="1.2" stroke-dasharray="3,2" />
+      <!-- Cylinder Top Ellipse -->
+      <ellipse cx="50" cy="25" rx="40" ry="14" fill="#818cf8" stroke="#4f46e5" stroke-width="1.5" />
+      <ellipse cx="50" cy="25" rx="24" ry="8" fill="#4338ca" opacity="0.4" />
+      <!-- Labels -->
+      <text x="50" y="105" class="node-label">NVMe Storage</text>
+      <text x="50" y="120" class="node-sub">Raw Master Videos</text>
+      <text x="50" y="132" font-size="8.5" font-weight="700" fill="#4f46e5" text-anchor="middle">100% PRIVATE</text>
+    </g>
+
+    <!-- Flow Arrow 1: Storage -> Scanner/GPU -->
+    <path d="M 135 110 L 175 110" fill="none" stroke="#6366f1" stroke-width="2.5" marker-end="url(#mIndigo)" />
+
+    <!-- 2. Hardware GPU Transcoder (NVIDIA ASIC Chip) -->
+    <g transform="translate(185, 65)" filter="url(#softGlow)">
+      <!-- Green Chip Body -->
+      <rect x="15" y="15" width="80" height="80" rx="8" fill="url(#gpuGrad)" stroke="#065f46" stroke-width="1.5" />
+      <!-- Chip Core Die -->
+      <rect x="27" y="27" width="56" height="56" rx="4" fill="#064e3b" stroke="#34d399" stroke-width="1" />
+      <text x="55" y="52" class="chip-text">NVIDIA</text>
+      <text x="55" y="66" class="chip-text" font-size="10">NVENC</text>
+      <text x="55" y="76" font-size="7.5" fill="#a7f3d0" text-anchor="middle">322+ FPS</text>
+      <!-- Gold Chip Pins -->
+      <line x1="25" y1="10" x2="25" y2="15" stroke="#f59e0b" stroke-width="2.5" />
+      <line x1="45" y1="10" x2="45" y2="15" stroke="#f59e0b" stroke-width="2.5" />
+      <line x1="65" y1="10" x2="65" y2="15" stroke="#f59e0b" stroke-width="2.5" />
+      <line x1="85" y1="10" x2="85" y2="15" stroke="#f59e0b" stroke-width="2.5" />
+      <line x1="25" y1="95" x2="25" y2="100" stroke="#f59e0b" stroke-width="2.5" />
+      <line x1="45" y1="95" x2="45" y2="100" stroke="#f59e0b" stroke-width="2.5" />
+      <line x1="65" y1="95" x2="65" y2="100" stroke="#f59e0b" stroke-width="2.5" />
+      <line x1="85" y1="95" x2="85" y2="100" stroke="#f59e0b" stroke-width="2.5" />
+      <!-- Labels -->
+      <text x="55" y="115" class="node-label">RTX 4060 GPU</text>
+      <text x="55" y="130" class="node-sub">10.7x Real-time Transcode</text>
+    </g>
+
+    <!-- Flow Arrow 2: GPU -> HLS Segments -->
+    <path d="M 285 110 L 325 110" fill="none" stroke="#10b981" stroke-width="2.5" marker-end="url(#mGreen)" />
+
+    <!-- 3. Pre-Encoded HLS Segments (Film Reel / Chunks) -->
+    <g transform="translate(335, 70)" filter="url(#softGlow)">
+      <!-- Film Strip / Puzzle Chunks -->
+      <rect x="10" y="15" width="85" height="70" rx="6" fill="#ffffff" stroke="#0284c7" stroke-width="1.5" />
+      <!-- Film Sprocket holes -->
+      <rect x="14" y="20" width="8" height="6" rx="1" fill="#0284c7" />
+      <rect x="28" y="20" width="8" height="6" rx="1" fill="#0284c7" />
+      <rect x="42" y="20" width="8" height="6" rx="1" fill="#0284c7" />
+      <rect x="56" y="20" width="8" height="6" rx="1" fill="#0284c7" />
+      <rect x="70" y="20" width="8" height="6" rx="1" fill="#0284c7" />
+      <!-- Video Frame inside -->
+      <rect x="16" y="32" width="73" height="38" rx="3" fill="#0369a1" />
+      <polygon points="48,44 48,58 60,51" fill="#38bdf8" />
+      <text x="52.5" y="105" class="node-label">4s fMP4 HLS</text>
+      <text x="52.5" y="120" class="node-sub">RFC 8216 GOP (g=120)</text>
+      <text x="52.5" y="132" font-size="8.5" font-weight="700" fill="#0284c7" text-anchor="middle">.custard/hls/</text>
+    </g>
+
+    <!-- Divider Line -->
+    <line x1="30" y1="215" x2="490" y2="215" stroke="#e9d5ff" stroke-width="1.5" stroke-dasharray="4,4" />
+
+    <!-- 4. Edge SQLite (WAL Mode) Database -->
+    <g transform="translate(50, 240)" filter="url(#softGlow)">
+      <path d="M 10 20 L 10 65 A 35 12 0 0 0 80 65 L 80 20 Z" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+      <path d="M 10 42 A 35 12 0 0 0 80 42" fill="none" stroke="#ddd6fe" stroke-width="1.2" />
+      <ellipse cx="45" cy="20" rx="35" ry="12" fill="#a78bfa" stroke="#7c3aed" stroke-width="1.5" />
+      <text x="45" y="92" class="node-label">Edge SQLite</text>
+      <text x="45" y="106" class="node-sub">WAL Mode (Fast Read)</text>
+      <text x="45" y="118" font-size="8.5" font-weight="700" fill="#7c3aed" text-anchor="middle">Watch History Stays Home</text>
+    </g>
+
+    <!-- 5. Edge Server Daemon & Local Mini-Jellyfin (:8089) -->
+    <g transform="translate(195, 235)" filter="url(#softGlow)">
+      <!-- Server Rack Chassis -->
+      <rect width="130" height="75" rx="8" fill="url(#serverGrad)" stroke="#475569" stroke-width="1.5" />
+      <!-- Drive Bays -->
+      <rect x="12" y="14" width="60" height="12" rx="2" fill="#0f172a" stroke="#64748b" />
+      <rect x="12" y="32" width="60" height="12" rx="2" fill="#0f172a" stroke="#64748b" />
+      <rect x="12" y="50" width="60" height="12" rx="2" fill="#0f172a" stroke="#64748b" />
+      <!-- Blinking Status LEDs -->
+      <circle cx="85" cy="20" r="3" fill="#10b981" />
+      <circle cx="97" cy="20" r="3" fill="#10b981" />
+      <circle cx="109" cy="20" r="3" fill="#38bdf8" />
+      <!-- Server Label -->
+      <text x="65" y="102" class="node-label">Edge Daemon (:8089)</text>
+      <text x="65" y="116" class="node-sub">Go static binary (&lt;20MB)</text>
+      <text x="65" y="128" font-size="8.5" font-weight="700" fill="#10b981" text-anchor="middle">Mini-Jellyfin LAN Engine</text>
+    </g>
+
+    <!-- 6. Direct LAN Clients (Monitor Screen) -->
+    <g transform="translate(365, 230)" filter="url(#softGlow)">
+      <!-- Desktop Monitor -->
+      <rect x="10" y="10" width="90" height="60" rx="6" fill="#1e293b" stroke="#64748b" stroke-width="1.5" />
+      <rect x="14" y="14" width="82" height="52" rx="3" fill="#064e3b" />
+      <polygon points="50,32 50,48 64,40" fill="#34d399" />
+      <!-- Stand -->
+      <path d="M 48 70 L 62 70 L 66 84 L 44 84 Z" fill="#475569" />
+      <line x1="38" y1="84" x2="72" y2="84" stroke="#64748b" stroke-width="2" />
+      <!-- Labels -->
+      <text x="55" y="105" class="node-label">📶 LAN Viewers</text>
+      <text x="55" y="120" class="node-sub">Sub-4ms Wi-Fi Latency</text>
+      <text x="55" y="132" font-size="8.5" font-weight="700" fill="#047857" text-anchor="middle">0 Bytes Cloud Egress</text>
+    </g>
+
+    <!-- Flow Arrow 3: Server -> LAN Viewers -->
+    <path d="M 330 270 L 370 270" fill="none" stroke="#10b981" stroke-width="2.5" marker-end="url(#mGreen)" />
+    <text x="350" y="260" font-size="8" font-weight="700" fill="#065f46" text-anchor="middle">Gigabit Wi-Fi</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- MIDDLE CONDUIT: ISP FIREWALL & OUTBOUND TUNNEL -->
+  <!-- ========================================================================= -->
+  <!-- Vertical Firewall Barrier Graphic -->
+  <g transform="translate(566, 110)">
+    <!-- Security Shield -->
+    <path d="M 24 15 Q 44 0 64 15 Q 64 70 44 95 Q 24 70 24 15 Z" fill="url(#firewallGrad)" stroke="#9f1239" stroke-width="1.5" filter="url(#badgeShadow)" />
+    <!-- Padlock Graphic inside Shield -->
+    <rect x="38" y="48" width="12" height="14" rx="2" fill="#ffffff" />
+    <path d="M 40 48 L 40 40 A 4 4 0 0 1 48 40 L 48 48" fill="none" stroke="#ffffff" stroke-width="2" />
+    <text x="44" y="115" font-size="9.5" font-weight="800" fill="#be123c" text-anchor="middle">ISP CGNAT</text>
+    <text x="44" y="127" font-size="8" fill="#e11d48" text-anchor="middle">RFC 6598</text>
+    <text x="44" y="142" font-size="8.5" font-weight="700" fill="#991b1b" text-anchor="middle">❌ Inbound Drops</text>
+  </g>
+
+  <!-- OUTBOUND CONDUIT 1: Persistent Reverse TLS Tunnel (Green Bridge) -->
+  <path d="M 330 350 C 450 350, 520 200, 640 200" fill="none" stroke="#10b981" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#mGreen)" />
+  <rect x="470" y="240" width="130" height="22" rx="4" fill="#ecfdf5" stroke="#10b981" />
+  <text x="535" y="255" class="flow-label" fill="#065f46" text-anchor="middle">① Outbound TLS 1.3</text>
+
+  <!-- OUTBOUND CONDUIT 2: Metadata Manifest Sync (~3 KB) -->
+  <path d="M 330 375 C 440 375, 520 290, 640 290" fill="none" stroke="#6366f1" stroke-width="2.5" marker-end="url(#mIndigo)" />
+  <rect x="475" y="315" width="120" height="20" rx="4" fill="#eef2ff" stroke="#c7d2fe" />
+  <text x="535" y="329" class="flow-label" fill="#4338ca" text-anchor="middle">② ~3 KB Manifest</text>
+
+  <!-- OUTBOUND CONDUIT 3: 15s Ephemeral Heartbeat -->
+  <path d="M 330 400 C 440 400, 520 380, 640 380" fill="none" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#mBlue)" />
+  <rect x="480" y="388" width="110" height="20" rx="4" fill="#fffbeb" stroke="#fde68a" />
+  <text x="535" y="402" class="flow-label" fill="#b45309" text-anchor="middle">③ 15s Heartbeat</text>
+
+  <!-- ========================================================================= -->
+  <!-- ZONE 2: PUBLIC CLOUD CONTROL PLANE (RIGHT HALF) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(634, 75)">
+    <!-- Actual Fluffy Cloud Contour Shape -->
+    <path d="M 70 80 
+             A 55 55 0 0 1 170 50 
+             A 65 65 0 0 1 290 45 
+             A 60 60 0 0 1 410 70 
+             A 50 50 0 0 1 480 130 
+             A 60 60 0 0 1 490 240 
+             A 70 70 0 0 1 460 380 
+             A 60 60 0 0 1 370 480 
+             A 70 70 0 0 1 180 495 
+             A 65 65 0 0 1 60 440 
+             A 55 55 0 0 1 30 310 
+             A 55 55 0 0 1 35 180 
+             A 50 50 0 0 1 70 80 Z" 
+          fill="url(#cloudGrad)" stroke="#7dd3fc" stroke-width="1.8" filter="url(#softGlow)" />
+
+    <!-- Cloud Zone Title Pill -->
+    <rect x="130" y="20" width="250" height="26" rx="13" fill="#0284c7" filter="url(#badgeShadow)" />
+    <text x="255" y="37" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">☁️ PUBLIC CLOUD CONTROL PLANE</text>
+    <text x="255" y="58" font-size="9.5" fill="#0369a1" text-anchor="middle">Zero Permanent Video Storage (₹4,129/mo VPS)</text>
+
+    <!-- 1. FRP Server Relay Tower (:7000) -->
+    <g transform="translate(60, 95)" filter="url(#softGlow)">
+      <rect width="105" height="65" rx="6" fill="#ffffff" stroke="#0284c7" stroke-width="1.5" />
+      <polygon points="52.5,12 35,35 70,35" fill="#38bdf8" />
+      <circle cx="52.5" cy="42" r="4" fill="#0284c7" />
+      <path d="M 40 48 Q 52.5 56 65 48" fill="none" stroke="#0369a1" stroke-width="2" />
+      <text x="52.5" y="85" class="node-label">FRP Relay (:7000)</text>
+      <text x="52.5" y="99" class="node-sub">Tunnel Terminator</text>
+    </g>
+
+    <!-- 2. Core Go API Router (apid) -->
+    <g transform="translate(195, 95)" filter="url(#softGlow)">
+      <rect width="115" height="65" rx="6" fill="#ffffff" stroke="#0284c7" stroke-width="1.5" />
+      <rect x="15" y="15" width="85" height="35" rx="4" fill="#e0f2fe" />
+      <text x="57.5" y="32" font-size="10" font-weight="800" fill="#0369a1" text-anchor="middle">STREAM ROUTER</text>
+      <text x="57.5" y="44" font-size="8" font-weight="700" fill="#0284c7" text-anchor="middle">10-Cap Admission</text>
+      <text x="57.5" y="85" class="node-label">Cloud API (apid)</text>
+      <text x="57.5" y="99" class="node-sub">Subnet &amp; ABR Decision</text>
+    </g>
+
+    <!-- 3. Origin Shield S3 Cache (24h Ephemeral Buffer) -->
+    <g transform="translate(340, 95)" filter="url(#softGlow)">
+      <rect width="110" height="65" rx="6" fill="#fefce8" stroke="#f59e0b" stroke-width="1.5" />
+      <path d="M 55 12 Q 75 0 90 12 Q 90 40 75 54 Q 55 62 40 54 Q 20 40 20 12 Z" transform="translate(0, 0) scale(0.65) translate(40, 5)" fill="url(#shieldGrad)" />
+      <text x="55" y="85" class="node-label">Origin Shield</text>
+      <text x="55" y="99" class="node-sub">S3 Ephemeral Cache</text>
+      <text x="55" y="111" font-size="8.5" font-weight="700" fill="#b45309" text-anchor="middle">24h Auto-Purge LRU</text>
+    </g>
+
+    <!-- 4. Distributed State Stores (PostgreSQL + Redis) -->
+    <g transform="translate(90, 220)" filter="url(#softGlow)">
+      <!-- Database 1: Postgres -->
+      <g transform="translate(0, 0)">
+        <path d="M 5 15 L 5 45 A 25 8 0 0 0 55 45 L 55 15 Z" fill="#ffffff" stroke="#0284c7" stroke-width="1.2" />
+        <ellipse cx="30" cy="15" rx="25" ry="8" fill="#7dd3fc" stroke="#0284c7" stroke-width="1.2" />
+        <text x="30" y="65" class="node-label">PostgreSQL</text>
+        <text x="30" y="78" class="node-sub">Catalog &amp; Users</text>
+      </g>
+      <!-- Database 2: Redis Heartbeat -->
+      <g transform="translate(75, 0)">
+        <path d="M 5 15 L 5 45 A 25 8 0 0 0 55 45 L 55 15 Z" fill="#ffffff" stroke="#ef4444" stroke-width="1.2" />
+        <ellipse cx="30" cy="15" rx="25" ry="8" fill="#fca5a5" stroke="#ef4444" stroke-width="1.2" />
+        <text x="30" y="65" class="node-label">Redis Liveness</text>
+        <text x="30" y="78" class="node-sub">15s Ephemeral TTL</text>
+      </g>
+    </g>
+
+    <!-- 5. Next.js Web Presentation Tier -->
+    <g transform="translate(265, 220)" filter="url(#softGlow)">
+      <rect width="160" height="70" rx="8" fill="#ffffff" stroke="#0f172a" stroke-width="1.5" />
+      <text x="80" y="28" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">Next.js 15 Web</text>
+      <text x="80" y="44" font-size="9" fill="#475569" text-anchor="middle">App Router + HLS.js</text>
+      <text x="80" y="58" font-size="8.5" font-weight="700" fill="#0284c7" text-anchor="middle">Stats for Nerds HUD</text>
+    </g>
+
+    <!-- 6. Remote Public Audience (Laptops & Phones) -->
+    <g transform="translate(210, 345)" filter="url(#softGlow)">
+      <!-- Laptop Graphic -->
+      <rect x="25" y="15" width="85" height="52" rx="4" fill="#1e293b" stroke="#475569" />
+      <rect x="29" y="19" width="77" height="44" rx="2" fill="#0f172a" />
+      <polygon points="63,33 63,47 75,40" fill="#f59e0b" />
+      <path d="M 15 67 L 120 67 L 115 73 L 20 73 Z" fill="#64748b" />
+      <!-- Smartphone Silhouette adjacent -->
+      <rect x="125" y="24" width="26" height="48" rx="4" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.2" />
+      <rect x="128" y="28" width="20" height="40" rx="2" fill="#1e293b" />
+      <!-- Labels -->
+      <text x="80" y="94" class="node-label">🌍 Remote Public Viewers</text>
+      <text x="80" y="108" class="node-sub">Served from S3 Origin Shield</text>
+      <text x="80" y="120" font-size="8.5" font-weight="700" fill="#15803d" text-anchor="middle">90% Home Upload Bandwidth Saved</text>
+    </g>
+
+    <!-- Connector: Next.js -> Remote Viewers -->
+    <path d="M 330 295 L 330 345" fill="none" stroke="#0284c7" stroke-width="2.5" marker-end="url(#mBlue)" />
+  </g>
+
+</svg>
+"""
+
+svg_file = os.path.join(fig_dir, "diag_02_architecture_overview.svg")
+png_file = os.path.join(fig_dir, "diag_02_architecture_overview.png")
+html_file = os.path.join(fig_dir, "diag_02_architecture_overview.html")
+
+with open(svg_file, "w", encoding="utf-8") as f:
+    f.write(svg_diag_02_creative)
+
+html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {{ margin: 0; padding: 0; background: #ffffff; display: flex; align-items: center; justify-content: center; }}
+  svg {{ width: 1180px; height: 620px; }}
+</style>
+</head>
+<body>
+  {svg_diag_02_creative}
+</body>
+</html>"""
+
+with open(html_file, "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+args = [
+    chrome_path,
+    "--headless=old",
+    "--disable-gpu",
+    f"--screenshot={png_file}",
+    "--window-size=1180,620",
+    html_file
+]
+subprocess.run(args, capture_output=True)
+print(f"Rendered {png_file} - Size: {os.path.getsize(png_file)} bytes")
+

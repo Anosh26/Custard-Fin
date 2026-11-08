@@ -1,0 +1,209 @@
+import os
+import subprocess
+
+fig_dir = r"C:\Users\Anosh\Documents\Notes\Projects\Cloud_Computing\sem_end\Custard Fin\report\figures"
+os.makedirs(fig_dir, exist_ok=True)
+chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+# ==============================================================================
+# DIAGRAM 6: Financial Cost Comparison in RUPEES (₹)
+# ==============================================================================
+svg_diag_06_rupees = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 500" width="1180" height="500">
+  <defs>
+    <filter id="costShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.08" />
+    </filter>
+
+    <!-- Pillar Gradients -->
+    <linearGradient id="gEgress" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f43f5e" /><stop offset="100%" stop-color="#e11d48" />
+    </linearGradient>
+    <linearGradient id="gTranscode" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fb7185" /><stop offset="100%" stop-color="#f43f5e" />
+    </linearGradient>
+    <linearGradient id="gInfra" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fda4af" /><stop offset="100%" stop-color="#fb7185" />
+    </linearGradient>
+    <linearGradient id="gStorage" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fecdd3" /><stop offset="100%" stop-color="#fda4af" />
+    </linearGradient>
+
+    <!-- CustardFin Gradients -->
+    <linearGradient id="gCustVM" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" /><stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="gCustShield" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6ee7b7" /><stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+
+    <!-- Badge Gradient -->
+    <linearGradient id="gBadgeSave" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" /><stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+  </defs>
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .title { font-size: 19px; font-weight: 800; fill: #0f172a; }
+    .subtitle { font-size: 12px; fill: #64748b; }
+    .pillar-hdr { font-size: 13.5px; font-weight: 800; }
+    .pillar-price { font-size: 20px; font-weight: 900; }
+    .seg-lbl { font-size: 11px; font-weight: 700; fill: #ffffff; }
+    .seg-val { font-size: 10px; fill: #ffffff; opacity: 0.95; }
+    .note-h { font-size: 11.5px; font-weight: 700; fill: #0f172a; }
+    .note-p { font-size: 10px; fill: #64748b; }
+  </style>
+
+  <!-- Canvas Base -->
+  <rect width="1180" height="500" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+
+  <!-- Header -->
+  <text x="40" y="36" class="title">Monthly Operating Cost Comparison in INR (100 Users, 5.0 TB Catalog)</text>
+  <text x="40" y="54" class="subtitle">Benchmark conversion rate: $1.00 USD = ₹84.00 INR  •  Decoupling video storage and GPU encoding cuts 95.89% of monthly expenses</text>
+
+  <!-- ========================================================================= -->
+  <!-- TOWER 1: TRADITIONAL CLOUD VOD (₹1,00,380.00/MO) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 85)" filter="url(#costShadow)">
+    <rect width="360" height="385" rx="12" fill="#fff5f5" stroke="#fecaca" stroke-width="1.2" />
+    <text x="24" y="30" class="pillar-hdr" fill="#991b1b">TRADITIONAL CLOUD VOD</text>
+    <text x="24" y="56" class="pillar-price" fill="#be123c">₹1,00,380.00 <tspan font-size="12" font-weight="600" fill="#991b1b">/ month</tspan></text>
+    <text x="24" y="72" font-size="10" font-weight="700" fill="#e11d48">₹12,04,560.00 / year (₹12.04 Lakhs/yr liability)</text>
+
+    <!-- Segment 1: Cloud Egress (₹68,040 - Height: 140px) -->
+    <rect x="24" y="88" width="312" height="135" rx="6" fill="url(#gEgress)" />
+    <text x="36" y="110" class="seg-lbl">Cloud Data Egress (9 TB @ ₹7.56 / GB)</text>
+    <text x="36" y="126" class="seg-val">₹68,040.00 / mo ($810.00) • 67.78% of Total</text>
+    <text x="36" y="140" font-size="9" fill="#fee2e2">Prohibitive public internet bandwidth charges</text>
+
+    <!-- Segment 2: Transcoding (₹11,760 - Height: 40px) -->
+    <rect x="24" y="228" width="312" height="40" rx="5" fill="url(#gTranscode)" />
+    <text x="36" y="246" class="seg-lbl">Transcode Compute (EC2 / MediaConvert)</text>
+    <text x="36" y="259" class="seg-val">₹11,760.00 / mo ($140.00) • 11.72% of Total</text>
+
+    <!-- Segment 3: Managed Infra (₹10,920 - Height: 38px) -->
+    <rect x="24" y="273" width="312" height="38" rx="5" fill="url(#gInfra)" />
+    <text x="36" y="291" class="seg-lbl">Managed DBs (RDS + Redis + ALB)</text>
+    <text x="36" y="303" class="seg-val">₹10,920.00 / mo ($130.00) • 10.88% of Total</text>
+
+    <!-- Segment 4: S3 Storage (₹9,660 - Height: 36px) -->
+    <rect x="24" y="316" width="312" height="36" rx="5" fill="url(#gStorage)" />
+    <text x="36" y="333" class="seg-lbl" fill="#881337">S3 Object Storage (5 TB @ ₹1.93 / GB-mo)</text>
+    <text x="36" y="345" class="seg-val" fill="#881337">₹9,660.00 / mo ($115.00) • 9.62% of Total</text>
+
+    <text x="24" y="372" font-size="9" font-weight="700" fill="#991b1b">Financially impossible for students or community labs</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- CENTER METRIC: 95.89% SAVINGS BADGE -->
+  <!-- ========================================================================= -->
+  <g transform="translate(450, 145)">
+    <!-- Large Savings Circle -->
+    <circle cx="140" cy="80" r="70" fill="url(#gBadgeSave)" filter="url(#costShadow)" />
+    <circle cx="140" cy="80" r="62" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="4,3" />
+    <text x="140" y="68" font-size="28" font-weight="900" fill="#ffffff" text-anchor="middle">95.9%</text>
+    <text x="140" y="86" font-size="11" font-weight="800" fill="#d1fae5" text-anchor="middle">SAVINGS</text>
+    <text x="140" y="100" font-size="9" fill="#ffffff" opacity="0.9" text-anchor="middle">VERIFIED ROI</text>
+
+    <!-- Savings Callouts -->
+    <rect x="15" y="175" width="250" height="78" rx="8" fill="#f8fafc" stroke="#e2e8f0" filter="url(#costShadow)" />
+    <text x="140" y="196" font-size="12.5" font-weight="800" fill="#047857" text-anchor="middle">-₹96,251.40 / MONTH</text>
+    <text x="140" y="212" font-size="10.5" font-weight="700" fill="#0f172a" text-anchor="middle">Saved: ₹11,55,016.80 / year</text>
+    <text x="140" y="228" font-size="9.5" font-weight="700" fill="#0369a1" text-anchor="middle">3-Year TCO Saved: ₹34.65 Lakhs</text>
+    <text x="140" y="243" font-size="8.5" fill="#64748b" text-anchor="middle">($41,250.60 USD Equivalent)</text>
+
+    <!-- Comparative Flow Arrow -->
+    <path d="M -15 80 L 45 80" fill="none" stroke="#e11d48" stroke-width="3" stroke-dasharray="4,4" />
+    <path d="M 235 80 L 295 80" fill="none" stroke="#10b981" stroke-width="3" />
+    <polygon points="295,75 305,80 295,85" fill="#10b981" />
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- TOWER 2: CUSTARDFIN DECENTRALIZED HYBRID (₹4,128.60/MO) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(760, 85)" filter="url(#costShadow)">
+    <rect width="360" height="385" rx="12" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2" />
+    <text x="24" y="30" class="pillar-hdr" fill="#065f46">CUSTARDFIN HYBRID ARCHITECTURE</text>
+    <text x="24" y="56" class="pillar-price" fill="#047857">₹4,128.60 <tspan font-size="12" font-weight="600" fill="#065f46">/ month</tspan></text>
+    <text x="24" y="72" font-size="10" font-weight="700" fill="#059669">₹49,543.20 / year total operating expenditure</text>
+
+    <!-- CustardFin Segment 1: Consolidated Cloud VM (₹4,032 - Height: 52px) -->
+    <rect x="24" y="88" width="312" height="52" rx="6" fill="url(#gCustVM)" />
+    <text x="36" y="110" class="seg-lbl">Consolidated Coordination Cloud VM</text>
+    <text x="36" y="126" class="seg-val">₹4,032.00 / mo ($48.00) • GCP e2-standard-2 / CPX31</text>
+
+    <!-- CustardFin Segment 2: Origin Shield Cache (₹96.60 - Height: 26px) -->
+    <rect x="24" y="145" width="312" height="26" rx="4" fill="url(#gCustShield)" />
+    <text x="36" y="162" class="seg-lbl" fill="#064e3b">Origin Shield Ephemeral S3 Cache: ₹96.60 / mo ($1.15)</text>
+
+    <!-- Zero Cost Callout 1: Video Storage -->
+    <g transform="translate(24, 182)">
+      <rect width="312" height="46" rx="6" fill="#ffffff" stroke="#86efac" />
+      <circle cx="20" cy="23" r="9" fill="#10b981" />
+      <text x="16" y="27" font-size="11" fill="#ffffff" font-weight="900">✓</text>
+      <text x="38" y="20" class="note-h" fill="#047857">Permanent Video Storage: ₹0.00</text>
+      <text x="38" y="34" class="note-p">100% on user-owned edge NVMe / SATA drives</text>
+      <text x="295" y="27" font-size="11" font-weight="800" fill="#15803d" text-anchor="end">FREE</text>
+    </g>
+
+    <!-- Zero Cost Callout 2: Video Transcoding -->
+    <g transform="translate(24, 236)">
+      <rect width="312" height="46" rx="6" fill="#ffffff" stroke="#86efac" />
+      <circle cx="20" cy="23" r="9" fill="#10b981" />
+      <text x="16" y="27" font-size="11" fill="#ffffff" font-weight="900">✓</text>
+      <text x="38" y="20" class="note-h" fill="#047857">Hardware Transcoding: ₹0.00</text>
+      <text x="38" y="34" class="note-p">Offloaded to local RTX GPUs (322 fps NVENC)</text>
+      <text x="295" y="27" font-size="11" font-weight="800" fill="#15803d" text-anchor="end">FREE</text>
+    </g>
+
+    <!-- Zero Cost Callout 3: Egress Bandwidth -->
+    <g transform="translate(24, 290)">
+      <rect width="312" height="46" rx="6" fill="#ffffff" stroke="#86efac" />
+      <circle cx="20" cy="23" r="9" fill="#10b981" />
+      <text x="16" y="27" font-size="11" fill="#ffffff" font-weight="900">✓</text>
+      <text x="38" y="20" class="note-h" fill="#047857">Egress Bandwidth: ₹0.00 Overages</text>
+      <text x="38" y="34" class="note-p">Direct LAN bypass + Bundled VPS traffic</text>
+      <text x="295" y="27" font-size="11" font-weight="800" fill="#15803d" text-anchor="end">FREE</text>
+    </g>
+
+    <text x="24" y="372" font-size="9" font-weight="700" fill="#047857">Easily funded on student budget or lab server grant</text>
+  </g>
+
+</svg>
+"""
+
+svg_file = os.path.join(fig_dir, "diag_06_cost_comparison.svg")
+png_file = os.path.join(fig_dir, "diag_06_cost_comparison.png")
+html_file = os.path.join(fig_dir, "diag_06_cost_comparison.html")
+
+with open(svg_file, "w", encoding="utf-8") as f:
+    f.write(svg_diag_06_rupees)
+
+html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {{ margin: 0; padding: 0; background: #ffffff; display: flex; align-items: center; justify-content: center; }}
+  svg {{ width: 1180px; height: 500px; }}
+</style>
+</head>
+<body>
+  {svg_diag_06_rupees}
+</body>
+</html>"""
+
+with open(html_file, "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+args = [
+    chrome_path,
+    "--headless=old",
+    "--disable-gpu",
+    f"--screenshot={png_file}",
+    "--window-size=1180,500",
+    html_file
+]
+subprocess.run(args, capture_output=True)
+print(f"Rendered {png_file} - Size: {os.path.getsize(png_file)} bytes")
+

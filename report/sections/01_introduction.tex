@@ -1,0 +1,160 @@
+% ==============================================================================
+% MODULE 01: INTRODUCTION AND PROBLEM STATEMENT
+% ==============================================================================
+
+\chapter{Introduction and Problem Statement}
+\label{chap:introduction}
+
+\section{Overview and Motivation}
+\label{sec:overview_motivation}
+
+Over the past two decades, video streaming has emerged as the dominant consumer of global internet bandwidth, accounting for over 65\% of all downstream network traffic. Modern media delivery is bifurcated into two mutually exclusive architectural paradigms, each presenting substantial structural trade-offs:
+
+\begin{enumerate}
+    \item \textbf{Centralized Public Video Platforms (The YouTube / Cloud VOD Model):} Commercial cloud video-on-demand architectures rely on hyper-scale centralized infrastructure (e.g., AWS S3, Google Cloud Storage, Akamai CDN). Users upload raw video files to corporate servers, which handle automated ingestion, cloud-side distributed transcoding, catalog indexing, and global Content Delivery Network (CDN) replication. While this provides frictionless community discovery and massive scalability, it introduces heavy economic penalties. Cloud storage pricing (typically \rupee~1.932 / \$0.023 per gigabyte per month on Amazon S3) combined with data egress transfer fees (\rupee~7.56 / \$0.09 per gigabyte) creates compounding monthly financial liabilities. Furthermore, content creators surrender custody of their original media files to platform algorithms, corporate content moderation, and intrusive advertisement monetization.
+    
+    \item \textbf{Self-Hosted Personal Media Servers (The Jellyfin / Plex Model):} In response to privacy concerns and subscription fatigue, self-hosted media servers have gained widespread adoption among home-lab enthusiasts. Media server software (such as Jellyfin, Plex Media Server, and Emby) executes on a personal home computer, Network Attached Storage (NAS), or home server, indexing files directly from local hard drives. This paradigm guarantees absolute privacy, zero cloud subscription fees, and pristine playback quality within the local home network. However, these systems operate as isolated private islands. They lack global discovery feeds, cannot be shared with friends or the broader community without manual credential distribution, and fail entirely when deployed behind standard residential Internet Service Provider (ISP) network configurations.
+\end{enumerate}
+
+To bridge this fundamental divide, this project introduces \textbf{CustardFin}, a free, open-source, hybrid edge-cloud media streaming and community catalog platform. The core conceptual anchor of CustardFin is defined by an uncompromising architectural rule:
+
+\begin{quote}
+\centering
+\itshape
+``Video binaries remain permanently on the content owner's home machine;\\
+the cloud holds only the metadata catalog and ephemeral stream coordination.''
+\end{quote}
+
+In CustardFin, a user hosts their personal library on an existing desktop PC or low-power laptop (the \textit{Home Edge Node}). Marking a video as \textbf{Public} does not trigger a massive multi-gigabyte cloud upload; instead, it compiles and synchronizes a compact $\le 3\text{ KB}$ JSON metadata manifest to a cloud database. Viewers discover titles through a centralized modern web application. When a remote viewer plays a video, the cloud retrieves pre-encoded streaming segments on-demand through an outbound-only reverse tunnel, caching them temporarily in a cloud-side 24-hour Least Recently Used (LRU) \textit{Origin Shield}. Consequently, CustardFin provides the global discovery and social sharing of YouTube alongside the privacy, local ownership, and zero-storage cost of Jellyfin.
+
+% ------------------------------------------------------------------------------
+\section{Problem Statement}
+\label{sec:problem_statement}
+
+Designing a decentralized personal streaming platform that enables global community sharing without incurring cloud storage bills presents three formidable engineering challenges:
+
+\begin{enumerate}
+    \item \textbf{The Cloud Storage and Bandwidth Cost Barrier:} In traditional cloud architectures, storing a modest community collection of 100 users averaging 50~GB each (a total library of 5~TB) costs over \rupee~9{,}660.00 (\$115.00) every month in raw S3 storage alone, excluding compute and bandwidth egress fees. For student developers, university labs, and open-source communities, recurring multi-thousand-dollar cloud bills exceeding \rupee~1.00 Lakh monthly render community video platforms economically unviable.
+    
+    \item \textbf{Residential ISP Carrier-Grade NAT (CGNAT) Traversal:} Residential broadband providers globally—and Indian ISPs such as Reliance JioFiber and Bharti Airtel in particular—utilize Carrier-Grade Network Address Translation (CGNAT) to conserve IPv4 address space. Residential routers are assigned non-routable private WAN IP addresses from the shared \texttt{100.64.0.0/10} block (RFC 6598). Consequently, traditional inbound port forwarding (opening ports 80, 443, or 8096) is completely impossible. Home servers cannot receive incoming connections from remote viewers over the public internet without expensive commercial static IP subscriptions or complex Virtual Private Network (VPN) configurations that external viewers cannot easily use.
+    
+    \item \textbf{Constrained Home Uplink Bandwidth and Host Compute Saturation:} Residential internet subscriptions are fundamentally asymmetric, typically providing high download bandwidth (e.g., 100--300~Mbps) but restricted upload bandwidth (e.g., 15--40~Mbps). When multiple remote users concurrently stream distinct high-definition video files, the home uplink saturates rapidly, resulting in severe packet loss and stream buffering. Furthermore, conventional media servers attempt real-time on-the-fly video transcoding upon each viewer request, which consumes 90\% to 100\% of host CPU resources, causing weak home PCs to overheat and freeze.
+\end{enumerate}
+
+CustardFin directly solves these three bottlenecks through hybrid edge-cloud decoupling, pre-encoded segment caching, and outbound reverse tunneling.
+
+% ------------------------------------------------------------------------------
+\section{Project Objectives and Target Metrics}
+\label{sec:objectives_metrics}
+
+To evaluate the success of CustardFin, explicit, quantifiable engineering targets were established in the Business Requirements Document (BRD\_v2). Table~\ref{tab:brd_objectives} delineates these primary objectives alongside their measured targets.
+
+\begin{table}[htbp]
+\centering
+\caption{CustardFin Core Objectives and Quantitative Targets}
+\label{tab:brd_objectives}
+\begin{tabularx}{\textwidth}{l p{5.5cm} X}
+\toprule
+\textbf{Objective} & \textbf{Operational Requirement} & \textbf{Target Metric} \\
+\midrule
+Zero Cloud Video Storage &
+No permanent media binaries stored in cloud infrastructure; cloud serves strictly as an ephemeral cache. &
+\textbf{0 GB} permanent video in cloud; only 24h auto-purging cache. \\
+\addlinespace
+Cost Reduction &
+Eliminate recurring S3 storage liabilities and minimize compute/bandwidth costs for community libraries. &
+\textbf{$\sim$98\% lower} than full cloud build (evaluated on 100 users, 5~TB library). \\
+\addlinespace
+Low Host Compute Overhead &
+Eliminate live on-the-fly transcoding spikes during active playback sessions. &
+Playback CPU \textbf{$<$ 3\%} (vs $\sim$96\% CPU under active live transcoding). \\
+\addlinespace
+Per-Node Concurrency &
+Sustain multiple remote viewers without degrading home host stability. &
+\textbf{10 concurrent streams} per edge node with HTTP 429 admission control. \\
+\addlinespace
+Instant Offline Detection &
+Detect edge machine disconnection or power loss without polling database. &
+Node marked offline in catalog within \textbf{15 seconds} of lost heartbeat. \\
+\addlinespace
+CGNAT Traversal &
+Bypass residential ISP firewalls without router configuration or port forwarding. &
+Outbound-only TLS reverse tunnel; \textbf{0 open inbound ports}. \\
+\addlinespace
+Direct LAN Streaming &
+Eliminate cloud traversal when streaming to devices on the same home network. &
+Instant local network playback with \textbf{$<$ 5 ms} Time-To-First-Byte (TTFB). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ------------------------------------------------------------------------------
+\section{Non-Negotiable Invariants}
+\label{sec:invariants}
+
+Throughout the design, implementation, and verification phases of CustardFin, engineering decisions were governed by ten strict architectural invariants. Changing any invariant requires formal review, ensuring that the system remains cost-effective, secure, and verifiable for semester-end demonstration on a self-hosted cloud environment.
+
+\begin{enumerate}
+    \item \textbf{Invariant 1 (Zero Permanent Cloud Video Retention):} No video binaries are stored permanently in the cloud tier. Video files reside exclusively on the owner's home edge storage. The cloud maintains only an ephemeral, 24-hour Least Recently Used (LRU) pull-through cache (\textit{Origin Shield}) for actively watched chunks.
+    
+    \item \textbf{Invariant 2 (Outbound-Only Home Connections):} Home edge daemons only establish outbound network connections. The system must never require an open inbound router port, port-forwarding rule, Dynamic DNS (DDNS) setup, or UPnP traversal, remaining fully immune to ISP CGNAT restrictions.
+    
+    \item \textbf{Invariant 3 (100\% Free and Open-Source Dependencies):} The architecture relies strictly on free and open-source software (FOSS). Zero commercial software licenses, proprietary cloud SDKs, or paid third-party relays are required to run the platform.
+    
+    \item \textbf{Invariant 4 (Strict Language Stack):} The backend is implemented exclusively in Go (\texttt{net/http}, \texttt{log/slog}). The frontend is implemented in Next.js (Node.js runtime, App Router, TypeScript strict, \texttt{hls.js}). No secondary queue engines (e.g., BullMQ) are permitted.
+    
+    \item \textbf{Invariant 5 (Restricted Redis Utilization):} Redis is employed solely as an ephemeral key-value store with Time-To-Live (TTL) keys for 15-second node heartbeat tracking. All background asynchronous jobs execute as native Go goroutines with persistent transactional state recorded in PostgreSQL or SQLite.
+    
+    \item \textbf{Invariant 6 (Pre-Encoded 4-Second HLS Chunks):} The platform replaces live on-the-fly transcoding with ahead-of-time pre-encoding into standardized 4-second HTTP Live Streaming (HLS) segments (\texttt{.m3u8} playlists and \texttt{.ts} video slices). Hardware acceleration (NVIDIA NVENC) is probed on startup with automatic, graceful fallback to multi-threaded CPU encoding (\texttt{libx264}).
+    
+    \item \textbf{Invariant 7 (Origin Shield Upload Protection):} The cloud object cache acts as an Origin Shield. When a title is watched by multiple remote viewers, the home edge node uploads each hot video chunk exactly once over the reverse tunnel. Subsequent viewers are served directly from the cloud cache, eliminating duplicate home uplink usage.
+    
+    \item \textbf{Invariant 8 (Privacy Preservation):} Personal private data remains at home. Watch progress, resume timestamps, and viewing history are stored exclusively in the edge node's local SQLite database and are never transmitted to the central cloud database.
+    
+    \item \textbf{Invariant 9 (Cryptographic Chunk Security):} All HLS segment access URLs are cryptographically signed using HMAC-SHA256 with short-lived expiration windows (15 minutes), bound to the specific node ID, media ID, and chunk file path. Direct unauthenticated access is rejected with HTTP 403 Forbidden.
+    
+    \item \textbf{Invariant 10 (Strict Admission Control Cap):} Each home node enforces a strict capacity limit of 10 concurrent distinct remote streams. When the limit is reached, the cloud stream router issues HTTP 429 Too Many Requests with a \texttt{Retry-After: 30} header (``Node Busy''), protecting the home machine from bandwidth and connection exhaustion.
+\end{enumerate}
+
+% ------------------------------------------------------------------------------
+\section{Scope of the Project}
+\label{sec:scope}
+
+\subsection{In-Scope System Boundaries}
+CustardFin encompasses the following functional capabilities:
+\begin{itemize}
+    \item Local media folder scanning, file probing, SHA-256 content deduplication, and automated poster thumbnail extraction.
+    \item Asynchronous background pre-encoding to multi-rendition HLS (1080p, 720p, 480p) utilizing NVIDIA NVENC GPU acceleration or CPU fallback.
+    \item Embedded, offline-capable Mini-Jellyfin single-page web application on the edge daemon for sub-5ms local LAN streaming.
+    \item 1-click Public/Private visibility control generating and synchronizing compact $\le 3\text{ KB}$ JSON metadata manifests.
+    \item Centralized community catalog browsing, title search, and user authentication via JWT tokens and hashed passwords.
+    \item Outbound-only reverse TLS tunneling via Fast Reverse Proxy (FRP) relay servers.
+    \item Dual-path play decision routing differentiating between same-subnet LAN clients and remote tunnel clients.
+    \item Ephemeral heartbeat tracking in Redis with 15-second TTLs for automatic offline detection.
+    \item Origin Shield S3-compatible pull-through caching with automated 24-hour LRU auto-purging.
+    \item Dynamic master playlist rewriting and adaptive bitrate throttling under heavy network load.
+\end{itemize}
+
+\subsection{Out-of-Scope (Version 1 Boundaries)}
+To ensure verifiable completion within the academic semester timeframe, the following features are explicitly out of scope for Version 1:
+\begin{itemize}
+    \item Digital Rights Management (DRM) technologies (e.g., Widevine, FairPlay) and cryptographic video watermarking.
+    \item Native mobile applications (iOS/Android) and native Smart TV interfaces (Android TV, Apple TV); streaming is delivered via responsive modern web browsers.
+    \item Real-time interactive live streaming (e.g., Twitch-style low-latency RTMP/WebRTC broadcasts).
+    \item Multi-region redundant relay meshing and node-to-node peer mesh transfers.
+\end{itemize}
+
+% ------------------------------------------------------------------------------
+\section{Organization of the Report}
+\label{sec:organization}
+
+The remainder of this report is organized as follows:
+\begin{itemize}
+    \item \textbf{Chapter~\ref{chap:literature_survey} (Literature Survey):} Reviews state-of-the-art cloud VOD platforms, self-hosted media servers, and peer-to-peer streaming systems, presenting a comprehensive gap analysis matrix.
+    \item \textbf{Chapter~\ref{chap:architecture} (System Architecture and Design):} Details the two-tier edge-cloud architecture, package structures, database schemas, and end-to-end sequence diagrams.
+    \item \textbf{Chapter~\ref{chap:features_implementation} (Key Features and Technical Implementation):} Explains the concrete implementation of the core features (HLS pre-encoding, NVENC, FRP tunneling, Origin Shield, Mini-Jellyfin UI) accompanied by annotated application screenshots.
+    \item \textbf{Chapter~\ref{chap:cost_analysis} (Cost Analysis and Financial Feasibility):} Formulates a rigorous mathematical cost model comparing traditional cloud streaming costs against CustardFin's hybrid architecture.
+    \item \textbf{Chapter~\ref{chap:evaluation_testing} (Deployment, Testing, and Evaluation):} Documents experimental performance benchmarks, the 10-viewer load simulation, quality gates, and multi-topology deployment proofs.
+    \item \textbf{Chapter~\ref{chap:contributions} (Team Contributions and Division of Work):} Provides an explicit breakdown of responsibilities and technical modules authored by team members Anish Ghadi and Anosh Chodankar.
+    \item \textbf{Chapter~\ref{chap:conclusion} (Conclusion and Future Scope):} Summarizes project accomplishments, addresses current limitations, and outlines future engineering enhancements.
+\end{itemize}

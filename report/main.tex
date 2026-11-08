@@ -1,0 +1,113 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+% --- Essential Packages ---
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=1in,headheight=15pt]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{cite}
+\usepackage{tfrupee}
+\DeclareUnicodeCharacter{20B9}{\rupee}
+\usepackage[hyphens]{url}
+\usepackage[hidelinks,colorlinks=true,linkcolor=blue!80!black,citecolor=green!60!black,urlcolor=blue]{hyperref}
+
+% --- Color Palette ---
+\definecolor{custardgold}{RGB}{234, 179, 8}
+\definecolor{custarddark}{RGB}{15, 23, 42}
+\definecolor{codegray}{RGB}{245, 247, 250}
+\definecolor{codeborder}{RGB}{203, 213, 225}
+
+% --- Listings Formatting ---
+\lstdefinelanguage{json}{
+    basicstyle=\ttfamily\footnotesize,
+    stringstyle=\color{blue!70!black},
+    commentstyle=\color{gray},
+    morestring=[b]",
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    literate=
+     *{0}{{{\color{red!70!black}0}}}{1}
+      {1}{{{\color{red!70!black}1}}}{1}
+      {2}{{{\color{red!70!black}2}}}{1}
+      {3}{{{\color{red!70!black}3}}}{1}
+      {4}{{{\color{red!70!black}4}}}{1}
+      {5}{{{\color{red!70!black}5}}}{1}
+      {6}{{{\color{red!70!black}6}}}{1}
+      {7}{{{\color{red!70!black}7}}}{1}
+      {8}{{{\color{red!70!black}8}}}{1}
+      {9}{{{\color{red!70!black}9}}}{1}
+      {:}{{{\color{black}:}}}{1}
+      {,}{{{\color{black},}}}{1}
+      {\{}{{{\color{black}\{}}}{1}
+      {\}}{{{\color{black}\}}}}{1}
+      {[}{{{\color{black}[}}}{1}
+      {]}{{{\color{black}]}}}{1},
+}
+
+\lstset{
+    backgroundcolor=\color{codegray},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{codeborder},
+    captionpos=b,
+    keepspaces=true,
+    showstringspaces=false
+}
+
+% --- Header and Footer Styling ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\nouppercase{\leftmark}}
+\fancyhead[R]{CustardFin Project Report}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Chapter Title Styling ---
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\Large}
+  {\filleft\MakeUppercase{\chaptertitlename} \Huge\thechapter}
+  {2ex}
+  {\titlerule\vspace{2ex}\filright}
+  [\vspace{2ex}\titlerule]
+
+\begin{document}
+
+% --- Front Matter (Title Page, Declaration, Abstract, ToC) ---
+\pagenumbering{roman}
+\include{sections/00_frontmatter}
+
+% --- Main Body Chapters ---
+\cleardoublepage
+\pagenumbering{arabic}
+
+\include{sections/01_introduction}
+\include{sections/02_literature_survey}
+\include{sections/03_architecture}
+\include{sections/04_features_implementation}
+\include{sections/05_cost_analysis}
+\include{sections/06_evaluation_testing}
+\include{sections/07_contributions}
+\include{sections/08_conclusion}
+
+% --- References ---
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
+

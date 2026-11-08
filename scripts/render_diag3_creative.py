@@ -1,0 +1,299 @@
+import os
+import subprocess
+
+fig_dir = r"C:\Users\Anosh\Documents\Notes\Projects\Cloud_Computing\sem_end\Custard Fin\report\figures"
+os.makedirs(fig_dir, exist_ok=True)
+chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+svg_diag_03_creative = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 440" width="1180" height="440">
+  <defs>
+    <filter id="cSh3" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.08" />
+    </filter>
+
+    <linearGradient id="gPipeHdr" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" /><stop offset="100%" stop-color="#3730a3" />
+    </linearGradient>
+
+    <!-- Markers -->
+    <marker id="mPipeArr" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#4f46e5" />
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .title { font-size: 19px; font-weight: 800; fill: #0f172a; }
+    .subtitle { font-size: 12px; fill: #64748b; }
+    .stage-hdr { font-size: 11.5px; font-weight: 800; fill: #ffffff; text-anchor: middle; }
+    .step-num { font-size: 10px; font-weight: 800; }
+    .node-title { font-size: 12px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .node-desc { font-size: 9.5px; fill: #64748b; text-anchor: middle; }
+    .badge-txt { font-size: 8.5px; font-weight: 800; }
+  </style>
+
+  <!-- Canvas Base -->
+  <rect width="1180" height="440" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+
+  <!-- Header -->
+  <text x="40" y="36" class="title">Local Media Ingestion &amp; Hardware Pre-Encoding Pipeline</text>
+  <text x="40" y="54" class="subtitle">Asynchronous edge pipeline: File discovery, cryptographic fingerprinting, GPU NVENC transcoding, and SQLite indexing</text>
+
+  <!-- Flow Connector Conduit (Connecting all 5 stages horizontally) -->
+  <path d="M 140 180 L 1040 180" fill="none" stroke="#e0e7ff" stroke-width="6" stroke-linecap="round" />
+  <path d="M 140 180 L 1040 180" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="8,6" />
+
+  <!-- ========================================================================= -->
+  <!-- STAGE 1: SCAN & SHA-256 DEDUPLICATION -->
+  <!-- ========================================================================= -->
+  <g transform="translate(40, 75)" filter="url(#cSh3)">
+    <rect width="200" height="330" rx="12" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.2" />
+    <rect width="200" height="32" rx="12" fill="#7c3aed" />
+    <rect y="22" width="200" height="10" fill="#7c3aed" />
+    <text x="100" y="21" class="stage-hdr">1. Ingest &amp; Fingerprint</text>
+
+    <!-- Visual 1: Video File Icon -->
+    <g transform="translate(65, 45)">
+      <path d="M 10 0 L 50 0 L 65 15 L 65 65 L 10 65 Z" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+      <polygon points="50,0 50,15 65,15" fill="#ddd6fe" stroke="#7c3aed" stroke-width="1.5" />
+      <text x="37.5" y="42" font-size="10" font-weight="800" fill="#7c3aed" text-anchor="middle">.MKV / .MP4</text>
+    </g>
+
+    <!-- Visual 2: SHA-256 Fingerprint Key Graphic -->
+    <g transform="translate(20, 130)">
+      <rect width="160" height="58" rx="6" fill="#ffffff" stroke="#ddd6fe" />
+      <circle cx="28" cy="29" r="14" fill="#ede9fe" />
+      <text x="28" y="34" font-size="13" text-anchor="middle">🔑</text>
+      <text x="50" y="24" font-size="10.5" font-weight="700" fill="#4c1d95">SHA-256 Header</text>
+      <text x="50" y="38" font-size="9" fill="#6b21a8">64KB Header + ModTime</text>
+      <text x="50" y="50" font-size="8" font-weight="700" fill="#7c3aed">Zero Re-Encode Check</text>
+    </g>
+
+    <!-- Visual 3: Poster Extraction -->
+    <g transform="translate(20, 205)">
+      <rect width="160" height="65" rx="6" fill="#ffffff" stroke="#ddd6fe" />
+      <rect x="12" y="10" width="35" height="45" rx="3" fill="#6366f1" />
+      <circle cx="29" cy="25" r="5" fill="#fef08a" />
+      <polygon points="15,50 30,35 44,50" fill="#38bdf8" />
+      <text x="56" y="28" font-size="10.5" font-weight="700" fill="#1e1b4b">Poster Extract</text>
+      <text x="56" y="42" font-size="9" fill="#64748b">1080p JPEG Frame</text>
+      <text x="56" y="55" font-size="8" font-weight="700" fill="#10b981">Local UI Ready</text>
+    </g>
+
+    <text x="100" y="300" font-size="9" font-weight="700" fill="#7c3aed" text-anchor="middle">Idempotent Deduplication</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- STAGE 2: HARDWARE ENCODER PROBE -->
+  <!-- ========================================================================= -->
+  <g transform="translate(265, 75)" filter="url(#cSh3)">
+    <rect width="200" height="330" rx="12" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2" />
+    <rect width="200" height="32" rx="12" fill="#059669" />
+    <rect y="22" width="200" height="10" fill="#059669" />
+    <text x="100" y="21" class="stage-hdr">2. Hardware Probe</text>
+
+    <!-- Visual 1: NVIDIA GPU ASIC Chip -->
+    <g transform="translate(60, 45)">
+      <rect x="10" y="5" width="60" height="60" rx="6" fill="#065f46" stroke="#34d399" stroke-width="1.2" />
+      <rect x="20" y="15" width="40" height="40" rx="3" fill="#047857" />
+      <text x="40" y="34" font-size="7.5" font-weight="800" fill="#ffffff" text-anchor="middle">NVENC</text>
+      <text x="40" y="46" font-size="6.5" font-weight="700" fill="#a7f3d0" text-anchor="middle">ASIC</text>
+      <!-- Pins -->
+      <line x1="20" y1="2" x2="20" y2="5" stroke="#f59e0b" stroke-width="2" />
+      <line x1="40" y1="2" x2="40" y2="5" stroke="#f59e0b" stroke-width="2" />
+      <line x1="60" y1="2" x2="60" y2="5" stroke="#f59e0b" stroke-width="2" />
+      <line x1="20" y1="65" x2="20" y2="68" stroke="#f59e0b" stroke-width="2" />
+      <line x1="40" y1="65" x2="40" y2="68" stroke="#f59e0b" stroke-width="2" />
+      <line x1="60" y1="65" x2="60" y2="68" stroke="#f59e0b" stroke-width="2" />
+    </g>
+
+    <!-- Visual 2: 1-Second Synthetic Test -->
+    <g transform="translate(20, 130)">
+      <rect width="160" height="58" rx="6" fill="#ffffff" stroke="#86efac" />
+      <circle cx="28" cy="29" r="14" fill="#dcfce7" />
+      <text x="28" y="34" font-size="13" text-anchor="middle">🧪</text>
+      <text x="50" y="24" font-size="10.5" font-weight="700" fill="#065f46">1s Probe Encode</text>
+      <text x="50" y="38" font-size="9" fill="#047857">Tests NVENC driver</text>
+      <text x="50" y="50" font-size="8" font-weight="700" fill="#15803d">Status: ACTIVE (322 fps)</text>
+    </g>
+
+    <!-- Visual 3: Fallback Safeguard -->
+    <g transform="translate(20, 205)">
+      <rect width="160" height="65" rx="6" fill="#ffffff" stroke="#cbd5e1" />
+      <circle cx="28" cy="32" r="14" fill="#fee2e2" />
+      <text x="28" y="37" font-size="13" text-anchor="middle">🛡️</text>
+      <text x="50" y="28" font-size="10.5" font-weight="700" fill="#991b1b">CPU Fallback</text>
+      <text x="50" y="42" font-size="9" fill="#64748b">libx264 veryfast</text>
+      <text x="50" y="55" font-size="8" font-weight="700" fill="#047857">Auto-Failover &lt;420ms</text>
+    </g>
+
+    <text x="100" y="300" font-size="9" font-weight="700" fill="#047857" text-anchor="middle">Hardware Adaptive Safety</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- STAGE 3: 4-SECOND GOP HLS SEGMENTATION -->
+  <!-- ========================================================================= -->
+  <g transform="translate(490, 75)" filter="url(#cSh3)">
+    <rect width="200" height="330" rx="12" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.2" />
+    <rect width="200" height="32" rx="12" fill="#0284c7" />
+    <rect y="22" width="200" height="10" fill="#0284c7" />
+    <text x="100" y="21" class="stage-hdr">3. 4s HLS Segmentation</text>
+
+    <!-- Visual 1: Film Strip Cuts -->
+    <g transform="translate(45, 45)">
+      <!-- Film Strip -->
+      <rect x="0" y="10" width="110" height="55" rx="4" fill="#0369a1" />
+      <rect x="4" y="14" width="8" height="6" fill="#ffffff" rx="1" />
+      <rect x="20" y="14" width="8" height="6" fill="#ffffff" rx="1" />
+      <rect x="36" y="14" width="8" height="6" fill="#ffffff" rx="1" />
+      <rect x="52" y="14" width="8" height="6" fill="#ffffff" rx="1" />
+      <rect x="68" y="14" width="8" height="6" fill="#ffffff" rx="1" />
+      <rect x="84" y="14" width="8" height="6" fill="#ffffff" rx="1" />
+      <rect x="100" y="14" width="6" height="6" fill="#ffffff" rx="1" />
+      <!-- Film Cuts -->
+      <line x1="37" y1="10" x2="37" y2="65" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3,2" />
+      <line x1="74" y1="10" x2="74" y2="65" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3,2" />
+      <text x="18" y="42" font-size="8" font-weight="700" fill="#ffffff">4s</text>
+      <text x="55" y="42" font-size="8" font-weight="700" fill="#ffffff">4s</text>
+      <text x="92" y="42" font-size="8" font-weight="700" fill="#ffffff">4s</text>
+    </g>
+
+    <!-- Visual 2: GOP Alignment -->
+    <g transform="translate(20, 130)">
+      <rect width="160" height="58" rx="6" fill="#ffffff" stroke="#7dd3fc" />
+      <circle cx="28" cy="29" r="14" fill="#e0f2fe" />
+      <text x="28" y="34" font-size="13" text-anchor="middle">🎯</text>
+      <text x="50" y="24" font-size="10.5" font-weight="700" fill="#0369a1">GOP Alignment</text>
+      <text x="50" y="38" font-size="9" fill="#0284c7">g=120 (30fps × 4s)</text>
+      <text x="50" y="50" font-size="8" font-weight="700" fill="#0369a1">IDR Keyframe Every 4s</text>
+    </g>
+
+    <!-- Visual 3: Multi-Bitrate Ladder -->
+    <g transform="translate(20, 205)">
+      <rect width="160" height="65" rx="6" fill="#ffffff" stroke="#cbd5e1" />
+      <circle cx="28" cy="32" r="14" fill="#fefce8" />
+      <text x="28" y="37" font-size="13" text-anchor="middle">📶</text>
+      <text x="50" y="28" font-size="10.5" font-weight="700" fill="#0f172a">ABR Ladder</text>
+      <text x="50" y="42" font-size="9" fill="#64748b">1080p, 720p, 480p</text>
+      <text x="50" y="55" font-size="8" font-weight="700" fill="#b45309">RFC 8216 HLS Specs</text>
+    </g>
+
+    <text x="100" y="300" font-size="9" font-weight="700" fill="#0284c7" text-anchor="middle">Pre-Encoded fMP4 Store</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- STAGE 4: ATOMIC SQLITE WAL COMMIT -->
+  <!-- ========================================================================= -->
+  <g transform="translate(715, 75)" filter="url(#cSh3)">
+    <rect width="200" height="330" rx="12" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.2" />
+    <rect width="200" height="32" rx="12" fill="#7c3aed" />
+    <rect y="22" width="200" height="10" fill="#7c3aed" />
+    <text x="100" y="21" class="stage-hdr">4. SQLite Index Commit</text>
+
+    <!-- Visual 1: 3D SQLite Database Cylinder -->
+    <g transform="translate(65, 45)">
+      <path d="M 10 18 L 10 55 A 30 10 0 0 0 70 55 L 70 18 Z" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+      <ellipse cx="40" cy="18" rx="30" ry="10" fill="#a78bfa" stroke="#7c3aed" stroke-width="1.5" />
+      <text x="40" y="42" font-size="9.5" font-weight="800" fill="#4c1d95" text-anchor="middle">SQLite</text>
+    </g>
+
+    <!-- Visual 2: WAL Mode Engine -->
+    <g transform="translate(20, 130)">
+      <rect width="160" height="58" rx="6" fill="#ffffff" stroke="#ddd6fe" />
+      <circle cx="28" cy="29" r="14" fill="#ede9fe" />
+      <text x="28" y="34" font-size="13" text-anchor="middle">📝</text>
+      <text x="50" y="24" font-size="10.5" font-weight="700" fill="#5b21b6">WAL Mode</text>
+      <text x="50" y="38" font-size="9" fill="#6d28d9">Non-blocking reads</text>
+      <text x="50" y="50" font-size="8" font-weight="700" fill="#5b21b6">Pure-Go (Zero CGO)</text>
+    </g>
+
+    <!-- Visual 3: Status READY & Private Progress -->
+    <g transform="translate(20, 205)">
+      <rect width="160" height="65" rx="6" fill="#ffffff" stroke="#cbd5e1" />
+      <circle cx="28" cy="32" r="14" fill="#dcfce7" />
+      <text x="28" y="37" font-size="13" text-anchor="middle">🔒</text>
+      <text x="50" y="28" font-size="10.5" font-weight="700" fill="#065f46">Status: READY</text>
+      <text x="50" y="42" font-size="9" fill="#64748b">Watch history home</text>
+      <text x="50" y="55" font-size="8" font-weight="700" fill="#047857">Invariant 8 Preserved</text>
+    </g>
+
+    <text x="100" y="300" font-size="9" font-weight="700" fill="#7c3aed" text-anchor="middle">Edge Database Persistence</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- STAGE 5: ACTIVE STREAMING & DUAL AVAILABILITY -->
+  <!-- ========================================================================= -->
+  <g transform="translate(940, 75)" filter="url(#cSh3)">
+    <rect width="200" height="330" rx="12" fill="#ecfdf5" stroke="#86efac" stroke-width="1.2" />
+    <rect width="200" height="32" rx="12" fill="#10b981" />
+    <rect y="22" width="200" height="10" fill="#10b981" />
+    <text x="100" y="21" class="stage-hdr">5. Active Playback</text>
+
+    <!-- Visual 1: TV/Monitor Playback -->
+    <g transform="translate(60, 45)">
+      <rect x="5" y="5" width="70" height="46" rx="4" fill="#064e3b" stroke="#34d399" stroke-width="1.2" />
+      <polygon points="35,20 35,36 48,28" fill="#34d399" />
+      <path d="M 33 51 L 47 51 L 50 60 L 30 60 Z" fill="#475569" />
+    </g>
+
+    <!-- Visual 2: LAN Playback Option -->
+    <g transform="translate(20, 130)">
+      <rect width="160" height="58" rx="6" fill="#ffffff" stroke="#86efac" />
+      <circle cx="28" cy="29" r="14" fill="#dcfce7" />
+      <text x="28" y="34" font-size="13" text-anchor="middle">📶</text>
+      <text x="50" y="24" font-size="10.5" font-weight="700" fill="#047857">Local Streamer</text>
+      <text x="50" y="38" font-size="9" fill="#065f46">Port :8089 (Mini-Jellyfin)</text>
+      <text x="50" y="50" font-size="8" font-weight="700" fill="#15803d">&lt; 3.2 ms Wi-Fi Latency</text>
+    </g>
+
+    <!-- Visual 3: Public Toggle Sync -->
+    <g transform="translate(20, 205)">
+      <rect width="160" height="65" rx="6" fill="#ffffff" stroke="#cbd5e1" />
+      <circle cx="28" cy="32" r="14" fill="#e0f2fe" />
+      <text x="28" y="37" font-size="13" text-anchor="middle">☁️</text>
+      <text x="50" y="28" font-size="10.5" font-weight="700" fill="#0369a1">Public Toggle</text>
+      <text x="50" y="42" font-size="9" fill="#64748b">Syncs ~3 KB Manifest</text>
+      <text x="50" y="55" font-size="8" font-weight="700" fill="#0284c7">0 Video Upload to Cloud</text>
+    </g>
+
+    <text x="100" y="300" font-size="9" font-weight="700" fill="#047857" text-anchor="middle">LAN &amp; Cloud Ready</text>
+  </g>
+
+</svg>
+"""
+
+svg_file = os.path.join(fig_dir, "diag_03_ingest_pipeline.svg")
+png_file = os.path.join(fig_dir, "diag_03_ingest_pipeline.png")
+html_file = os.path.join(fig_dir, "diag_03_ingest_pipeline.html")
+
+with open(svg_file, "w", encoding="utf-8") as f:
+    f.write(svg_diag_03_creative)
+
+html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {{ margin: 0; padding: 0; background: #ffffff; display: flex; align-items: center; justify-content: center; }}
+  svg {{ width: 1180px; height: 440px; }}
+</style>
+</head>
+<body>
+  {svg_diag_03_creative}
+</body>
+</html>"""
+
+with open(html_file, "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+args = [
+    chrome_path,
+    "--headless=old",
+    "--disable-gpu",
+    f"--screenshot={png_file}",
+    "--window-size=1180,440",
+    html_file
+]
+subprocess.run(args, capture_output=True)
+print(f"Rendered {png_file} - Size: {os.path.getsize(png_file)} bytes")
+

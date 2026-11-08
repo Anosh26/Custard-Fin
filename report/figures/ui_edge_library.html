@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CustardFin - My Edge Library Modal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+  body { background: rgba(11, 15, 25, 0.95); color: #f3f4f6; display: flex; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
+  .modal { width: 880px; background: #111827; border: 1px solid #1f2937; border-radius: 14px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); overflow: hidden; }
+  .modal-hdr { background: #182234; padding: 18px 24px; border-bottom: 1px solid #1f2937; display: flex; justify-content: space-between; align-items: center; }
+  .modal-title { font-size: 17px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; }
+  .node-pill { background: #064e3b; color: #34d399; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; text-transform: uppercase; }
+
+  .node-status-bar { padding: 14px 24px; background: #0f172a; border-bottom: 1px solid #1f2937; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; font-size: 12px; }
+  .status-item { display: flex; flex-direction: column; gap: 3px; }
+  .status-lbl { color: #94a3b8; font-size: 11px; text-transform: uppercase; font-weight: 600; }
+  .status-val { font-weight: 600; color: #fff; font-family: 'JetBrains Mono', monospace; }
+
+  .table-box { padding: 20px 24px; max-height: 400px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+  th { padding: 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #1f2937; font-weight: 600; }
+  td { padding: 12px; border-bottom: 1px solid #1f2937; }
+  .media-title { font-weight: 600; color: #fff; }
+  .media-meta { font-size: 11px; color: #94a3b8; font-family: 'JetBrains Mono', monospace; }
+
+  /* Switch */
+  .switch-box { display: flex; align-items: center; gap: 8px; }
+  .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .3s; border-radius: 20px; }
+  .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+  .switch.active .slider { background-color: #eab308; }
+  .switch.active .slider:before { transform: translateX(16px); }
+
+  .btn-lan { background: #312e81; color: #a5b4fc; border: 1px solid #4338ca; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none; }
+  .modal-ftr { padding: 16px 24px; background: #182234; border-top: 1px solid #1f2937; display: flex; justify-content: space-between; align-items: center; }
+  .btn-gold { background: #eab308; color: #000; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="modal">
+  <div class="modal-hdr">
+    <div class="modal-title">
+      <span>&#128187; My Edge Node Library Manager</span>
+      <span class="node-pill">Node: node-4060-desktop (Online)</span>
+    </div>
+    <span style="color: #94a3b8; cursor: pointer; font-size: 18px;">&times;</span>
+  </div>
+
+  <div class="node-status-bar">
+    <div class="status-item">
+      <span class="status-lbl">Transcode Engine</span>
+      <span class="status-val" style="color: #38bdf8;">NVIDIA NVENC (HW Active)</span>
+    </div>
+    <div class="status-item">
+      <span class="status-lbl">Edge Local Storage</span>
+      <span class="status-val">42.8 GB / 1.0 TB (4.2%)</span>
+    </div>
+    <div class="status-item">
+      <span class="status-lbl">Active Streams</span>
+      <span class="status-val" style="color: #10b981;">2 / 10 (Within Cap)</span>
+    </div>
+    <div class="status-item">
+      <span class="status-lbl">Heartbeat Beacon</span>
+      <span class="status-val" style="color: #eab308;">Last sent: 4s ago</span>
+    </div>
+  </div>
+
+  <div class="table-box">
+    <table>
+      <thead>
+        <tr>
+          <th>Media Title & Specs</th>
+          <th>Ingest Status</th>
+          <th>Public Manifest Sync</th>
+          <th>LAN Direct Access</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="media-title">Tears of Steel 4K Master</div>
+            <div class="media-meta">SHA-256: e3b0c442... | 1080p HLS (12:14)</div>
+          </td>
+          <td><span style="color: #10b981; font-weight: 600;">&#10003; READY</span></td>
+          <td>
+            <div class="switch-box">
+              <div class="switch active"><div class="slider"></div></div>
+              <span style="font-size: 11px; color: #eab308; font-weight: 600;">PUBLIC (Synced ~3KB)</span>
+            </div>
+          </td>
+          <td><button class="btn-lan">&#128640; Launch LAN Stream</button></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="media-title">Big Buck Bunny 1080p 60fps</div>
+            <div class="media-meta">SHA-256: 7f83b165... | Multi-bitrate HLS (09:56)</div>
+          </td>
+          <td><span style="color: #10b981; font-weight: 600;">&#10003; READY</span></td>
+          <td>
+            <div class="switch-box">
+              <div class="switch active"><div class="slider"></div></div>
+              <span style="font-size: 11px; color: #eab308; font-weight: 600;">PUBLIC (Synced ~3KB)</span>
+            </div>
+          </td>
+          <td><button class="btn-lan">&#128640; Launch LAN Stream</button></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="media-title">Family Vacation Archive 2024 (Private)</div>
+            <div class="media-meta">SHA-256: a14f89d0... | 1080p HLS (34:20)</div>
+          </td>
+          <td><span style="color: #10b981; font-weight: 600;">&#10003; READY</span></td>
+          <td>
+            <div class="switch-box">
+              <div class="switch"><div class="slider"></div></div>
+              <span style="font-size: 11px; color: #94a3b8;">PRIVATE (Home Only)</span>
+            </div>
+          </td>
+          <td><button class="btn-lan">&#128640; Launch LAN Stream</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="modal-ftr">
+    <div style="font-size: 12px; color: #94a3b8;">Private items never sync metadata or chunks to cloud.</div>
+    <div style="display: flex; gap: 12px;">
+      <button style="background: transparent; border: 1px solid #374151; color: #d1d5db; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;">Scan Directory</button>
+      <button class="btn-gold">&#8635; Force Sync Manifests</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

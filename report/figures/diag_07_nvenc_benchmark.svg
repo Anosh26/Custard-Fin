@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 500" width="1180" height="500">
+  <defs>
+    <filter id="cSh7" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#0f172a" flood-opacity="0.08" />
+    </filter>
+
+    <!-- Gradients -->
+    <linearGradient id="gNvidia" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" /><stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="gCpu" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e" /><stop offset="100%" stop-color="#be123c" />
+    </linearGradient>
+
+    <!-- Thermometer Gradients -->
+    <linearGradient id="gThermoGpu" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" /><stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+    <linearGradient id="gThermoCpu" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#f97316" /><stop offset="100%" stop-color="#ef4444" />
+    </linearGradient>
+  </defs>
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .title { font-size: 19px; font-weight: 800; fill: #0f172a; }
+    .subtitle { font-size: 12px; fill: #64748b; }
+    .card-hdr { font-size: 13.5px; font-weight: 800; fill: #ffffff; }
+    .metric-big { font-size: 24px; font-weight: 900; }
+    .metric-sub { font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .detail { font-size: 9.5px; fill: #64748b; }
+  </style>
+
+  <!-- Background Base -->
+  <rect width="1180" height="500" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+
+  <!-- Header -->
+  <text x="40" y="36" class="title">Hardware Transcoding Benchmark: NVIDIA NVENC vs. CPU Software</text>
+  <text x="40" y="54" class="subtitle">Empirical evaluation on AMD Ryzen 7 7840HS + NVIDIA RTX 4060 Laptop GPU (Tears of Steel 4K to 1080p HLS)</text>
+
+  <!-- ========================================================================= -->
+  <!-- LEFT: NVIDIA GEFORCE RTX 4060 (NVENC ASIC) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(50, 85)" filter="url(#cSh7)">
+    <rect width="490" height="385" rx="14" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" />
+    <rect width="490" height="40" rx="14" fill="url(#gNvidia)" />
+    <rect y="28" width="490" height="12" fill="url(#gNvidia)" />
+    <text x="24" y="26" class="card-hdr">⚡ NVIDIA GeForce RTX 4060 (h264_nvenc ASIC)</text>
+
+    <!-- 1. Tachometer Speed Gauge (Throughput 322.3 fps / 10.74x) -->
+    <g transform="translate(30, 65)">
+      <!-- Semi-circle Speedometer Arc -->
+      <path d="M 20 85 A 60 60 0 0 1 140 85" fill="none" stroke="#e2e8f0" stroke-width="14" stroke-linecap="round" />
+      <path d="M 20 85 A 60 60 0 0 1 138 75" fill="none" stroke="#10b981" stroke-width="14" stroke-linecap="round" />
+      <!-- Needle -->
+      <polygon points="76,82 84,82 130,55" fill="#065f46" />
+      <circle cx="80" cy="85" r="7" fill="#047857" />
+      <!-- Text Value inside -->
+      <text x="80" y="112" class="metric-big" fill="#047857" text-anchor="middle">322.3 <tspan font-size="13" font-weight="700">fps</tspan></text>
+      <text x="80" y="127" class="metric-sub" fill="#15803d" text-anchor="middle">10.74× Realtime</text>
+      <text x="80" y="140" class="detail" text-anchor="middle">High-speed hardware encode</text>
+    </g>
+
+    <!-- 2. CPU Donut Ring (4.8% Utilization) -->
+    <g transform="translate(200, 65)">
+      <!-- Donut Circle -->
+      <circle cx="65" cy="55" r="42" fill="none" stroke="#e2e8f0" stroke-width="12" />
+      <!-- 4.8% green arc (Circumference = 2 * PI * 42 = 263.89; 4.8% = 12.66) -->
+      <circle cx="65" cy="55" r="42" fill="none" stroke="#10b981" stroke-width="12" 
+              stroke-dasharray="14 250" stroke-linecap="round" transform="rotate(-90 65 55)" />
+      <!-- Value inside -->
+      <text x="65" y="58" class="metric-big" fill="#047857" text-anchor="middle">4.8%</text>
+      <text x="65" y="74" font-size="8.5" font-weight="700" fill="#15803d" text-anchor="middle">CPU LOAD</text>
+      <text x="65" y="115" class="metric-sub" fill="#15803d" text-anchor="middle">Host Responsive</text>
+      <text x="65" y="128" class="detail" text-anchor="middle">Zero CPU contention</text>
+    </g>
+
+    <!-- 3. Physical Thermometer (61°C / 42W) -->
+    <g transform="translate(360, 65)">
+      <!-- Glass Tube -->
+      <rect x="25" y="15" width="16" height="85" rx="8" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.2" />
+      <!-- Mercury Level (61% of tube height = 50px) -->
+      <rect x="27" y="50" width="12" height="50" rx="6" fill="url(#gThermoGpu)" />
+      <!-- Bulb -->
+      <circle cx="33" cy="105" r="16" fill="url(#gThermoGpu)" stroke="#10b981" stroke-width="1.5" />
+      <!-- Tick Marks -->
+      <line x1="45" y1="35" x2="52" y2="35" stroke="#94a3b8" stroke-width="1.5" />
+      <text x="56" y="38" font-size="8" fill="#64748b">100°</text>
+      <line x1="45" y1="60" x2="52" y2="60" stroke="#10b981" stroke-width="1.5" />
+      <text x="56" y="63" font-size="8.5" font-weight="700" fill="#047857">61°C</text>
+      <!-- Labels -->
+      <text x="33" y="140" class="metric-sub" fill="#047857" text-anchor="middle">61°C • 42W</text>
+      <text x="33" y="153" class="detail" text-anchor="middle">Cool &amp; quiet</text>
+    </g>
+
+    <!-- Encoding Time Pill (Bottom) -->
+    <g transform="translate(24, 235)">
+      <rect width="442" height="55" rx="8" fill="#ffffff" stroke="#86efac" />
+      <circle cx="35" cy="28" r="15" fill="#dcfce7" />
+      <text x="27" y="34" font-size="16">⚡</text>
+      <text x="62" y="24" font-size="11.5" font-weight="800" fill="#065f46">10-Minute Video Encoding Time: 55.8 Seconds</text>
+      <text x="62" y="42" font-size="10" fill="#047857">Transcodes faster than realtime — 1-hour movie pre-encoded in 5.5 minutes</text>
+    </g>
+
+    <!-- ASIC Load Callout -->
+    <rect x="24" y="305" width="442" height="55" rx="8" fill="#ffffff" stroke="#cbd5e1" />
+    <text x="36" y="327" font-size="11" font-weight="700" fill="#0f172a">Dedicated 8th Gen NVENC Hardware Architecture</text>
+    <text x="36" y="345" font-size="9.5" fill="#64748b">Runs on dedicated silicon; 3D gaming and desktop applications run at 100% speed</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- RIGHT: MULTI-CORE CPU SOFTWARE (LIBX264) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(640, 85)" filter="url(#cSh7)">
+    <rect width="490" height="385" rx="14" fill="#fff5f5" stroke="#fecaca" stroke-width="1.5" />
+    <rect width="490" height="40" rx="14" fill="url(#gCpu)" />
+    <rect y="28" width="490" height="12" fill="url(#gCpu)" />
+    <text x="24" y="26" class="card-hdr">💻 Multi-Threaded CPU Software (libx264 veryfast)</text>
+
+    <!-- 1. Tachometer Speed Gauge (Throughput 33.6 fps / 1.12x) -->
+    <g transform="translate(30, 65)">
+      <path d="M 20 85 A 60 60 0 0 1 140 85" fill="none" stroke="#e2e8f0" stroke-width="14" stroke-linecap="round" />
+      <!-- Slow 33fps arc -->
+      <path d="M 20 85 A 60 60 0 0 1 45 45" fill="none" stroke="#f43f5e" stroke-width="14" stroke-linecap="round" />
+      <!-- Needle stuck near left -->
+      <polygon points="76,82 84,82 40,55" fill="#991b1b" />
+      <circle cx="80" cy="85" r="7" fill="#be123c" />
+      <!-- Text Value inside -->
+      <text x="80" y="112" class="metric-big" fill="#be123c" text-anchor="middle">33.6 <tspan font-size="13" font-weight="700">fps</tspan></text>
+      <text x="80" y="127" class="metric-sub" fill="#991b1b" text-anchor="middle">1.12× Realtime</text>
+      <text x="80" y="140" class="detail" text-anchor="middle">Barely above 30fps playback</text>
+    </g>
+
+    <!-- 2. CPU Donut Ring (96.4% Utilization - Red Saturated) -->
+    <g transform="translate(200, 65)">
+      <circle cx="65" cy="55" r="42" fill="none" stroke="#e2e8f0" stroke-width="12" />
+      <!-- 96.4% red arc (96.4% of 263.89 = 254) -->
+      <circle cx="65" cy="55" r="42" fill="none" stroke="#ef4444" stroke-width="12" 
+              stroke-dasharray="254 264" stroke-linecap="round" transform="rotate(-90 65 55)" />
+      <!-- Value inside -->
+      <text x="65" y="58" class="metric-big" fill="#991b1b" text-anchor="middle">96.4%</text>
+      <text x="65" y="74" font-size="8.5" font-weight="700" fill="#991b1b" text-anchor="middle">CPU PEGGED</text>
+      <text x="65" y="115" class="metric-sub" fill="#991b1b" text-anchor="middle">16 Threads Maxed</text>
+      <text x="65" y="128" class="detail" text-anchor="middle">Host system lags severely</text>
+    </g>
+
+    <!-- 3. Physical Thermometer (89°C / 95W - Boiling) -->
+    <g transform="translate(360, 65)">
+      <rect x="25" y="15" width="16" height="85" rx="8" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.2" />
+      <!-- Mercury Level (89% height = 75px) -->
+      <rect x="27" y="25" width="12" height="75" rx="6" fill="url(#gThermoCpu)" />
+      <!-- Bulb -->
+      <circle cx="33" cy="105" r="16" fill="url(#gThermoCpu)" stroke="#ef4444" stroke-width="1.5" />
+      <!-- Tick Marks -->
+      <line x1="45" y1="28" x2="52" y2="28" stroke="#ef4444" stroke-width="1.5" />
+      <text x="56" y="31" font-size="8.5" font-weight="700" fill="#b91c1c">89°C</text>
+      <!-- Labels -->
+      <text x="33" y="140" class="metric-sub" fill="#b91c1c" text-anchor="middle">89°C • 95W</text>
+      <text x="33" y="153" class="detail" text-anchor="middle">Heavy fan noise &amp; heat</text>
+    </g>
+
+    <!-- Encoding Time Pill (Bottom) -->
+    <g transform="translate(24, 235)">
+      <rect width="442" height="55" rx="8" fill="#ffffff" stroke="#fca5a5" />
+      <circle cx="35" cy="28" r="15" fill="#fee2e2" />
+      <text x="27" y="34" font-size="16">⏳</text>
+      <text x="62" y="24" font-size="11.5" font-weight="800" fill="#991b1b">10-Minute Video Encoding Time: 535.7 Seconds</text>
+      <text x="62" y="42" font-size="10" fill="#b91c1c">Takes 8.9 minutes — 9.59× slower than hardware-accelerated NVENC</text>
+    </g>
+
+    <!-- Contention Callout -->
+    <rect x="24" y="305" width="442" height="55" rx="8" fill="#ffffff" stroke="#cbd5e1" />
+    <text x="36" y="327" font-size="11" font-weight="700" fill="#0f172a">CPU Thermal Throttling &amp; System Stalls</text>
+    <text x="36" y="345" font-size="9.5" fill="#64748b">Consumes 95W continuous power; prevents host from serving concurrent network streams</text>
+  </g>
+
+</svg>
