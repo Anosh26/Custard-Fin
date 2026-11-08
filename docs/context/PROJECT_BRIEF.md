@@ -1,7 +1,13 @@
 # CustardFin Project Brief
 
 ## Overview
-CustardFin is a hybrid personal media streaming and community sharing platform created for the MCA Cloud Computing Lab project by Anish Ghadi (25P0320009) and Anosh Chodankar (25P0320010).
+CustardFin is a hybrid personal media streaming and community sharing platform created for the MCA Cloud Computing Lab project.
+- **Master Report Title:** Cloud Computing Project Report
+- **Team (Identified Strictly by Seat Numbers):**
+  - Anish Ghadi — Seat No.: `25P0320009`
+  - Anosh Chodankar — Seat No.: `25P0320010`
+- **Academic Deliverable:** 62-page compiled LaTeX report (`report/main.pdf`) with 0 errors.
+- **Financial Validation:** Verified 95.89% cloud expenditure reduction (slashing monthly costs from ₹1,00,380.00/mo to ₹4,128.60/mo, saving ₹11.55 Lakhs/year at benchmark rate $1.00 USD = ₹84.00 INR).
 
 ## Core Idea
 Video files remain on the owner's local machine ("home edge node"). Only a compact metadata manifest (~3 KB JSON) is synced to the central cloud catalog when marked "Public".
