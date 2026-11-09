@@ -1,0 +1,296 @@
+import xml.etree.ElementTree as ET
+import subprocess
+import pathlib
+
+svg_raw = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480" width="1200" height="480" style="background-color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <!-- Soft Drop Shadows -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.06" />
+    </filter>
+    <filter id="shadow-sm" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.05" />
+    </filter>
+
+    <!-- Arrowhead Markers -->
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#dc2626" />
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f59e0b" />
+    </marker>
+
+    <!-- Animations for Heartbeat Scenario A -->
+    <style>
+      @keyframes heartbeat-dash {
+        to { stroke-dashoffset: -24; }
+      }
+      .anim-pulse {
+        stroke-dasharray: 8 4;
+        animation: heartbeat-dash 1.2s linear infinite;
+      }
+      .ecg-pulse {
+        stroke-dasharray: 100;
+        stroke-dashoffset: 100;
+        animation: draw 2s infinite ease-out;
+      }
+      @keyframes draw {
+        0% { stroke-dashoffset: 100; }
+        50% { stroke-dashoffset: 0; }
+        100% { stroke-dashoffset: 0; }
+      }
+    </style>
+  </defs>
+
+  <!-- ================= GLOBAL HEADER ================= -->
+  <text x="600" y="34" text-anchor="middle" font-size="20" font-weight="800" fill="#0f172a" letter-spacing="-0.3">
+    Ephemeral Heartbeat and Automated Node Liveness Detection
+  </text>
+  <text x="600" y="54" text-anchor="middle" font-size="11.5" font-weight="500" fill="#64748b">
+    Edge transmits a 15-second heartbeat beacon refreshing a Redis TTL key; missed beacons cause automatic catalog de-listing
+  </text>
+
+  <!-- ================= SCENARIO A: NORMAL ONLINE (Top Track) ================= -->
+  <g transform="translate(20, 75)">
+    <!-- Track Background -->
+    <rect x="0" y="0" width="1160" height="160" rx="10" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5" filter="url(#shadow)" />
+    
+    <!-- Track Header -->
+    <rect x="0" y="0" width="1160" height="30" rx="10" fill="#10b981" />
+    <!-- Hide bottom radius of header -->
+    <rect x="0" y="15" width="1160" height="15" fill="#10b981" />
+    <text x="24" y="20" font-size="11.5" font-weight="800" fill="#ffffff" letter-spacing="0.5">
+      SCENARIO A: NORMAL ONLINE HEARTBEAT LOOP
+    </text>
+    <text x="1136" y="20" text-anchor="end" font-size="10.5" font-weight="600" fill="#ecfdf5">
+      Status: System Healthy &amp; Synchronized
+    </text>
+
+    <!-- Connectors for Scenario A -->
+    <line x1="365" y1="92" x2="415" y2="92" stroke="#10b981" stroke-width="3" class="anim-pulse" marker-end="url(#arrow-green)" />
+    <line x1="775" y1="92" x2="825" y2="92" stroke="#10b981" stroke-width="3" class="anim-pulse" marker-end="url(#arrow-green)" />
+
+    <!-- Card 1A: Edge Daemon -->
+    <g transform="translate(15, 40)">
+      <rect x="0" y="0" width="350" height="105" rx="8" fill="#ffffff" stroke="#34d399" stroke-width="1.5" filter="url(#shadow-sm)" />
+      
+      <!-- Icon Group -->
+      <g transform="translate(15, 20)">
+        <rect x="0" y="0" width="60" height="65" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" />
+        <rect x="15" y="10" width="30" height="45" rx="3" fill="#1e293b" />
+        <!-- Green ECG Wave -->
+        <path d="M 10 32 L 20 32 L 26 18 L 34 46 L 40 32 L 50 32" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linejoin="round" class="ecg-pulse" />
+        <circle cx="22" cy="16" r="2" fill="#10b981" />
+      </g>
+
+      <!-- Text Content -->
+      <text x="95" y="34" font-size="11" font-weight="700" fill="#0f172a">Edge Daemon: Emits POST request to</text>
+      <rect x="95" y="44" width="180" height="18" rx="4" fill="#f1f5f9" />
+      <text x="102" y="56.5" font-family="monospace" font-size="10" font-weight="600" fill="#059669">/v1/nodes/{id}/heartbeat</text>
+      <text x="95" y="78" font-size="10.5" font-weight="500" fill="#334155">every 15.0s with active stream count.</text>
+    </g>
+
+    <!-- Card 2A: Redis Online -->
+    <g transform="translate(425, 40)">
+      <rect x="0" y="0" width="350" height="105" rx="8" fill="#ffffff" stroke="#34d399" stroke-width="1.5" filter="url(#shadow-sm)" />
+      
+      <!-- Icon Group -->
+      <g transform="translate(15, 20)">
+        <rect x="0" y="0" width="60" height="65" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5" />
+        <!-- Redis DB Barrel -->
+        <path d="M 15 20 L 15 45 C 15 52 45 52 45 45 L 45 20 Z" fill="#ef4444" />
+        <ellipse cx="30" cy="20" rx="15" ry="6" fill="#f87171" stroke="#dc2626" stroke-width="1" />
+        <path d="M 15 32 C 15 39 45 39 45 32" fill="none" stroke="#dc2626" stroke-width="1.5" />
+        <!-- Green Liveness LED -->
+        <circle cx="30" cy="38" r="4.5" fill="#10b981" stroke="#ffffff" stroke-width="1.5" />
+      </g>
+
+      <!-- Text Content -->
+      <text x="95" y="34" font-size="11" font-weight="700" fill="#0f172a">Redis TTL Key:</text>
+      <text x="180" y="34" font-family="monospace" font-size="10" font-weight="700" fill="#dc2626">SET heartbeat EX 20</text>
+      <text x="95" y="56" font-size="10.5" font-weight="500" fill="#334155">Key is actively refreshed at t = 15s.</text>
+      <text x="95" y="78" font-size="10.5" font-weight="700" fill="#059669">Key never expires while Edge is online.</text>
+    </g>
+
+    <!-- Card 3A: UI Online -->
+    <g transform="translate(835, 40)">
+      <rect x="0" y="0" width="310" height="105" rx="8" fill="#ffffff" stroke="#34d399" stroke-width="1.5" filter="url(#shadow-sm)" />
+      
+      <!-- Icon Group -->
+      <g transform="translate(15, 20)">
+        <!-- Browser Frame -->
+        <rect x="0" y="0" width="60" height="65" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" />
+        <rect x="0" y="0" width="60" height="14" rx="4" fill="#cbd5e1" />
+        <circle cx="8" cy="7" r="2" fill="#ef4444" /> <circle cx="14" cy="7" r="2" fill="#f59e0b" /> <circle cx="20" cy="7" r="2" fill="#10b981" />
+        <!-- Content -->
+        <rect x="8" y="22" width="44" height="24" rx="2" fill="#334155" />
+        <!-- Online Badge -->
+        <rect x="12" y="50" width="36" height="10" rx="3" fill="#ecfdf5" stroke="#10b981" stroke-width="1" />
+        <circle cx="18" cy="55" r="2" fill="#10b981" />
+        <text x="24" y="58" font-size="6" font-weight="800" fill="#047857">ONLINE</text>
+      </g>
+
+      <!-- Text Content -->
+      <text x="90" y="34" font-size="11" font-weight="700" fill="#0f172a">Catalog Status: <tspan fill="#059669">Healthy &amp; Listed</tspan></text>
+      <text x="90" y="56" font-size="10.5" font-weight="500" fill="#334155">Instant playback authorized by apid.</text>
+      <text x="90" y="78" font-size="10.5" font-weight="700" fill="#0f172a">Edge is fully ready to stream.</text>
+    </g>
+  </g>
+
+  <!-- ================= SCENARIO B: SUDDEN OFFLINE FAILOVER (Bottom Track) ================= -->
+  <g transform="translate(20, 260)">
+    <!-- Track Background -->
+    <rect x="0" y="0" width="1160" height="160" rx="10" fill="#fff1f2" stroke="#fecdd3" stroke-width="1.5" filter="url(#shadow)" />
+    
+    <!-- Track Header -->
+    <rect x="0" y="0" width="1160" height="30" rx="10" fill="#dc2626" />
+    <rect x="0" y="15" width="1160" height="15" fill="#dc2626" />
+    <text x="24" y="20" font-size="11.5" font-weight="800" fill="#ffffff" letter-spacing="0.5">
+      SCENARIO B: SUDDEN EDGE POWER LOSS / OFFLINE FAILOVER
+    </text>
+    <text x="1136" y="20" text-anchor="end" font-size="10.5" font-weight="600" fill="#fff1f2">
+      Status: Automatic Degradation
+    </text>
+
+    <!-- Connectors for Scenario B (Broken/Red) -->
+    <line x1="365" y1="92" x2="415" y2="92" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="4,3" marker-end="url(#arrow-red)" />
+    <text x="390" y="85" text-anchor="middle" font-size="12" font-weight="800" fill="#dc2626">✕</text>
+    
+    <line x1="775" y1="92" x2="825" y2="92" stroke="#f59e0b" stroke-width="3" marker-end="url(#arrow-amber)" />
+
+    <!-- Card 1B: Edge Offline -->
+    <g transform="translate(15, 40)">
+      <rect x="0" y="0" width="350" height="105" rx="8" fill="#ffffff" stroke="#fca5a5" stroke-width="1.5" filter="url(#shadow-sm)" />
+      
+      <!-- Icon Group -->
+      <g transform="translate(15, 20)">
+        <rect x="0" y="0" width="60" height="65" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" />
+        <rect x="15" y="10" width="30" height="45" rx="3" fill="#1e293b" />
+        <!-- Red Flatline ECG -->
+        <path d="M 10 32 L 50 32" fill="none" stroke="#dc2626" stroke-width="2.5" />
+        <circle cx="22" cy="16" r="2" fill="#475569" />
+        <!-- Broken Plug / Lightning Strike -->
+        <path d="M 5 50 L 15 62 L 11 62 L 20 72 L 16 62 L 20 62 Z" fill="#dc2626" />
+      </g>
+
+      <!-- Text Content -->
+      <text x="95" y="34" font-size="11" font-weight="700" fill="#0f172a">t = 0s: Home edge loses power or</text>
+      <text x="95" y="56" font-size="10.5" font-weight="500" fill="#334155">ISP internet completely disconnects.</text>
+      <text x="95" y="78" font-size="10.5" font-weight="700" fill="#dc2626">Heartbeat beacons cease immediately.</text>
+    </g>
+
+    <!-- Card 2B: Redis Evicted -->
+    <g transform="translate(425, 40)">
+      <rect x="0" y="0" width="350" height="105" rx="8" fill="#ffffff" stroke="#fca5a5" stroke-width="1.5" filter="url(#shadow-sm)" />
+      
+      <!-- Icon Group -->
+      <g transform="translate(15, 20)">
+        <rect x="0" y="0" width="60" height="65" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5" />
+        <!-- Faded Redis DB Barrel -->
+        <path d="M 10 20 L 10 45 C 10 52 35 52 35 45 L 35 20 Z" fill="#fca5a5" opacity="0.5" />
+        <ellipse cx="22.5" cy="20" rx="12.5" ry="5" fill="#fecdd3" opacity="0.5" />
+        <!-- Trash Can Icon overlay -->
+        <rect x="25" y="30" width="22" height="24" rx="2" fill="#64748b" />
+        <rect x="23" y="27" width="26" height="4" rx="1" fill="#475569" />
+        <rect x="32" y="24" width="8" height="3" fill="#475569" />
+        <line x1="30" y1="34" x2="30" y2="49" stroke="#94a3b8" stroke-width="1.5" />
+        <line x1="36" y1="34" x2="36" y2="49" stroke="#94a3b8" stroke-width="1.5" />
+        <line x1="42" y1="34" x2="42" y2="49" stroke="#94a3b8" stroke-width="1.5" />
+        <!-- Puff of smoke/eviction -->
+        <circle cx="20" cy="30" r="5" fill="#cbd5e1" opacity="0.8" />
+        <circle cx="15" cy="38" r="4" fill="#cbd5e1" opacity="0.8" />
+      </g>
+
+      <!-- Text Content -->
+      <text x="95" y="34" font-size="11" font-weight="700" fill="#0f172a">t = 15s: Expected beacon missed.</text>
+      <text x="95" y="56" font-size="10.5" font-weight="700" fill="#991b1b">t = 20s: 20-second Redis TTL expires!</text>
+      <text x="95" y="78" font-size="10.5" font-weight="700" fill="#dc2626">Key automatically evicted from RAM.</text>
+    </g>
+
+    <!-- Card 3B: UI Offline Degradation -->
+    <g transform="translate(835, 40)">
+      <rect x="0" y="0" width="310" height="105" rx="8" fill="#ffffff" stroke="#fcd34d" stroke-width="1.5" filter="url(#shadow-sm)" />
+      
+      <!-- Icon Group -->
+      <g transform="translate(15, 20)">
+        <!-- Browser Frame -->
+        <rect x="0" y="0" width="60" height="65" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" />
+        <rect x="0" y="0" width="60" height="14" rx="4" fill="#cbd5e1" />
+        <circle cx="8" cy="7" r="2" fill="#ef4444" /> <circle cx="14" cy="7" r="2" fill="#f59e0b" /> <circle cx="20" cy="7" r="2" fill="#10b981" />
+        <!-- Content -->
+        <rect x="8" y="22" width="44" height="24" rx="2" fill="#64748b" />
+        <text x="30" y="37" text-anchor="middle" font-size="10" font-weight="800" fill="#ffffff">⚠</text>
+        <!-- Offline Badge -->
+        <rect x="10" y="50" width="40" height="10" rx="3" fill="#fffbeb" stroke="#f59e0b" stroke-width="1" />
+        <circle cx="16" cy="55" r="2" fill="#f59e0b" />
+        <text x="21" y="58" font-size="5.5" font-weight="800" fill="#b45309">OFFLINE</text>
+      </g>
+
+      <!-- Text Content -->
+      <text x="90" y="34" font-size="11" font-weight="800" fill="#d97706">Graceful UI Degradation:</text>
+      <text x="90" y="56" font-size="10.5" font-weight="500" fill="#334155">Uncached media shows 'Node Offline'.</text>
+      <text x="90" y="78" font-size="10.5" font-weight="700" fill="#0f172a">Cached chunks continue playing.</text>
+    </g>
+  </g>
+
+  <!-- ================= BOTTOM CALLOUT (INVARIANT 5) ================= -->
+  <g transform="translate(200, 435)" filter="url(#shadow-sm)">
+    <rect x="0" y="0" width="800" height="36" rx="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" />
+    <circle cx="20" cy="18" r="10" fill="#0284c7" />
+    <text x="20" y="22" text-anchor="middle" font-size="12" font-weight="800" fill="#ffffff">i</text>
+    <text x="400" y="22" text-anchor="middle" font-size="10.5" font-weight="800" fill="#0f172a" letter-spacing="0.2">
+      Invariant 5 Upheld: Redis is used strictly for 15s heartbeat keys; no heavy background queue overhead.
+    </text>
+  </g>
+
+</svg>"""
+
+# Parse to verify XML validity
+try:
+    ET.fromstring(svg_raw)
+    print("XML Validation Passed: Valid SVG!")
+except Exception as e:
+    print("XML Validation Failed:", e)
+    raise
+
+svg_file = pathlib.Path("report/figures/diag_04_heartbeat_liveness.svg")
+html_file = pathlib.Path("report/figures/diag_04_heartbeat_liveness.html")
+png_file = pathlib.Path("report/figures/diag_04_heartbeat_liveness.png")
+
+svg_file.write_text(svg_raw, encoding="utf-8")
+print(f"Saved {svg_file}")
+
+html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+  html, body {{ width: 3600px; height: 1440px; background: #ffffff; overflow: hidden; }}
+  svg {{ width: 3600px; height: 1440px; display: block; }}
+</style>
+</head>
+<body>
+{svg_raw}
+</body>
+</html>"""
+
+html_file.write_text(html_content, encoding="utf-8")
+print(f"Saved {html_file}")
+
+chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+args = [
+    chrome_path,
+    "--headless=old",
+    "--disable-gpu",
+    "--hide-scrollbars",
+    "--window-size=3600,1440",
+    f"--screenshot={png_file.resolve()}",
+    str(html_file.resolve())
+]
+
+subprocess.run(args, check=True)
+print(f"Rendered {png_file} Ultra-HD -> {png_file.stat().st_size} bytes")
