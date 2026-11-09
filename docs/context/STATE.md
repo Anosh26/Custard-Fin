@@ -46,8 +46,8 @@
   - Strictly specified student identification by Seat Numbers: Anish Ghadi (Seat No.: 25P0320009) and Anosh Chodankar (Seat No.: 25P0320010).
   - Fully converted all economic figures, mathematical proofs, and comparison tables to Indian Rupees (₹) with baseline benchmark $1.00 USD = ₹84.00 INR (e.g. Traditional Cloud: ₹1,00,380.00/mo vs CustardFin: ₹4,128.60/mo; 95.89% savings; ₹11.55 Lakhs/yr saved).
   - Streamlined and condensed report down to 35 core pages (40 pages total including front matter), removing redundant diagrams and screenshot filler while preserving the 4 primary architectural and benchmark figures (System Architecture, Dual-Path Stream Router, INR Cost Comparison, NVENC GPU Benchmark) and a consolidated 2-panel UI showcase figure.
-  - Rebuilt Figure 3.1 (`diag_02_architecture_overview`) using a modular SVG component architecture with reusable `<symbol>` definitions, technical dot-grid canvas, and parallel non-intersecting conduits across the ISP CGNAT barrier. Rendered in 3x Ultra-HD (3600x1920) with headless Chrome.
-  - Zero LaTeX compilation errors, clean typography, perfectly calibrated for MCA semester-end lab evaluation (`report/main.pdf`, 2.86 MB).
+  - Refactored Figure 3.1 (`diag_02_architecture_overview`) into an ultra-clean, symmetrical 3x2 grid layout (6 nodes Home Edge, 6 nodes Cloud Tier). Eliminated multi-line arrow clutter and overlapping lines, perfectly center-aligned all icon boxes and titles, and unified cross-firewall traffic into a single horizontal outbound reverse tunnel (Yamux multiplex). Rendered at 3x Ultra-HD Retina quality (`diag_02_architecture_overview.png`, 399 KB).
+  - Zero LaTeX compilation errors, clean typography, perfectly calibrated for MCA semester-end lab evaluation (`report/main.pdf`, 2.73 MB, exactly 40 pages).
 
 ## In Progress
 - Final rehearsal and submission of `report/main.pdf`.

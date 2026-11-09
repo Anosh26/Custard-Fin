@@ -1,3 +1,28 @@
+## 2026-11-10 - Elimination of Arrow Clutter & Perfect Alignment in Figure 3.1
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Architecture Figure Streamlining & Visual Polish
+- **Summary:**
+  1. Box Alignment & Overlapping Fixes:
+     - Addressed user feedback regarding multiple crossing arrows and box/text alignment.
+     - Organized both tiers into a symmetrical 3x2 grid:
+       - Home Edge Domain (Left): NVMe Storage, GPU Transcoder, Edge Daemon, Media Scanner, Edge SQLite, LAN Viewers.
+       - Public Cloud Tier (Right): FRP Relay, Origin Shield, Next.js Web, Cloud API, PostgreSQL & Redis, Public Viewers.
+     - Center-aligned all 12 cards mathematically (`text-anchor="middle"` with computed coordinates).
+     - Unified cross-firewall traffic into a single horizontal outbound reverse tunnel conduit (`100% Outbound Only` Yamux tunnel carrying chunks, manifests, and 15s heartbeats), eliminating redundant lines.
+     - Resolved line-text collision on the CGNAT barrier: separated firewall shield badge (above tunnel) from tunnel placard card (below tunnel).
+     - Made all arrows strictly horizontal or vertical (with one diagonal from SQLite to Edge Daemon), resulting in zero crossing or overlapping lines.
+  2. Rendering & Compilation:
+     - Rendered in Ultra-HD Retina quality (`diag_02_architecture_overview.png`, 399 KB) via headless Chrome.
+     - Recompiled `report/main.pdf` cleanly with 0 errors (exactly 40 pages total, 35 core pages).
+- **Files Touched:**
+  - `report/figures/diag_02_architecture_overview.svg`
+  - `report/figures/diag_02_architecture_overview.html`
+  - `report/figures/diag_02_architecture_overview.png`
+  - `report/main.pdf`
+  - `scripts/update_diag2_simplified.py`
+  - `docs/context/STATE.md`
+  - `docs/context/SESSION_LOG.md`
+
 ## 2026-11-10 - Simplification of Figure 3.1: Minimalist Icons & Bottom Labels
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Architecture Figure Streamlining
