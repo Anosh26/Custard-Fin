@@ -1,3 +1,25 @@
+## 2026-11-09 - Integration of Polished Figure 4.1 (Ingestion & Slicing Pipeline)
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Final Academic Report Polish & Vector Quality Verification
+- **Summary:**
+  1. Updated Figure 4.1 (`diag_03_ingest_pipeline.svg` / `.png`):
+     - Replaced with polished, high-contrast 5-station pipeline SVG:
+       - Station 1: Raw Media Discovery & Hashing (Slate/Blue, SHA-256 fingerprinting).
+       - Station 2: Hardware Capabilities Probe & Fallback (Emerald, `h264_nvenc` -> QSV -> `libx264`).
+       - Station 3: Subprocess Transcoder & HLS Slicer (Crimson, 4.0s segments, GOP 120, multi-bitrate ladder).
+       - Station 4: Local SQLite Metadata Persistence Engine (Purple, WAL mode, private watch history).
+       - Station 5: Public Manifest Gen & Cloud Synchronization (Amber, ~650-byte manifest sync, 0 binary upload).
+     - Rendered in Ultra-HD 3600x1440 resolution using headless Chrome.
+  2. Master Report Recompilation & Push:
+     - Recompiled `report/main.pdf` (63 pages, 6.29 MB, zero errors).
+     - Committed and pushed to `origin/master` (`commit aa93ebd`).
+- **Files Touched:**
+  - `report/figures/diag_03_ingest_pipeline.svg`
+  - `report/figures/diag_03_ingest_pipeline.html`
+  - `report/figures/diag_03_ingest_pipeline.png`
+  - `report/main.pdf`
+  - `scripts/update_diag3.py`
+
 ## 2026-11-09 - Resolution of Figure 2.1 Overlap & Ultra-HD 3600px Diagram Re-rendering
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Final Academic Report Polish & Visual Verification
