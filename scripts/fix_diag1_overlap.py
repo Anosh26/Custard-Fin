@@ -405,3 +405,4 @@ if os.path.exists(html_file):
     os.remove(html_file)
 
 print(f"Rendered Ultra-HD {png_file} - Size: {os.path.getsize(png_file)} bytes")
+
