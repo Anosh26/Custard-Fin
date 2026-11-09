@@ -1,3 +1,32 @@
+## 2026-11-09 - Integration of Polished Figure 5.1 (Monthly OpEx Cost Comparison in INR ₹)
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Final Academic Report Polish & Vector Quality Verification
+- **Summary:**
+  1. Updated Figure 5.1 (`diag_06_cost_comparison.svg` / `.png`):
+     - Replaced with polished technical infographic on technical dot grid background:
+       - Tower 1 (Traditional Cloud VOD - AWS, ₹1,00,380.00/mo, ₹12.05 L/yr, 3-Yr TCO ₹36.14 L):
+         - S3 Storage (5 TB @ ₹1.932/GB): ₹9,660.00
+         - Managed RDS Database & API: ₹10,920.00
+         - Transcoding (EC2 / MediaConvert): ₹11,760.00
+         - Data Egress Bandwidth (9 TB @ ₹7.56/GB): ₹68,040.00 (dominant 68% cost segment)
+       - Center Medallion (Glow Green Medallion):
+         - 95.89% NET SAVINGS (Save ₹96,251.40/mo, Save ₹11.55 Lakhs/yr, Save ₹34.65 L over 3Y)
+       - Tower 2 (CustardFin Hybrid Architecture, ₹4,128.60/mo, ₹49,543/yr, 3-Yr TCO ₹1.49 L):
+         - Eliminated items (100% Edge NVMe storage ₹0.00, Edge NVENC transcoding ₹0.00, LAN/VPS egress ₹0.00)
+         - Cloud expenditures: Relay VM (₹2,045.40), PG (₹1,470.00), Redis (₹420.00), Origin Shield buffer (₹193.20)
+       - Bottom Equation Callout:
+         - Asymptotic Storage Proof: $\lim_{N \to \infty} C_{\text{custard}}(N) = O(1) \le \text{₹193.20/mo}$ vs Traditional $O(N) \to \infty$.
+     - Rendered in Ultra-HD 3600x1560 resolution using headless Chrome.
+  2. Master Report Recompilation & Push:
+     - Recompiled `report/main.pdf` (63 pages, 5.03 MB, zero errors).
+     - Committed and pushed to `origin/master` (`commit 368edfc`).
+- **Files Touched:**
+  - `report/figures/diag_06_cost_comparison.svg`
+  - `report/figures/diag_06_cost_comparison.html`
+  - `report/figures/diag_06_cost_comparison.png`
+  - `report/main.pdf`
+  - `scripts/update_diag6.py`
+
 ## 2026-11-09 - Integration of Polished Figure 6.1 (Hardware Transcoding Benchmarks)
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Final Academic Report Polish & Vector Quality Verification
