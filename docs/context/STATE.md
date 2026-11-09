@@ -46,14 +46,14 @@
   - Strictly specified student identification by Seat Numbers: Anish Ghadi (Seat No.: 25P0320009) and Anosh Chodankar (Seat No.: 25P0320010).
   - Fully converted all economic figures, mathematical proofs, and comparison tables to Indian Rupees (₹) with baseline benchmark $1.00 USD = ₹84.00 INR (e.g. Traditional Cloud: ₹1,00,380.00/mo vs CustardFin: ₹4,128.60/mo; 95.89% savings; ₹11.55 Lakhs/yr saved).
   - Replaced generic nested boxes across all diagrams with custom creative visual metaphors:
-    - Diag 1: NAT Traversal with 3D NVMe cylinder, server chassis, and brick firewall with padlock shield.
+    - Diag 1: NAT Traversal with 3D NVMe cylinder, server chassis, and brick firewall with padlock shield (resolved green reverse tunnel conduit intersection on Inbound SYN Dropped badge).
     - Diag 2: Two-tier architecture with NVIDIA GPU chip (NVENC), film strips, and cloud database barrels.
     - Diag 3: Automated ingest with SHA-256 binary key, GPU probe, 4s GOP film strip, and SQLite WAL cylinder.
     - Diag 4: Heartbeat liveness with active pulsing green ECG waveform vs severed flatline and 30s grace stopwatch.
     - Diag 5: Dual-path proximity routing with Smart TV LAN bypass (₹0.00 egress) and Origin Shield S3 cache fan-out (90% uplink saved).
     - Diag 6: Economic cost comparison with 3D stacked cost towers in INR (₹1,00,380 vs ₹4,129) and 95.9% savings medallion.
     - Diag 7: Hardware acceleration benchmarks with tachometer speedometers (322 fps vs 33 fps), donut rings, and mercury thermometers.
-  - Successfully compiled to `report/main.pdf` (62 pages, 2.41 MB) with zero syntax errors and all references resolved.
+  - Rendered all diagrams at 3x Ultra-HD resolution (3600px width, ~400 DPI Retina quality) via headless Chrome, producing pristine, razor-sharp vector graphics in `report/main.pdf` (63 pages, 6.31 MB).
 
 ## In Progress
 - Final rehearsal and submission of `report/main.pdf`.

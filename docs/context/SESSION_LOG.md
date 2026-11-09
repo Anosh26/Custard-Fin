@@ -1,3 +1,25 @@
+## 2026-11-09 - Resolution of Figure 2.1 Overlap & Ultra-HD 3600px Diagram Re-rendering
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Final Academic Report Polish & Visual Verification
+- **Summary:**
+  1. Resolved Visual Conduit Collision in Figure 2.1 (`diag_01_nat_traversal.svg` / `.png`):
+     - Identified root cause: The green vertical reverse tunnel conduit at `x = 628` extended up to `y = 117`, cutting directly through the red `① Inbound SYN Dropped` badge (`x = 612..736`, `y = 112..132`) and intersecting the red dashed firewall rejection arrow (`y = 148`).
+     - Relocated the descriptive `① Inbound SYN Dropped` pill completely inside the INBOUND BLOCKED container card (`x = 14, y = 64`), making it fully self-contained.
+     - Re-routed the green outbound TLS tunnel conduit to terminate upward rise at `y = 190` before turning into the FRP Server at `x = 664, y = 190`, leaving an absolute 45px clear vertical separation below the red rejection lane (`y = 145`).
+     - Aligned horizontal conduit entrances and exits: Home Server exit at `y = 180`, CGNAT entry/exit at `y = 343`, and FRP Server entry at `y = 190` matching the internal cloud routing connector at `y = 189`.
+  2. Ultra-HD 3600px Diagram Re-rendering:
+     - Rendered all 7 report figures at 3600px width (~400 DPI Retina print quality) using headless Chrome with zero scrollbars and full viewport coverage.
+  3. Master Report Recompilation & Push:
+     - Recompiled `report/main.pdf` (63 pages, 6.31 MB) with clean IEEE bibliography and zero LaTeX errors.
+     - Committed and pushed to `origin/master` (`commit 5aa50e2`).
+- **Files Touched:**
+  - `report/figures/diag_01_nat_traversal.svg`
+  - `report/figures/diag_01_nat_traversal.html`
+  - `report/figures/diag_01_nat_traversal.png`
+  - `report/main.pdf`
+  - `scripts/fix_diag1_overlap.py`
+  - `scripts/render_all_ultra_hd.py`
+
 ## 2026-11-09 - Indian Rupee (₹) Financial Conversion & Creative Visual Diagram Upgrades
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Final Academic Report Polish & Visual Enhancements
