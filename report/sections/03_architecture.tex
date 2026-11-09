@@ -5,155 +5,93 @@
 \chapter{System Architecture and Design}
 \label{chap:architecture}
 
-CustardFin is architected as a decoupled, asymmetric two-tier distributed system comprising the \textbf{Home Edge Tier} (the decentralized media plane) and the \textbf{Cloud Control Tier} (the centralized coordination and caching plane). This design strictly enforces the fundamental invariant that large media binaries remain permanently on consumer-owned edge storage, while the cloud tier acts exclusively as a discovery registry, connection facilitator, and temporary Origin Shield cache.
+CustardFin is organized into two distinct tiers: the \textbf{Home Edge Tier} (runs on user PCs to store and stream video) and the \textbf{Cloud Control Tier} (runs on a cloud server to handle discovery, authentication, and temporary caching).
 
 % ------------------------------------------------------------------------------
-\section{Overall Two-Tier System Architecture}
+\section{Two-Tier System Architecture}
 \label{sec:arch_overall}
-% ------------------------------------------------------------------------------
 
-Figure~\ref{fig:system_architecture_overview} illustrates the macro-architectural topology of CustardFin, depicting the strict physical and logical boundaries between residential edge deployments and the cloud hosting environment.
+Figure~\ref{fig:system_architecture_overview} illustrates the overall architecture and data boundaries of CustardFin.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{figures/diag_02_architecture_overview.png}
-\caption{CustardFin Macro Two-Tier Distributed System Architecture Blueprint}
+\caption{Two-Tier Hybrid Cloud-Edge Topology and Data Boundary}
 \label{fig:system_architecture_overview}
 \end{figure}
 
-The architecture enforces a strict division of responsibilities:
+The division of responsibilities is straightforward:
 \begin{itemize}
-    \item \textbf{Decentralized Data Plane:} Video decoding, hardware transcoding, storage persistence, and local streaming execution occur exclusively on edge nodes. The cloud tier never ingests raw video masters.
-    \item \textbf{Centralized Control Plane:} Media discoverability, authentication, edge health monitoring, routing decisions, and admission control are coordinated centrally by the cloud API.
-    \item \textbf{Ephemeral Origin Shield:} The cloud maintains an object storage cache operating purely as a temporary read-through buffer. Video chunks exist in the cloud only when actively being consumed by remote viewers, automatically evicting via 24-hour Least Recently Used (LRU) lifecycle policies.
+    \item \textbf{Home Edge Tier (Data Plane):} All video files remain stored on home hard drives or NVMe SSDs. Video scanning, GPU pre-encoding, and local playback happen on the home machine. The cloud never stores master video files.
+    \item \textbf{Cloud Control Tier (Control Plane):} Manages user logins, node registration, search catalogs, and stream routing.
+    \item \textbf{Origin Shield Cache:} A temporary cloud storage buffer (S3-compatible) that holds actively watched video chunks for 24 hours to shield home upload bandwidth from multiple viewers.
 \end{itemize}
 
 % ------------------------------------------------------------------------------
 \section{Home Edge Node Architecture (\texttt{apps/edge})}
 \label{sec:arch_edge}
-% ------------------------------------------------------------------------------
 
-The home edge daemon (\texttt{edged}) is implemented as a self-contained, statically compiled Go binary adhering strictly to Hexagonal Architecture (Ports and Adapters). It operates with an idle memory footprint of less than $20\text{ MB}$ of RAM and executes without external runtime dependencies beyond the FFmpeg multimedia binary.
+The home daemon (\texttt{edged}) is a standalone Go program running as a background service on the user's PC. It requires less than $20\text{ MB}$ of RAM at idle and has no external dependencies other than FFmpeg.
 
-\subsection{Subsystem Decomposition}
-The internal structure of \texttt{edged} is divided into six modular packages:
+\subsection{Core Components of \texttt{edged}}
 \begin{enumerate}
-    \item \textbf{Recursive Ingestion Scanner and Hasher (\texttt{internal/adapters/fs}, \texttt{hasher}):}
-    A background scanner traverses user-configured local media directories. It filters files based on supported multimedia containers (\texttt{.mp4}, \texttt{.mkv}, \texttt{.mov}, \texttt{.avi}) and computes a cryptographic SHA-256 content hash over the primary stream header and media metadata:
-    \begin{equation}
-        H_{\text{content}} = \text{SHA-256}(\text{Header}_{64\text{KB}} \mathbin{\Vert} \text{FileSize} \mathbin{\Vert} \text{ModTime})
-    \end{equation}
-    This hash guarantees idempotent media identification regardless of file renaming or local folder reorganization.
-    \item \textbf{Hardware-Adaptive Transcoder (\texttt{internal/adapters/ffmpeg}):}
-    A managed subprocess controller wraps \texttt{exec.CommandContext}. At daemon startup, it executes an automated hardware probe to test encoder availability in priority order:
-    \begin{equation}
-        \text{NVENC (NVIDIA)} \;\longrightarrow\; \text{QSV / VAAPI} \;\longrightarrow\; \text{libx264 (CPU Fallback)}
-    \end{equation}
-    The controller runs a 1-second synthetic probe encode to confirm GPU initialization before accepting jobs. In the event of GPU memory exhaustion, driver failure, or hardware timeout, the subsystem automatically falls back to multi-threaded CPU encoding without dropping the transcode pipeline.
-    \item \textbf{HLS Packager and Segmenter:}
-    The transcoder produces pre-encoded multi-bitrate HLS streams partitioned into exact 4-second segments with strict keyframe alignment (\texttt{-g 120 -keyint\_min 120} at 30~fps). Segments are persisted locally in a dedicated hidden cache directory (\texttt{.custard/hls/\{media\_id\}/}).
-    \item \textbf{Embedded Relational Edge Storage (\texttt{internal/adapters/sqlite}):}
-    Local state is managed via an embedded pure-Go SQLite database engine (\texttt{modernc.org/sqlite}). The database operates in Write-Ahead Logging (\texttt{PRAGMA journal\_mode=WAL}) with a busy timeout of 5,000~ms. It tracks local file paths, SHA-256 hashes, transcode progress, public/private visibility flags, and private watch progress.
-    \item \textbf{Local Mini-Jellyfin HTTP Server (\texttt{internal/adapters/httpapi}):}
-    An embedded HTTP engine running on port \texttt{8089} serves an offline single-page application (SPA) directly to local network clients. It provides instant, full-featured library browsing, search, and native HLS playback for LAN users without requiring cloud connectivity.
-    \item \textbf{Network Uplink Adapters (\texttt{internal/adapters/frp}, \texttt{heartbeat}):}
-    The edge daemon initiates and maintains an outbound TLS reverse proxy tunnel to the cloud relay server and transmits cryptographic health beacons to the cloud API every 15 seconds.
+    \item \textbf{Media Scanner and Hasher:} Scans configured media folders for video files (\texttt{.mp4}, \texttt{.mkv}, \texttt{.mov}). It computes a fast SHA-256 fingerprint over file headers to detect duplicates and prevent re-encoding if files are moved or renamed.
+    \item \textbf{Transcoder Controller:} Manages FFmpeg background subprocesses. On startup, it checks available hardware encoders in priority order:
+    \begin{equation*}
+        \text{NVIDIA NVENC} \;\longrightarrow\; \text{Intel QuickSync} \;\longrightarrow\; \text{CPU (libx264 Fallback)}
+    \end{equation*}
+    A 1-second test encode validates the GPU. If the GPU is busy or fails, it switches to CPU encoding automatically without crashing.
+    \item \textbf{HLS Packager:} Slices videos into 4-second HLS segments (\texttt{.ts} files) across 1080p, 720p, and 480p bitrates, creating aligned keyframes for smooth quality switching.
+    \item \textbf{Local SQLite Database:} Stores file paths, hashes, transcode states, and private watch progress in a local pure-Go SQLite database using Write-Ahead Logging (\texttt{WAL} mode) for fast concurrent access.
+    \item \textbf{Embedded Mini-Jellyfin Web Server:} Serves a lightweight web player on port 8089 for direct streaming to phones and TVs on the same home Wi-Fi network, requiring no internet connection.
+    \item \textbf{FRP Tunnel Client:} Maintains an outbound TLS 1.3 reverse tunnel to the cloud relay server, enabling remote access without changing router settings.
 \end{enumerate}
 
 % ------------------------------------------------------------------------------
-\section{Cloud Control Plane Architecture (\texttt{apps/api})}
+\section{Cloud Control Tier Architecture (\texttt{apps/api})}
 \label{sec:arch_cloud}
-% ------------------------------------------------------------------------------
 
-The cloud API daemon (\texttt{apid}) provides centralized orchestration, catalog indexing, access control, and dynamic stream routing. Written in Go utilizing standard library primitives (\texttt{net/http}, \texttt{log/slog}), it achieves microsecond-level request routing while maintaining zero external queue dependencies.
+The cloud control plane runs on a single low-cost virtual machine (such as a Google Cloud \texttt{e2-standard-2} instance) hosting the following services:
 
-\subsection{Database and Cache Layer}
-\begin{itemize}
-    \item \textbf{PostgreSQL Relational Store:} Persists user identity records, node registrations, public media manifests, and node ownership relations. Managed via \texttt{pgx} connection pooling and compile-time verified queries generated by \texttt{sqlc}.
-    \item \textbf{Redis Ephemeral Heartbeat Store:} Implements distributed node liveness detection. Nodes maintain an active status by issuing an authenticated \texttt{POST /v1/nodes/\{id\}/heartbeat} every 15 seconds. The API writes an ephemeral key \texttt{heartbeat:\{node\_id\}} with an exact Time-To-Live (TTL) of 20 seconds. If an edge node suffers network severance or power loss, Redis expires the key automatically, instantly marking the node as \textit{Offline} in the global catalog without expensive database polling.
-\end{itemize}
-
-\subsection{Origin Shield Pull-Through Cache}
-To protect home broadband connections from multi-viewer traffic spikes, \texttt{apid} implements an Origin Shield proxy backed by an S3-compatible object store (such as Amazon S3, MinIO, or the Floci cloud emulator). When a remote viewer requests chunk $k$ of video $V$:
 \begin{enumerate}
-    \item The API queries the S3 bucket for key \texttt{chunks/\{media\_id\}/chunk\_\{k\}.ts}.
-    \item \textbf{Cache Hit:} If the chunk exists, the API generates a time-limited HMAC-signed URL redirecting the viewer directly to the S3 bucket or CDN edge, completely bypassing the home node.
-    \item \textbf{Cache Miss:} If the chunk is absent, the API issues an internal HTTP request through the FRP reverse tunnel to the edge node's local streamer on port 8089. The retrieved chunk is simultaneously streamed back to the requesting viewer and asynchronously committed to the S3 cache bucket with an S3 Lifecycle Expiration rule set to 24 hours.
+    \item \textbf{Caddy Web Server:} Handles public HTTPS termination with automatic Let's Encrypt TLS certificates and routes requests to the Go API and Next.js frontend.
+    \item \textbf{Go Control API (\texttt{apid}):} Handles user authentication (JWT), node registration, catalog search, and playback authorization.
+    \item \textbf{PostgreSQL Database:} Stores registered user accounts, claimed edge nodes, and public video manifests ($\approx 650\text{ bytes}$ per video).
+    \item \textbf{Redis Liveness Store:} Tracks 15-second node heartbeats. If a home PC goes offline, its Redis key expires in 20 seconds, and the catalog marks it as offline immediately.
+    \item \textbf{Origin Shield Object Cache:} An S3-compatible bucket (MinIO or cloud S3) that temporarily stores video chunks requested by remote viewers, auto-purging them after 24 hours.
+    \item \textbf{FRP Relay Server (\texttt{frps}):} Listens on port 7000 (TLS) to accept outbound reverse tunnels from home edge nodes.
 \end{enumerate}
-Subsequent requests from other viewers for chunk $k$ hit the Origin Shield cache, guaranteeing that the home edge node uploads each video chunk across the residential uplink \textbf{exactly once}.
-
-\subsection{Stream Router and Admission Limiter}
-The stream router evaluates client IP addresses, node health status, and active stream counts to execute optimal routing decisions, summarized in Algorithm~\ref{alg:stream_routing}.
-
-\begin{algorithm}[htbp]
-\caption{CustardFin Dual-Path Stream Routing and Admission Control}
-\label{alg:stream_routing}
-\begin{algorithmic}[1]
-\Require Request for media $M$ by Client $C$ from IP $IP_C$
-\Ensure Playback URL $URL_{\text{play}}$ or Error Response
-\State Fetch Node $N$ associated with media $M$ from PostgreSQL
-\State Check Redis key $\text{heartbeat}:N.\text{id}$
-\If{Redis key does not exist}
-    \If{All chunks of $M$ exist in Origin Shield Cache}
-        \State \Return Signed S3 Cache URL \Comment{Serve fully cached media}
-    \Else
-        \State \Return \textbf{HTTP 503 Service Unavailable} (``Node Offline'')
-    \EndIf
-\EndIf
-\If{$\text{Subnet}(IP_C) == \text{Subnet}(N.\text{LAN\_IP})$}
-    \State \Return Direct LAN Stream URL (\texttt{http://192.168.x.x:8089/...}) \Comment{Direct LAN Bypass}
-\EndIf
-\State Query Active Remote Streams $S_{\text{active}}$ for Node $N$
-\If{$S_{\text{active}} \ge 10$}
-    \State \Return \textbf{HTTP 429 Too Many Requests} with header \texttt{Retry-After: 30}
-\EndIf
-\State Increment $S_{\text{active}}$ for Node $N$
-\State Generate Short-Lived HMAC-SHA256 Token $T_{\text{signed}}$ (TTL = 300~s)
-\State \Return Signed Remote Gateway URL (\texttt{/v1/media/playback?token=}$T_{\text{signed}}$)
-\end{algorithmic}
-\end{algorithm}
 
 % ------------------------------------------------------------------------------
 \section{Presentation Tier Architecture (\texttt{apps/web})}
 \label{sec:arch_web}
-% ------------------------------------------------------------------------------
 
-The presentation tier is engineered with Next.js 15 utilizing the React Server Components (RSC) App Router model, executed on standard Node.js LTS runtimes.
-
-\subsection{Server vs. Client Component Segregation}
-The frontend strictly delineates between server-rendered and client-hydrated code:
+The web frontend is built using Next.js 15 (React App Router) and runs on Node.js:
 \begin{itemize}
-    \item \textbf{React Server Components (RSC):} The public media feed (\texttt{src/app/page.tsx}) and video watch page wrapper (\texttt{src/app/watch/[id]/page.tsx}) execute exclusively on the server. They fetch metadata directly from the internal Go API via private container networks. This guarantees instantaneous First Contentful Paint (FCP), zero client-side JavaScript execution for catalog indexing, and optimal search engine discoverability without exposing API keys or database connections.
-    \item \textbf{Interactive Client Components:} Browser-side interactivity is encapsulated within specialized components marked with the \texttt{'use client'} directive:
-    \begin{itemize}
-        \item \textbf{Custom HLS Video Player:} Built upon \texttt{hls.js}, providing adaptive bitrate (ABR) rendition switching, buffer management, custom UI controls, and recovery routines for intermittent network stalls.
-        \item \textbf{``Stats for Nerds'' Performance HUD:} An engineering overlay providing real-time telemetry: player resolution, viewport dimensions, buffer health in seconds, network bandwidth estimation, dropped video frames, active audio/video codecs, and individual HLS chunk download latencies.
-        \item \textbf{Edge Library Manager Modal:} An administrative modal communicating with the local edge daemon, enabling content owners to inspect local drives, toggle public/private visibility, trigger background re-encodes, and launch direct LAN sessions.
-        \item \textbf{Developer Settings Modal:} Enables instant API endpoint switching, simulated node injection, and diagnostic logging for testing and grading demonstrations.
-    \end{itemize}
+    \item \textbf{Server Components:} The home page and catalog browse views are rendered on the server for instant page loads and zero client-side database overhead.
+    \item \textbf{Custom HLS Video Player:} Uses \texttt{hls.js} to play adaptive multi-bitrate streams, automatically adjusting video quality based on the viewer's internet speed.
+    \item \textbf{``Stats for Nerds'' HUD:} An overlay showing real-time player telemetry: resolution, buffer health in seconds, current bitrate, and cache delivery status.
+    \item \textbf{Edge Management Modals:} Allows node owners to check local drive space, monitor GPU status, toggle videos between Public and Private, and launch direct LAN streams.
 \end{itemize}
 
 % ------------------------------------------------------------------------------
-\section{End-to-End Data Flows and Sequence Workflows}
+\section{Operational Workflows}
 \label{sec:arch_dataflows}
-% ------------------------------------------------------------------------------
-
-To demonstrate the temporal and transactional interactions across the distributed system, this section details four primary operational sequences.
 
 \subsection{Workflow 1: Local Ingestion and Pre-Encoding}
-When a user adds media to their local library, \texttt{edged} processes the file locally without transmitting data to the cloud, as detailed in Figure~\ref{fig:seq_ingest}.
+When a user adds a video to their local library, the edge daemon processes the file locally without uploading it to the cloud, as shown in Figure~\ref{fig:seq_ingest}.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{figures/diag_03_ingest_pipeline.png}
-\caption{Local Ingestion, Hardware Encoding, and SQLite Indexing Sequence}
+\caption{Local Ingestion, Hardware Encoding, and SQLite Indexing Pipeline}
 \label{fig:seq_ingest}
 \end{figure}
 
 \subsection{Workflow 2: Public Manifest Synchronization}
-Marking a video as ``Public'' does not upload the video binary. Instead, the edge daemon transmits an ultra-compact JSON manifest ($\le 3\text{ KB}$) to the cloud control plane:
+Marking a video as ``Public'' does not upload the video file. Instead, the edge daemon sends a small JSON manifest ($\approx 650\text{ bytes}$) containing only title and rendition metadata to the cloud API:
 
-\begin{lstlisting}[language=json,caption={Standard CustardFin Public Media Manifest ($\approx 650$ Bytes)}]
+\begin{lstlisting}[language=json,caption={Sample CustardFin Public Media Manifest ($\approx 650$ Bytes)}]
 {
   "schema_version": "1.0",
   "media_id": "m-8f7a2c1e4d9b",
@@ -182,10 +120,10 @@ Marking a video as ``Public'' does not upload the video binary. Instead, the edg
 }
 \end{lstlisting}
 
-Upon receipt, the Cloud API verifies JWT authentication, parses the manifest schema, and upserts the metadata into PostgreSQL. The video instantly appears in the public community catalog worldwide.
+The cloud API validates this JSON and saves it in PostgreSQL. The title instantly appears in the public community catalog worldwide.
 
 \subsection{Workflow 3: Node Heartbeat and Liveness Tracking}
-Figure~\ref{fig:seq_heartbeat} depicts the background heartbeat loop that continuously synchronizes node availability.
+Figure~\ref{fig:seq_heartbeat} shows how the system tracks node availability using periodic heartbeats.
 
 \begin{figure}[htbp]
 \centering
@@ -194,14 +132,19 @@ Figure~\ref{fig:seq_heartbeat} depicts the background heartbeat loop that contin
 \label{fig:seq_heartbeat}
 \end{figure}
 
-\subsection{Workflow 4: Remote Playback Decision and Origin Shield Caching}
-Figure~\ref{fig:seq_playback} details the end-to-end resolution of a remote playback request, demonstrating the single-ingest property of the Origin Shield.
+The edge node sends a heartbeat every 15 seconds. If the node powers off or loses internet, the 20-second Redis key expires automatically, and the catalog marks the node as offline.
+
+\subsection{Workflow 4: Stream Routing and Origin Shield Caching}
+Figure~\ref{fig:seq_playback} shows how playback requests are routed based on viewer location.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{figures/diag_05_dual_path_shield.png}
-\caption{Dual-Path Playback Decision Tree and Origin Shield Single-Ingest Workflow}
+\caption{Dual-Path Stream Routing and Origin Shield Single-Ingest Workflow}
 \label{fig:seq_playback}
 \end{figure}
 
-This multi-tier sequence guarantees that the home node's residential uplink is contacted only once per unique chunk, regardless of how many remote viewers consume the media stream simultaneously.
+\begin{itemize}
+    \item \textbf{Local Viewers (Same Wi-Fi):} Stream directly from the home PC on port 8089 with $<4\text{ ms}$ latency and zero cloud bandwidth usage.
+    \item \textbf{Remote Viewers:} The first viewer triggers a single chunk pull through the FRP tunnel into the Origin Shield S3 cache ($\approx 2.5\text{ MB}$). Subsequent viewers are served directly from the cloud cache, saving 90\% of home upload bandwidth.
+\end{itemize}
