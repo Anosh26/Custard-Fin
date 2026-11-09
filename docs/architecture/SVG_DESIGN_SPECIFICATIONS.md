@@ -352,3 +352,4 @@ BOTTOM FAILOVER BADGE:
 | **Diag 5** | `diag_05_dual_path_shield.svg` | Chapter 3, Fig 3.4 | Dual-Path Stream Routing & Origin Shield Single Ingest |
 | **Diag 6** | `diag_06_cost_comparison.svg` | Chapter 5, Fig 5.1 | Monthly Operational Expenditure Comparison (INR ₹) |
 | **Diag 7** | `diag_07_nvenc_benchmark.svg` | Chapter 6, Fig 6.1 | Hardware Transcoding Benchmarks (NVENC vs CPU) |
+

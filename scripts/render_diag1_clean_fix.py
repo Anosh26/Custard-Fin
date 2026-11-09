@@ -321,3 +321,4 @@ args = [
 ]
 subprocess.run(args, capture_output=True)
 print(f"Rendered {png_file} - Size: {os.path.getsize(png_file)} bytes")
+
