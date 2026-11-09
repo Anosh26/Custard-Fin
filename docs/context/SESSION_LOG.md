@@ -1,3 +1,21 @@
+## 2026-11-10 - Simplification of Figure 3.1: Minimalist Icons & Bottom Labels
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Architecture Figure Streamlining
+- **Summary:**
+  1. Simplified Design:
+     - Replaced cluttered multi-line box cards with minimalist rounded icons (Storage, GPU Transcoder, HLS Segments, SQLite, Edge Daemon, LAN Viewers, FRP Relay, Origin Shield, Cloud API, Postgres & Redis, Next.js Web, Remote Viewers).
+     - Clean, direct 2-line text below each icon (Bold Title + Short Subtitle).
+     - Clean, uncrossed directional arrows connecting the pipeline stages and bridging across the central ISP CGNAT firewall.
+  2. Rendering & Compilation:
+     - Rendered in 3x Ultra-HD (3540x1500) via headless Chrome (`report/figures/diag_02_architecture_overview.png`).
+     - Recompiled `report/main.pdf` cleanly with 0 errors (40 pages total, 35 core pages).
+- **Files Touched:**
+  - `report/figures/diag_02_architecture_overview.svg`
+  - `report/figures/diag_02_architecture_overview.html`
+  - `report/figures/diag_02_architecture_overview.png`
+  - `report/main.pdf`
+  - `scripts/update_diag2_simplified.py`
+
 ## 2026-11-10 - Redesign of Figure 3.1: Modular Component SVG Architecture
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Architecture Figure Quality Polish & Modularity
