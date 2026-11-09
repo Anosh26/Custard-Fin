@@ -46,7 +46,8 @@
   - Strictly specified student identification by Seat Numbers: Anish Ghadi (Seat No.: 25P0320009) and Anosh Chodankar (Seat No.: 25P0320010).
   - Fully converted all economic figures, mathematical proofs, and comparison tables to Indian Rupees (₹) with baseline benchmark $1.00 USD = ₹84.00 INR (e.g. Traditional Cloud: ₹1,00,380.00/mo vs CustardFin: ₹4,128.60/mo; 95.89% savings; ₹11.55 Lakhs/yr saved).
   - Streamlined and condensed report down to 35 core pages (40 pages total including front matter), removing redundant diagrams and screenshot filler while preserving the 4 primary architectural and benchmark figures (System Architecture, Dual-Path Stream Router, INR Cost Comparison, NVENC GPU Benchmark) and a consolidated 2-panel UI showcase figure.
-  - Zero LaTeX compilation errors, clean typography, perfectly calibrated for MCA semester-end lab evaluation (`report/main.pdf`, 3.51 MB).
+  - Rebuilt Figure 3.1 (`diag_02_architecture_overview`) using a modular SVG component architecture with reusable `<symbol>` definitions, technical dot-grid canvas, and parallel non-intersecting conduits across the ISP CGNAT barrier. Rendered in 3x Ultra-HD (3600x1920) with headless Chrome.
+  - Zero LaTeX compilation errors, clean typography, perfectly calibrated for MCA semester-end lab evaluation (`report/main.pdf`, 2.86 MB).
 
 ## In Progress
 - Final rehearsal and submission of `report/main.pdf`.

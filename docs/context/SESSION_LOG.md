@@ -1,3 +1,37 @@
+## 2026-11-10 - Redesign of Figure 3.1: Modular Component SVG Architecture
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Architecture Figure Quality Polish & Modularity
+- **Summary:**
+  1. Explanation of Previous Method:
+     - Clarified that the original diagram was hand-coded raw SVG paths (manual Bézier curves, crude 3D cylinder arcs, and a hand-drawn cloud boundary) which looked clunky and distorted.
+  2. Modular SVG Re-Architecture:
+     - Re-architected Figure 3.1 (`diag_02_architecture_overview.svg` / `.png`) using reusable modular symbols (`<symbol id="...">` in `<defs>`):
+       - `mod-storage`: NVMe master video drive ("100% Home Disks").
+       - `mod-gpu`: NVIDIA NVENC hardware ASIC chip ("322 fps / <5% CPU").
+       - `mod-hls`: RFC 8216 HLS packager (1080p, 720p, 480p).
+       - `mod-sqlite`: Pure-Go SQLite WAL database for private watch progress.
+       - `mod-daemon`: Go Edge Server on port 8089 with Mini-Jellyfin offline LAN hub.
+       - `mod-lan-viewers`: Local Wi-Fi streaming (<4ms TTFB, ₹0.00 egress).
+       - `mod-frp-relay`: Cloud FRP reverse tunnel terminator (:7000).
+       - `mod-stream-router`: Go API stream router with 10-stream admission limiter.
+       - `mod-origin-shield`: S3-compatible cache with 24h LRU auto-purge.
+       - `mod-databases`: PostgreSQL relational catalog + Redis 15s ephemeral heartbeats.
+       - `mod-nextjs`: Next.js 15 presentation tier with "Stats for Nerds" telemetry.
+       - `mod-remote-viewers`: Remote public viewers served from S3 Origin Shield (90% upload bandwidth saved).
+  3. Layout & Visual Cleanliness:
+     - Placed on a technical dot-grid canvas (`#f8fafc`) matching Figures 5.1 and 6.1.
+     - Center ISP CGNAT firewall barrier features 3 parallel, non-intersecting, color-coded conduits (Green: TLS 1.3 reverse tunnel; Indigo: 650-byte manifest sync; Amber: 15s heartbeat).
+     - Rendered in 3x Ultra-HD (3600x1920) via headless Chrome (`report/figures/diag_02_architecture_overview.png`, 533 KB).
+  4. Report Recompiled & Verified:
+     - `report/main.pdf` compiled cleanly with 0 errors (40 pages total, 35 core pages, 2.86 MB).
+- **Files Touched:**
+  - `report/figures/diag_02_architecture_overview.svg`
+  - `report/figures/diag_02_architecture_overview.html`
+  - `report/figures/diag_02_architecture_overview.png`
+  - `report/main.pdf`
+  - `scripts/update_diag2_modular.py`
+  - `docs/context/STATE.md`
+
 ## 2026-11-10 - Report Condensation & Redundant Diagram Removal (~35 Pages)
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Final Academic Report Streamlining
