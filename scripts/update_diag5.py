@@ -1,0 +1,282 @@
+import xml.etree.ElementTree as ET
+import subprocess
+import pathlib
+
+svg_raw = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" style="background-color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <!-- Soft Drop Shadows -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.06" />
+    </filter>
+    <filter id="shadow-sm" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.05" />
+    </filter>
+
+    <!-- Arrowhead Markers -->
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981" />
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d97706" />
+    </marker>
+    <marker id="arrow-amber-up" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d97706" />
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0ea5e9" />
+    </marker>
+  </defs>
+
+  <!-- ================= GLOBAL HEADER ================= -->
+  <text x="600" y="34" text-anchor="middle" font-size="20" font-weight="800" fill="#0f172a" letter-spacing="-0.3">
+    Dual-Path Stream Routing &amp; Origin Shield Single Ingest
+  </text>
+  <text x="600" y="54" text-anchor="middle" font-size="11.5" font-weight="500" fill="#64748b">
+    Subnet-aware proximity routing bypasses WAN for local clients; cloud cache shields home uplink from remote viewer fan-out
+  </text>
+
+  <!-- ================= TOP TIER (Nodes & Routers) ================= -->
+  
+  <!-- 1. HOME EDGE NODE -->
+  <g transform="translate(30, 70)" filter="url(#shadow)">
+    <rect x="0" y="0" width="300" height="140" rx="10" fill="#0f172a" stroke="#334155" stroke-width="2" />
+    <path d="M 0 10 C 0 4.48 4.48 0 10 0 L 290 0 C 295.52 0 300 4.48 300 10 L 300 36 L 0 36 Z" fill="#1e293b" />
+    <text x="150" y="23" text-anchor="middle" font-size="11" font-weight="800" fill="#f8fafc" letter-spacing="0.5">
+      HOME EDGE NODE (192.168.1.105)
+    </text>
+    
+    <rect x="20" y="48" width="40" height="50" rx="4" fill="#334155" />
+    <line x1="28" y1="56" x2="52" y2="56" stroke="#64748b" stroke-width="2" />
+    <line x1="28" y1="64" x2="52" y2="64" stroke="#64748b" stroke-width="2" />
+    <circle cx="30" cy="88" r="3" fill="#10b981" />
+    
+    <text x="75" y="60" font-size="10" font-weight="700" fill="#e2e8f0">Edge PC (RTX 4060, NVMe)</text>
+    <text x="75" y="76" font-size="9" fill="#94a3b8">Mini-Jellyfin (:8089) + FRP Client</text>
+    <rect x="75" y="86" width="205" height="18" rx="4" fill="#7f1d1d" />
+    <text x="177" y="98" text-anchor="middle" font-size="8.5" font-weight="700" fill="#fecdd3">
+      Residential Uplink Budget: 20 Mbps Limit
+    </text>
+  </g>
+
+  <!-- 2. STREAM ROUTER DECISION GATE -->
+  <g transform="translate(360, 70)" filter="url(#shadow)">
+    <rect x="0" y="0" width="480" height="140" rx="10" fill="#ffffff" stroke="#bae6fd" stroke-width="2" />
+    <path d="M 0 10 C 0 4.48 4.48 0 10 0 L 470 0 C 475.52 0 480 4.48 480 10 L 480 36 L 0 36 Z" fill="#0284c7" />
+    <text x="240" y="23" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff" letter-spacing="0.5">
+      SMART STREAM ROUTER DECISION GATE (apid)
+    </text>
+
+    <!-- IDE Code Block -->
+    <rect x="20" y="48" width="440" height="60" rx="6" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
+    <text x="35" y="64" font-family="monospace" font-size="9" font-weight="600" fill="#c4b5fd">if <tspan fill="#38bdf8">clientIP.InSubnet</tspan>(edgeNode) {</text>
+    <text x="55" y="78" font-family="monospace" font-size="9" font-weight="600" fill="#10b981">return <tspan fill="#a7f3d0">DirectLAN_URL()</tspan></text>
+    <text x="35" y="92" font-family="monospace" font-size="9" font-weight="600" fill="#c4b5fd">} else { <tspan fill="#f59e0b">return </tspan><tspan fill="#fde68a">OriginShield_URL()</tspan> }</text>
+
+    <!-- Limiter Badge -->
+    <rect x="20" y="114" width="440" height="16" rx="4" fill="#fef2f2" stroke="#fca5a5" stroke-width="1" />
+    <text x="240" y="125" text-anchor="middle" font-family="monospace" font-size="8" font-weight="700" fill="#dc2626">
+      ADMISSION LIMITER: if active_streams &gt;= 10 { return HTTP 429 Too Many Requests }
+    </text>
+  </g>
+
+  <!-- 3. ORIGIN SHIELD CACHE -->
+  <g transform="translate(870, 70)" filter="url(#shadow)">
+    <rect x="0" y="0" width="300" height="140" rx="10" fill="#fffbeb" stroke="#fcd34d" stroke-width="2" />
+    <path d="M 0 10 C 0 4.48 4.48 0 10 0 L 290 0 C 295.52 0 300 4.48 300 10 L 300 36 L 0 36 Z" fill="#d97706" />
+    <text x="150" y="23" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff" letter-spacing="0.5">
+      ORIGIN SHIELD CACHE (S3 / MinIO)
+    </text>
+
+    <!-- S3 Bucket Icon -->
+    <g transform="translate(20, 50)">
+      <path d="M 0 10 L 0 35 C 0 42 40 42 40 35 L 40 10 Z" fill="#f59e0b" />
+      <ellipse cx="20" cy="10" rx="20" ry="6" fill="#fbbf24" stroke="#d97706" stroke-width="1.5" />
+      <path d="M 0 22 C 0 29 40 29 40 22" fill="none" stroke="#d97706" stroke-width="1.5" />
+    </g>
+    
+    <text x="75" y="65" font-size="10" font-weight="700" fill="#92400e">S3 24h LRU Ephemeral Bucket</text>
+    <text x="75" y="81" font-size="9" fill="#b45309">Absorbs 100% of multi-viewer traffic</text>
+    <rect x="75" y="91" width="205" height="18" rx="4" fill="#fef3c7" stroke="#fcd34d" stroke-width="1" />
+    <text x="177" y="103" text-anchor="middle" font-size="8.5" font-weight="700" fill="#b45309">
+      Cloud Uplink Capacity: Unlimited
+    </text>
+  </g>
+
+
+  <!-- ================= THE ZERO-OVERLAP ROUTING CORRIDOR (Y=210 to Y=310) ================= -->
+  
+  <!-- 1. AMBER PIPE (Edge to Origin Shield - Cache Miss Pull) -->
+  <path d="M 280 210 L 280 260 L 920 260 L 920 215" fill="none" stroke="#d97706" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#arrow-amber-up)" />
+  <rect x="470" y="249" width="300" height="22" rx="11" fill="#fffbeb" stroke="#fcd34d" stroke-width="1" filter="url(#shadow-sm)" />
+  <text x="620" y="263" text-anchor="middle" font-size="9" font-weight="700" fill="#b45309">
+    Tunnel Fetch: Origin Shield pulls ONCE via FRP (~2.5 MB)
+  </text>
+
+  <!-- 2. GREEN PIPE (Edge down to Path A - Direct LAN) -->
+  <path d="M 180 210 L 180 305" stroke="#10b981" stroke-width="4.5" marker-end="url(#arrow-green)" />
+  <rect x="200" y="249" width="130" height="22" rx="11" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1" filter="url(#shadow-sm)" />
+  <text x="265" y="263" text-anchor="middle" font-size="9" font-weight="700" fill="#047857">
+    Direct Local Subnet
+  </text>
+
+  <!-- 3. BLUE PIPE (Origin Shield down to Path B - Cache Delivery) -->
+  <path d="M 1020 210 L 1020 305" stroke="#0ea5e9" stroke-width="4.5" marker-end="url(#arrow-blue)" />
+  <rect x="1040" y="249" width="130" height="22" rx="11" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1" filter="url(#shadow-sm)" />
+  <text x="1105" y="263" text-anchor="middle" font-size="9" font-weight="700" fill="#0369a1">
+    Internet Edge Delivery
+  </text>
+
+
+  <!-- ================= BOTTOM TIER (Client Paths) ================= -->
+  
+  <!-- PATH A: DIRECT LAN BYPASS -->
+  <g transform="translate(30, 310)" filter="url(#shadow)">
+    <rect x="0" y="0" width="370" height="220" rx="10" fill="#f8fafc" stroke="#34d399" stroke-width="2" />
+    <path d="M 0 10 C 0 4.48 4.48 0 10 0 L 360 0 C 365.52 0 370 4.48 370 10 L 370 34 L 0 34 Z" fill="#059669" />
+    <text x="185" y="22" text-anchor="middle" font-size="11.5" font-weight="800" fill="#ffffff" letter-spacing="0.5">
+      PATH A: DIRECT LAN BYPASS
+    </text>
+
+    <!-- Smart TV Icon -->
+    <rect x="25" y="55" width="80" height="50" rx="4" fill="#0f172a" />
+    <rect x="30" y="60" width="70" height="40" fill="#1e293b" />
+    <polygon points="65,72 65,88 78,80" fill="#10b981" />
+    <rect x="55" y="105" width="20" height="6" fill="#334155" />
+    <rect x="35" y="111" width="60" height="3" fill="#334155" />
+    
+    <text x="65" y="132" text-anchor="middle" font-size="9.5" font-weight="700" fill="#064e3b">Living Room TV</text>
+
+    <!-- Metrics List -->
+    <g transform="translate(130, 50)">
+      <rect x="0" y="0" width="220" height="150" rx="6" fill="#ffffff" stroke="#a7f3d0" stroke-width="1.5" />
+      
+      <circle cx="15" cy="25" r="5" fill="#10b981" />
+      <text x="28" y="29" font-size="9" font-weight="700" fill="#0f172a">Latency (TTFB): <tspan fill="#059669">&lt; 3.2 ms</tspan></text>
+      <text x="28" y="42" font-size="8" fill="#64748b">Local Gigabit Wi-Fi Routing</text>
+
+      <circle cx="15" cy="62" r="5" fill="#10b981" />
+      <text x="28" y="66" font-size="9" font-weight="700" fill="#0f172a">Cloud Egress Cost: <tspan fill="#059669">₹0.00</tspan></text>
+      <text x="28" y="79" font-size="8" fill="#64748b">Completely Free Local Streaming</text>
+
+      <circle cx="15" cy="99" r="5" fill="#10b981" />
+      <text x="28" y="103" font-size="9" font-weight="700" fill="#0f172a">WAN Bandwidth: <tspan fill="#059669">0 Bps</tspan></text>
+      <text x="28" y="116" font-size="8" fill="#64748b">Bypasses ISP Quotas entirely</text>
+
+      <circle cx="15" cy="136" r="5" fill="#10b981" />
+      <text x="28" y="140" font-size="9" font-weight="700" fill="#0f172a">Offline Resilience: <tspan fill="#059669">100%</tspan></text>
+    </g>
+  </g>
+
+  <!-- PATH B: CLOUD ORIGIN SHIELD FAN-OUT -->
+  <g transform="translate(430, 310)" filter="url(#shadow)">
+    <rect x="0" y="0" width="740" height="220" rx="10" fill="#f8fafc" stroke="#7dd3fc" stroke-width="2" />
+    <path d="M 0 10 C 0 4.48 4.48 0 10 0 L 730 0 C 735.52 0 740 4.48 740 10 L 740 34 L 0 34 Z" fill="#0284c7" />
+    <text x="370" y="22" text-anchor="middle" font-size="11.5" font-weight="800" fill="#ffffff" letter-spacing="0.5">
+      PATH B: CLOUD ORIGIN SHIELD &amp; MULTI-VIEWER FAN-OUT
+    </text>
+
+    <!-- Sub-Box 1: Cache Miss (Left) -->
+    <g transform="translate(20, 50)">
+      <rect x="0" y="0" width="280" height="110" rx="6" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5" />
+      <rect x="0" y="0" width="280" height="24" rx="6" fill="#fef3c7" />
+      <text x="140" y="16" text-anchor="middle" font-size="9.5" font-weight="800" fill="#b45309">
+        STEP 1 (Amber): INITIAL CACHE MISS
+      </text>
+
+      <!-- Laptop Icon -->
+      <rect x="15" y="45" width="40" height="26" rx="3" fill="#78350f" />
+      <path d="M 5 71 L 65 71 L 70 76 L 0 76 Z" fill="#d97706" />
+      <text x="35" y="92" text-anchor="middle" font-size="9" font-weight="800" fill="#92400e">Viewer 1</text>
+
+      <text x="90" y="55" font-size="9.5" font-weight="700" fill="#0f172a">Viewer 1 requests <tspan fill="#b45309" font-family="monospace">seg_042.ts</tspan></text>
+      <text x="90" y="75" font-size="9" font-weight="500" fill="#475569">Origin Shield triggers a single fetch.</text>
+      <text x="90" y="92" font-size="9" font-weight="700" fill="#d97706">Go API pulls chunk ONCE (~2.5 MB).</text>
+    </g>
+
+    <!-- Sub-Box 2: Cache Hit (Right) -->
+    <g transform="translate(320, 50)">
+      <rect x="0" y="0" width="400" height="110" rx="6" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.5" />
+      <rect x="0" y="0" width="400" height="24" rx="6" fill="#e0f2fe" />
+      <text x="200" y="16" text-anchor="middle" font-size="9.5" font-weight="800" fill="#0369a1">
+        STEP 2 (Blue): MULTI-VIEWER CACHE HIT (FAN-OUT)
+      </text>
+
+      <!-- Viewer Devices -->
+      <!-- Phone 1 -->
+      <rect x="20" y="40" width="22" height="34" rx="3" fill="#0284c7" />
+      <circle cx="31" cy="68" r="1.5" fill="#ffffff" />
+      <!-- Phone 2 -->
+      <rect x="50" y="40" width="22" height="34" rx="3" fill="#0284c7" />
+      <circle cx="61" cy="68" r="1.5" fill="#ffffff" />
+      <!-- Tablet -->
+      <rect x="80" y="40" width="30" height="34" rx="4" fill="#0369a1" />
+      <circle cx="95" cy="68" r="1.5" fill="#ffffff" />
+      <!-- Desktop -->
+      <rect x="120" y="40" width="44" height="28" rx="2" fill="#0369a1" />
+      <rect x="138" y="68" width="8" height="6" fill="#0284c7" />
+      <rect x="126" y="74" width="32" height="2" fill="#0284c7" />
+      
+      <text x="92" y="92" text-anchor="middle" font-size="9" font-weight="800" fill="#0369a1">Viewers 2 through 10</text>
+
+      <text x="180" y="55" font-size="9.5" font-weight="700" fill="#0f172a">Viewers 2–10 request same chunk.</text>
+      <text x="180" y="75" font-size="9" font-weight="500" fill="#475569">Served directly from Cloud S3 Cache.</text>
+      <text x="180" y="92" font-size="9" font-weight="700" fill="#0ea5e9">Home edge uplink load: EXACTLY 0 BYTES.</text>
+    </g>
+
+    <!-- Bottom Metrics Savings Banner -->
+    <g transform="translate(20, 175)">
+      <rect x="0" y="0" width="700" height="30" rx="6" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.5" />
+      <text x="350" y="19" text-anchor="middle" font-size="10.5" font-weight="800" fill="#047857">
+        90% Upload Bandwidth Saved (1x Upload vs 10 Viewers) — Invariant 7 Upheld
+      </text>
+    </g>
+  </g>
+
+</svg>"""
+
+# Parse to verify XML validity
+try:
+    ET.fromstring(svg_raw)
+    print("XML Validation Passed: Valid SVG!")
+except Exception as e:
+    print("XML Validation Failed:", e)
+    raise
+
+svg_file = pathlib.Path("report/figures/diag_05_dual_path_shield.svg")
+html_file = pathlib.Path("report/figures/diag_05_dual_path_shield.html")
+png_file = pathlib.Path("report/figures/diag_05_dual_path_shield.png")
+
+svg_file.write_text(svg_raw, encoding="utf-8")
+print(f"Saved {svg_file}")
+
+html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+  html, body {{ width: 3600px; height: 1680px; background: #ffffff; overflow: hidden; }}
+  svg {{ width: 3600px; height: 1680px; display: block; }}
+</style>
+</head>
+<body>
+{svg_raw}
+</body>
+</html>"""
+
+html_file.write_text(html_content, encoding="utf-8")
+print(f"Saved {html_file}")
+
+chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+args = [
+    chrome_path,
+    "--headless=old",
+    "--disable-gpu",
+    "--hide-scrollbars",
+    "--window-size=3600,1680",
+    f"--screenshot={png_file.resolve()}",
+    str(html_file.resolve())
+]
+
+subprocess.run(args, check=True)
+print(f"Rendered {png_file} Ultra-HD -> {png_file.stat().st_size} bytes")
