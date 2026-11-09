@@ -5,134 +5,50 @@
 \chapter{Team Contributions and Division of Work}
 \label{chap:contributions}
 
-CustardFin was designed and built as a collaborative engineering project by two Master of Computer Applications (MCA) students for the Cloud Computing Laboratory course:
+CustardFin was built collaboratively by two Master of Computer Applications (MCA) students for the Cloud Computing Laboratory course:
 \begin{itemize}
     \item \textbf{Anish Ghadi} (Seat No.: \textbf{25P0320009})
     \item \textbf{Anosh Chodankar} (Seat No.: \textbf{25P0320010})
 \end{itemize}
 
-This chapter describes the division of responsibilities, individual contributions, and the team's collaborative workflow.
-
 % ------------------------------------------------------------------------------
-\section{Collaborative Engineering Approach}
-\label{sec:contrib_model}
+\section{Individual Responsibilities}
+\label{sec:contrib_individual}
 % ------------------------------------------------------------------------------
 
-To ensure smooth collaboration across the edge and cloud components, the team used modern software engineering practices:
+\subsection{Anish Ghadi (Seat No.: 25P0320009)}
+Anish Ghadi served as the lead developer for the \textbf{Home Edge Subsystem (\texttt{apps/edge})}, hardware acceleration, and local data persistence:
 \begin{itemize}
-    \item \textbf{Monorepo Structure:} The project was organized into modular Go packages (\texttt{apps/edge}, \texttt{apps/api}, and \texttt{libs/contracts}) linked via \texttt{go.work}, alongside a Next.js frontend (\texttt{apps/web}). This allowed parallel development without dependency conflicts.
-    \item \textbf{Contract-First Design:} Shared data structures and API interfaces were defined first in \texttt{libs/contracts} and documented in \texttt{docs/api/openapi.yaml}. Both members wrote code and tests against these contracts.
-    \item \textbf{Conventional Commits and Code Reviews:} All code changes used conventional commit tags (such as \texttt{feat(edge): ...} and \texttt{feat(api): ...}) and passed automated tests before merging.
-    \item \textbf{Pair Programming:} Complex integration components—specifically reverse tunnel handling and Origin Shield caching—were developed collaboratively through pair programming.
+    \item \textbf{Recursive Scanner and Media Hasher (\texttt{internal/adapters/fs}):} Designed the directory scanner for video indexing and developed the file header hashing algorithm for unique media IDs.
+    \item \textbf{Hardware Transcoder (\texttt{internal/adapters/ffmpeg}):} Built the managed Go subprocess controller with dynamic NVENC GPU probing, automatic CPU fallback (\texttt{libx264}), and strict 4-second HLS segmenting.
+    \item \textbf{Embedded SQLite Engine (\texttt{internal/adapters/sqlite}):} Integrated pure-Go SQLite with Write-Ahead Logging (WAL) and migrations to record transcode status and private watch history.
+    \item \textbf{Reverse Tunnel Client (\texttt{internal/adapters/frp}):} Implemented the \texttt{frpc} client daemon for outbound TLS connections to bypass residential CGNAT.
+    \item \textbf{Mini-Jellyfin Offline Web Hub:} Developed the standalone embedded web UI on port 8089 for offline direct LAN playback.
+    \item \textbf{GPU Benchmarking:} Created the automated benchmark script (\texttt{scripts/bench-gpu}) evaluating NVENC throughput ($322.3\text{ fps}$) versus CPU software ($33.6\text{ fps}$).
 \end{itemize}
 
-% ------------------------------------------------------------------------------
-\section[Contribution of Anish Ghadi]{Contribution of Anish Ghadi \\ (Seat No.: 25P0320009)}
-\label{sec:contrib_anish}
-% ------------------------------------------------------------------------------
-
-Anish Ghadi served as the lead developer for the \textbf{Home Edge Subsystem (\texttt{apps/edge})}, hardware transcoding, and local storage:
-
-\begin{enumerate}
-    \item \textbf{Media Scanner and File Hasher (\texttt{internal/adapters/fs}):}
-    \begin{itemize}
-        \item Built the recursive folder scanner to discover and index video files (\texttt{.mp4}, \texttt{.mkv}, \texttt{.mov}, \texttt{.avi}).
-        \item Implemented the hashing algorithm using file headers and metadata to generate unique IDs, avoiding duplicate transcodes when files are moved.
-    \end{itemize}
-
-    \item \textbf{FFmpeg Transcoder and Hardware Acceleration:}
-    \begin{itemize}
-        \item Created the managed FFmpeg subprocess runner (\texttt{internal/adapters/ffmpeg}) using Go's \texttt{exec.CommandContext} with safe cancellation.
-        \item Implemented hardware encoder probe prioritizing NVIDIA NVENC with automatic fallback to CPU software encoding (\texttt{libx264}).
-        \item Added a 1-second test encode to verify GPU availability before starting batch jobs.
-        \item Configured strict 4-second HLS segmenting with aligned keyframes (\texttt{-g 120} at 30~fps) for smooth quality switching.
-    \end{itemize}
-
-    \item \textbf{Embedded SQLite Database (\texttt{internal/adapters/sqlite}):}
-    \begin{itemize}
-        \item Integrated pure-Go SQLite (\texttt{modernc.org/sqlite}), allowing the edge daemon to compile into a single static binary without CGO.
-        \item Configured Write-Ahead Logging (WAL) and a 5-second busy timeout to prevent database locks during simultaneous streaming and transcoding.
-        \item Created database tables and migrations for media paths, transcode status, and private watch progress (Invariant~8).
-    \end{itemize}
-
-    \item \textbf{Outbound Reverse Tunnel Client (\texttt{internal/adapters/frp}):}
-    \begin{itemize}
-        \item Integrated the Fast Reverse Proxy (\texttt{frpc}) client to establish outbound TLS connections to the cloud relay, bypassing residential CGNAT (Invariant~2).
-        \item Added automatic reconnection logic with exponential backoff for network drops.
-    \end{itemize}
-
-    \item \textbf{Mini-Jellyfin Offline Web Hub:}
-    \begin{itemize}
-        \item Built the embedded web UI served directly by \texttt{edged} on port \texttt{8089}.
-        \item Provided local HLS video playback and hardware status indicators when disconnected from the internet.
-    \end{itemize}
-
-    \item \textbf{Hardware Benchmarking and Lab Testing:}
-    \begin{itemize}
-        \item Created the GPU benchmarking script (\texttt{scripts/bench-gpu}) and collected performance data comparing NVENC ($322.3\text{ fps}$) against CPU ($33.6\text{ fps}$).
-        \item Configured and operated the NVIDIA RTX 4060 edge test machine during laboratory demonstrations.
-    \end{itemize}
-\end{enumerate}
-
-% ------------------------------------------------------------------------------
-\section[Contribution of Anosh Chodankar]{Contribution of Anosh Chodankar \\ (Seat No.: 25P0320010)}
-\label{sec:contrib_anosh}
-% ------------------------------------------------------------------------------
-
-Anosh Chodankar served as the lead developer for the \textbf{Cloud Control Plane (\texttt{apps/api})}, presentation frontend (\texttt{apps/web}), and cloud deployment:
-
-\begin{enumerate}
-    \item \textbf{Cloud Control API (\texttt{apps/api}):}
-    \begin{itemize}
-        \item Built the Go REST API using standard library packages (\texttt{net/http}, \texttt{log/slog}) following hexagonal architecture.
-        \item Implemented versioned REST endpoints (for auth, nodes, catalog, and media playback) with strict schema validation.
-    \end{itemize}
-
-    \item \textbf{PostgreSQL Database and Manifest Synchronization:}
-    \begin{itemize}
-        \item Designed relational database schemas for users, edge nodes, and public video catalogs.
-        \item Integrated connection pooling (\texttt{pgxpool}) and type-safe query generation using \texttt{sqlc}.
-        \item Built the manifest sync worker that ingests $\le 3\text{ KB}$ JSON metadata manifests while leaving video files on home drives (Invariant~1).
-    \end{itemize}
-
-    \item \textbf{Redis Heartbeat and Node Health Tracking (\texttt{internal/adapters/redis}):}
-    \begin{itemize}
-        \item Implemented node health tracking using Redis keys with 20-second TTLs (\texttt{heartbeat:\{node\_id\}}).
-        \item Enabled automatic offline detection: when a node disconnects, its key expires and the catalog flags it as \textit{Offline} within seconds.
-    \end{itemize}
-
-    \item \textbf{Origin Shield Caching and URL Security (\texttt{internal/adapters/s3}):}
-    \begin{itemize}
-        \item Designed the \texttt{ChunkCache} interface and built the S3 cache adapter using AWS Go SDK v2 (compatible with AWS S3, MinIO, and Floci).
-        \item Implemented single-ingest caching (Invariant~7): cache misses pull video segments once through the tunnel, store them in S3 with a 24-hour LRU purge policy, and serve subsequent viewers from the cache.
-        \item Added HMAC-SHA256 signed playback URLs with short expirations to prevent unauthorized video hotlinking (Invariant~9).
-    \end{itemize}
-
-    \item \textbf{Next.js 15 Web Frontend (\texttt{apps/web}):}
-    \begin{itemize}
-        \item Developed the responsive web application using Next.js 15 App Router and React Server Components.
-        \item Built the custom video player using \texttt{hls.js}, including quality selection and a ``Stats for Nerds'' telemetry overlay showing buffer health and cache status.
-        \item Implemented the ``My Edge Library'' management modal and Developer Diagnostics panel.
-    \end{itemize}
-
-    \item \textbf{Cloud Deployment and Laboratory Setup:}
-    \begin{itemize}
-        \item Deployed the cloud stack on a Google Cloud Platform VM (\texttt{e2-standard-2}) with Caddy reverse proxy and automatic Let's Encrypt TLS.
-        \item Configured the Floci local cloud emulator for zero-cost lab demonstrations.
-    \end{itemize}
-\end{enumerate}
+\subsection{Anosh Chodankar (Seat No.: 25P0320010)}
+Anosh Chodankar served as the lead developer for the \textbf{Cloud Control Plane (\texttt{apps/api})}, presentation frontend (\texttt{apps/web}), and cloud infrastructure:
+\begin{itemize}
+    \item \textbf{Cloud Control API (\texttt{apps/api}):} Developed the Go REST API using standard packages (\texttt{net/http}, \texttt{log/slog}) with hexagonal architecture and input validation.
+    \item \textbf{PostgreSQL Schemas and Manifest Sync:} Designed multi-tenant user and node tables with \texttt{sqlc} queries, and built the manifest sync worker ingesting $\le 3\text{ KB}$ JSON metadata.
+    \item \textbf{Redis Liveness Engine (\texttt{internal/adapters/redis}):} Implemented ephemeral heartbeat tracking with 20-second TTLs for automatic, zero-polling node offline detection.
+    \item \textbf{Origin Shield Cache and Token Signer (\texttt{internal/adapters/s3}):} Built the S3 pull-through cache with 24-hour LRU auto-purge and HMAC-SHA256 signed playback URLs.
+    \item \textbf{Next.js 15 Web Frontend (\texttt{apps/web}):} Created the responsive App Router web interface, custom HLS player with real-time ``Stats for Nerds'' HUD, and edge management modals.
+    \item \textbf{Cloud Deployment and Lab Setup:} Deployed the cloud tier on a Google Cloud Platform VM with Caddy automated TLS, and configured Floci for offline lab testing.
+\end{itemize}
 
 % ------------------------------------------------------------------------------
 \section{Joint Responsibilities and Shared Work}
 \label{sec:contrib_joint}
 % ------------------------------------------------------------------------------
 
-Both team members collaborated on core system design and testing milestones:
+Both members collaborated equally on foundational design and validation:
 \begin{itemize}
-    \item \textbf{System Constraints:} Defined the 10 Non-Negotiable Invariants governing video storage, networking, licensing, and capacity limits.
-    \item \textbf{Admission Control Design:} Formulated the 10-stream remote cap per node (Invariant~10), implementing stream tracking and \texttt{HTTP 429 Retry-After} responses.
-    \item \textbf{Load Testing:} Designed and executed the 10-viewer concurrency load simulation to verify single-ingest caching.
-    \item \textbf{Documentation:} Co-authored setup guides (\texttt{DEMO\_ALL\_MODES.md}), the project presentation slides, and this academic report.
+    \item Formulated the 10 Non-Negotiable Invariants and system dataflow contracts.
+    \item Designed the dual-path stream router with the 10-stream remote cap and HTTP 429 admission control.
+    \item Conducted the automated 10-viewer load simulation validating Origin Shield bandwidth preservation.
+    \item Co-authored the operational runbooks, presentation slide deck, and this academic report.
 \end{itemize}
 
 % ------------------------------------------------------------------------------
@@ -140,12 +56,12 @@ Both team members collaborated on core system design and testing milestones:
 \label{sec:contrib_matrix}
 % ------------------------------------------------------------------------------
 
-Table~\ref{tab:contribution_matrix} summarizes the module ownership and workload distribution between the team members.
+Table~\ref{tab:contribution_matrix} details the relative workload distribution across major deliverables.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{System Responsibility and Workload Contribution Matrix}
+\caption{Subsystem Responsibility and Workload Contribution Matrix}
 \label{tab:contribution_matrix}
 \begin{tabularx}{\textwidth}{p{3.2cm}XXcc}
 \toprule

@@ -137,52 +137,30 @@ The edge daemon includes an embedded single-page web app served directly on port
 \section{User Interface Walkthrough}
 \label{sec:feat_screenshots}
 
-\subsection{Community Catalog Feed}
-Figure~\ref{fig:ui_catalog_feed} shows the public catalog feed, displaying videos shared by active home nodes with real-time online status badges.
+Figure~\ref{fig:ui_showcase} presents the primary user-facing interfaces of CustardFin.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/ui_catalog_feed.png}
-\caption{Community Catalog Feed Showing Discoverable Videos and Node Status}
-\label{fig:ui_catalog_feed}
+\begin{subfigure}[b]{0.92\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ui_catalog_feed.png}
+    \caption{Community Catalog Feed Showing Discoverable Videos and Live Node Status Badges}
+    \label{fig:ui_catalog_feed}
+\end{subfigure}
+\vspace{0.4cm}
+\begin{subfigure}[b]{0.92\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ui_player_stats.png}
+    \caption{Adaptive HLS Video Player with Real-Time ``Stats for Nerds'' HUD Overlay}
+    \label{fig:ui_player_stats}
+\end{subfigure}
+\caption{CustardFin Presentation Tier: Public Catalog Feed and Video Telemetry Player}
+\label{fig:ui_showcase}
 \end{figure}
 
-\subsection{Video Player with ``Stats for Nerds'' HUD}
-Figure~\ref{fig:ui_player_stats} shows the video player with the diagnostic overlay active, displaying resolution, buffer health, current bitrate, and cache delivery status.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.92\textwidth]{figures/ui_player_stats.png}
-\caption{Video Player with Real-Time ``Stats for Nerds'' Overlay}
-\label{fig:ui_player_stats}
-\end{figure}
-
-\subsection{My Edge Library Manager}
-Figure~\ref{fig:ui_edge_library} shows the library management modal where users inspect local disk usage, check GPU status, and toggle public sharing.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.92\textwidth]{figures/ui_edge_library.png}
-\caption{Edge Library Management Modal with Public/Private Visibility Toggles}
-\label{fig:ui_edge_library}
-\end{figure}
-
-\subsection{Embedded Mini-Jellyfin Offline Hub}
-Figure~\ref{fig:ui_mini_jellyfin} shows the offline web player served directly by the Go edge daemon on port 8089 for local Wi-Fi playback.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.92\textwidth]{figures/ui_mini_jellyfin.png}
-\caption{Embedded Mini-Jellyfin Web Portal for Direct Local LAN Streaming (Port 8089)}
-\label{fig:ui_mini_jellyfin}
-\end{figure}
-
-\subsection{Developer Settings Modal}
-Figure~\ref{fig:ui_dev_settings} shows the developer console used to switch test environments, configure endpoints, and verify admission limits.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.90\textwidth]{figures/ui_dev_settings.png}
-\caption{Developer Diagnostics and Settings Interface}
-\label{fig:ui_dev_settings}
-\end{figure}
+In addition to the public catalog and streaming player, the frontend includes specialized management views:
+\begin{itemize}
+    \item \textbf{My Edge Library Manager:} A management modal for node owners to inspect local hard drive capacity, monitor real-time GPU/NVENC transcoding status, and toggle individual media files between \textit{Public} (manifest synced to cloud) and \textit{Private} (edge-only).
+    \item \textbf{Embedded Mini-Jellyfin Offline Hub:} A zero-dependency web player served directly by the Go edge daemon on port \texttt{8089}, enabling instant LAN streaming to smart TVs and mobile phones during complete cloud or internet outages.
+    \item \textbf{Developer Diagnostics and Settings:} An administrative modal to switch operational topologies (Local Dev, Docker Compose, Floci, and Live GCP) and observe real-time stream counters.
+\end{itemize}

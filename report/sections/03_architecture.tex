@@ -15,7 +15,7 @@ Figure~\ref{fig:system_architecture_overview} illustrates the overall architectu
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/diag_02_architecture_overview.png}
+\includegraphics[width=0.92\textwidth]{figures/diag_02_architecture_overview.png}
 \caption{Two-Tier Hybrid Cloud-Edge Topology and Data Boundary}
 \label{fig:system_architecture_overview}
 \end{figure}
@@ -79,14 +79,7 @@ The web frontend is built using Next.js 15 (React App Router) and runs on Node.j
 \label{sec:arch_dataflows}
 
 \subsection{Workflow 1: Local Ingestion and Pre-Encoding}
-When a user adds a video to their local library, the edge daemon processes the file locally without uploading it to the cloud, as shown in Figure~\ref{fig:seq_ingest}.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{figures/diag_03_ingest_pipeline.png}
-\caption{Local Ingestion, Hardware Encoding, and SQLite Indexing Pipeline}
-\label{fig:seq_ingest}
-\end{figure}
+When a user adds a video to their local media directory, the edge daemon scans the file, computes its SHA-256 header hash, and runs asynchronous FFmpeg pre-encoding using the GPU (or CPU fallback). The resulting 4-second HLS segments and private watch bookmarks are indexed directly in local SQLite storage without uploading any video binaries to the cloud.
 
 \subsection{Workflow 2: Public Manifest Synchronization}
 Marking a video as ``Public'' does not upload the video file. Instead, the edge daemon sends a small JSON manifest ($\approx 650\text{ bytes}$) containing only title and rendition metadata to the cloud API:
@@ -123,23 +116,14 @@ Marking a video as ``Public'' does not upload the video file. Instead, the edge 
 The cloud API validates this JSON and saves it in PostgreSQL. The title instantly appears in the public community catalog worldwide.
 
 \subsection{Workflow 3: Node Heartbeat and Liveness Tracking}
-Figure~\ref{fig:seq_heartbeat} shows how the system tracks node availability using periodic heartbeats.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{figures/diag_04_heartbeat_liveness.png}
-\caption{Ephemeral Heartbeat and Automated Node Liveness Detection}
-\label{fig:seq_heartbeat}
-\end{figure}
-
-The edge node sends a heartbeat every 15 seconds. If the node powers off or loses internet, the 20-second Redis key expires automatically, and the catalog marks the node as offline.
+The edge daemon sends a heartbeat beacon to the cloud API every 15 seconds. The API stores this in Redis with a 20-second TTL (\texttt{heartbeat:\{node\_id\}}). If the edge PC loses power or network connectivity, the Redis key expires automatically, and the catalog immediately marks the node as offline without manual database polling.
 
 \subsection{Workflow 4: Stream Routing and Origin Shield Caching}
 Figure~\ref{fig:seq_playback} shows how playback requests are routed based on viewer location.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/diag_05_dual_path_shield.png}
+\includegraphics[width=0.92\textwidth]{figures/diag_05_dual_path_shield.png}
 \caption{Dual-Path Stream Routing and Origin Shield Single-Ingest Workflow}
 \label{fig:seq_playback}
 \end{figure}

@@ -111,37 +111,14 @@ CustardFin is built around ten strict engineering rules to ensure it remains rel
 \section{Scope of the Project}
 \label{sec:scope}
 
-\subsection{In-Scope Features}
+The project delivers a fully working hybrid streaming platform comprising:
 \begin{itemize}
-    \item Automatic folder scanning, SHA-256 deduplication, and thumbnail generation.
-    \item Background pre-encoding to multi-bitrate HLS (1080p, 720p, 480p) using NVENC GPU acceleration or CPU fallback.
-    \item Embedded Mini-Jellyfin web interface on the edge daemon for direct local LAN playback ($< 4\text{ ms}$ latency).
-    \item 1-click Public/Private toggle that syncs a compact $\le 3\text{ KB}$ JSON manifest to the cloud catalog.
-    \item Centralized web catalog with user login, video search, and playback telemetry (``Stats for Nerds'').
-    \item Outbound reverse TLS tunnel using Fast Reverse Proxy (FRP) to bypass home firewalls.
-    \item Smart stream router that automatically chooses between direct LAN playback and cloud-cached streaming.
-    \item Redis heartbeat tracking with 15-second TTL for automatic node offline detection.
-    \item Cloud-side Origin Shield cache with 24-hour LRU auto-purging.
-\end{itemize}
-
-\subsection{Out-of-Scope Features (Version 1)}
-To focus on core cloud computing requirements, the following features are reserved for future work:
-\begin{itemize}
-    \item Commercial Digital Rights Management (DRM) like Widevine or FairPlay.
-    \item Native mobile apps (iOS/Android) or Smart TV apps; standard responsive web browsers are used instead.
-    \item Live streaming broadcasts (e.g., RTMP/WebRTC webcam feeds).
+    \item \textbf{In-Scope:} Automated directory scanning and SHA-256 fingerprinting; background HLS pre-encoding (1080p, 720p, 480p) via NVIDIA NVENC or CPU fallback; embedded Mini-Jellyfin offline web UI ($< 4\text{ ms}$ LAN latency); outbound reverse TLS tunneling (FRP) to bypass residential CGNAT; 1-click public catalog synchronization via 650-byte JSON manifests; Redis heartbeat tracking; and an Origin Shield 24-hour cloud cache.
+    \item \textbf{Out-of-Scope (Version 1):} Commercial hardware DRM (such as Widevine or FairPlay), live broadcast streaming (RTMP/WebRTC webcam feeds), and native Smart TV applications are reserved for future work.
 \end{itemize}
 
 % ------------------------------------------------------------------------------
 \section{Organization of the Report}
 \label{sec:organization}
 
-\begin{itemize}
-    \item \textbf{Chapter~\ref{chap:literature_survey} (Literature Survey):} Examines existing cloud streaming platforms, home media servers, and peer-to-peer systems.
-    \item \textbf{Chapter~\ref{chap:architecture} (System Architecture):} Describes the two-tier edge-cloud architecture, components, and data workflows.
-    \item \textbf{Chapter~\ref{chap:features_implementation} (Key Features and Implementation):} Details the implementation of core features, supported by application screenshots.
-    \item \textbf{Chapter~\ref{chap:cost_analysis} (Cost Analysis):} Presents a financial model comparing traditional cloud hosting against CustardFin in Indian Rupees (\rupee).
-    \item \textbf{Chapter~\ref{chap:evaluation_testing} (Testing and Evaluation):} Covers performance benchmarks, the 10-viewer load test, and quality gates.
-    \item \textbf{Chapter~\ref{chap:contributions} (Team Contributions):} Outlines the individual roles and work completed by Anish Ghadi and Anosh Chodankar.
-    \item \textbf{Chapter~\ref{chap:conclusion} (Conclusion):} Summarizes project results and highlights future improvements.
-\end{itemize}
+The remainder of this report is organized as follows: Chapter~\ref{chap:literature_survey} surveys existing streaming architectures; Chapter~\ref{chap:architecture} details the two-tier edge-cloud architecture; Chapter~\ref{chap:features_implementation} covers the implementation of key features; Chapter~\ref{chap:cost_analysis} provides an itemized cost analysis in Indian Rupees (\rupee); Chapter~\ref{chap:evaluation_testing} evaluates transcoding throughput and load resilience; Chapter~\ref{chap:contributions} outlines individual student responsibilities; and Chapter~\ref{chap:conclusion} concludes with system limitations and future directions.

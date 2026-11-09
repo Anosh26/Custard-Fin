@@ -45,8 +45,8 @@
   - Authored a publication-grade LaTeX project report explicitly titled "Cloud Computing Project Report" formatted with IEEEtran bibliography and standard academic front matter.
   - Strictly specified student identification by Seat Numbers: Anish Ghadi (Seat No.: 25P0320009) and Anosh Chodankar (Seat No.: 25P0320010).
   - Fully converted all economic figures, mathematical proofs, and comparison tables to Indian Rupees (₹) with baseline benchmark $1.00 USD = ₹84.00 INR (e.g. Traditional Cloud: ₹1,00,380.00/mo vs CustardFin: ₹4,128.60/mo; 95.89% savings; ₹11.55 Lakhs/yr saved).
-  - Streamlined and simplified prose across all 8 chapters, eliminating dense academic jargon and excessive padding while preserving all 7 Ultra-HD architectural diagrams, performance benchmarks, and core implementation details. Reduced overall length to a balanced, highly readable 50 pages (from 63 pages).
-  - Rendered all diagrams at 3x Ultra-HD resolution (3600px width, ~400 DPI Retina quality) via headless Chrome, producing pristine, razor-sharp vector graphics in `report/main.pdf` (50 pages, 4.91 MB, 0 errors).
+  - Streamlined and condensed report down to 35 core pages (40 pages total including front matter), removing redundant diagrams and screenshot filler while preserving the 4 primary architectural and benchmark figures (System Architecture, Dual-Path Stream Router, INR Cost Comparison, NVENC GPU Benchmark) and a consolidated 2-panel UI showcase figure.
+  - Zero LaTeX compilation errors, clean typography, perfectly calibrated for MCA semester-end lab evaluation (`report/main.pdf`, 3.51 MB).
 
 ## In Progress
 - Final rehearsal and submission of `report/main.pdf`.

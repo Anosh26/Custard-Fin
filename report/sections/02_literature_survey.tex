@@ -5,83 +5,49 @@
 \chapter{Literature Survey and Background Study}
 \label{chap:literature_survey}
 
-Modern video delivery systems must balance three conflicting factors: infrastructure costs, ease of content discovery, and viewing performance. This chapter surveys existing video architectures—centralized cloud platforms, self-hosted media servers, and peer-to-peer networks—and explains the core technologies (reverse tunneling, HLS, and GPU encoding) used by CustardFin.
+Modern video delivery systems must balance three conflicting factors: infrastructure costs, ease of content discovery, and viewing performance. This chapter surveys existing video architectures and examines the underlying technologies (reverse tunneling, HLS segmentation, and GPU encoding) used by CustardFin.
 
 % ------------------------------------------------------------------------------
-\section{Centralized Cloud Video Platforms (YouTube / AWS Model)}
-\label{sec:survey_centralized}
+\section{Existing Video Streaming Paradigms}
+\label{sec:survey_paradigms}
+% ------------------------------------------------------------------------------
 
-Commercial video platforms (such as YouTube, Netflix, and services built on AWS MediaConvert and CloudFront) rely on storing all video files in centralized cloud data centers \cite{armbrust2010view}.
-
-\subsection{Standard Cloud Pipeline}
-In a centralized platform, the process follows four steps:
-\begin{enumerate}
-    \item \textbf{File Upload:} The creator uploads the full master video file to cloud object storage (e.g., AWS S3).
-    \item \textbf{Cloud Transcoding:} Cloud virtual machines or managed encoding clusters transcode the raw file into multiple streaming bitrates (1080p, 720p, 480p) packaged as HTTP Live Streaming (HLS) chunks.
-    \item \textbf{Permanent Cloud Storage:} All generated video segments and playlists are stored permanently in cloud storage buckets with high redundancy.
-    \item \textbf{Global CDN Delivery:} Content Delivery Network (CDN) edge servers cache and deliver chunks to viewers worldwide.
-\end{enumerate}
-
-\subsection{Limitations for Community and Personal Use}
-While cloud platforms offer high scalability, their financial model is prohibitive for small organizations, colleges, and independent creators:
+\subsection{Centralized Cloud Platforms (YouTube / AWS Model)}
+Commercial platforms store all media in cloud data centers \cite{armbrust2010view}. Creators upload raw files, which cloud clusters transcode into multi-bitrate HLS ladders and store permanently in object storage buckets (e.g., AWS S3) for CDN delivery. While highly scalable, this model imposes heavy ongoing costs:
 \begin{itemize}
-    \item \textbf{Compounding Storage Costs:} Cloud storage fees grow with every uploaded gigabyte, regardless of whether a video is actively watched \cite{aws2024s3pricing}. Storing just 100~TB of video on AWS S3 costs over \rupee~1,93,200 every month (\rupee~23.18 Lakhs/year).
-    \item \textbf{Expensive Bandwidth (Egress Fees):} Cloud providers charge high rates for data downloaded by viewers (\rupee~7.56 per GB). Streaming a 1-hour 1080p video (about 2.25~GB) to 1,000 viewers incurs over \rupee~17,000 in bandwidth charges for a single video.
-    \item \textbf{Loss of Privacy and Control:} Uploading private family videos, lab recordings, or unreleased media exposes personal data to platform terms, corporate scanning, and potential algorithmic takedowns.
+    \item \textbf{Compounding Storage Fees:} Storing a modest 100~TB library on AWS S3 costs over \rupee~1,93,200 monthly (\rupee~23.18 Lakhs/year) regardless of views \cite{aws2024s3pricing}.
+    \item \textbf{High Bandwidth (Egress) Charges:} Cloud providers charge steep egress rates (\rupee~7.56 per GB), creating unpredictable monthly bills.
+    \item \textbf{Loss of Data Privacy:} Personal, family, or unreleased media is stored on third-party servers subject to corporate surveillance and algorithmic moderation.
 \end{itemize}
 
-% ------------------------------------------------------------------------------
-\section{Self-Hosted Home Media Servers (Jellyfin / Plex Model)}
-\label{sec:survey_self_hosted}
-
-To avoid cloud bills and protect privacy, open-source personal media servers (such as Jellyfin \cite{jellyfin2024project} and Plex) run directly on a user's home computer, NAS, or mini-PC.
-
-\subsection{Strengths on Local Networks}
-For in-home playback, self-hosted servers provide major advantages:
+\subsection{Self-Hosted Home Media Servers (Jellyfin / Plex Model)}
+Open-source servers such as Jellyfin \cite{jellyfin2024project} and Plex run on home PCs or NAS hardware. They keep video files local and provide fast, free LAN playback. However, sharing outside the home presents major barriers:
 \begin{itemize}
-    \item \textbf{Zero Cloud Hosting Costs:} Videos remain on the user's hard drives, eliminating cloud storage and bandwidth bills.
-    \item \textbf{Full Privacy:} Video files never leave the home network; watch history stays on local disk.
-    \item \textbf{Fast LAN Streaming:} Home Wi-Fi easily delivers high-bitrate video with sub-second startup and no buffering.
+    \item \textbf{Blocked by Carrier-Grade NAT (CGNAT):} Most residential ISPs (e.g., JioFiber, Airtel) use CGNAT to conserve IPv4 addresses \cite{weil2012cgnat}. Home routers lack public IPs, causing incoming connection attempts to fail.
+    \item \textbf{Upload Bandwidth Saturation:} Typical residential upload speeds (15--30~Mbps) cannot handle multiple simultaneous viewers without severe buffering.
+    \item \textbf{No Shared Discovery Catalog:} Home servers exist as isolated silos with no unified discovery or search across friends' libraries.
 \end{itemize}
 
-\subsection{Challenges with Remote Sharing}
-However, self-hosted servers struggle when sharing media outside the home:
-\begin{enumerate}
-    \item \textbf{Carrier-Grade NAT (CGNAT) Blocks Inbound Access:} Most home internet providers (such as JioFiber and Airtel) use CGNAT to share IPv4 addresses \cite{weil2012cgnat}. Home routers are assigned private IP addresses, meaning standard port forwarding (ports 80, 443, 8096) is completely blocked. Remote viewers cannot connect to the home server over the internet.
-    \item \textbf{Complex VPNs Frustrate Non-Technical Viewers:} Workarounds like WireGuard or Tailscale require every viewer to install specialized software and configure keys, which is too complex for friends and family.
-    \item \textbf{Home Upload Bandwidth Choke:} Home broadband has limited upload bandwidth (typically 15--30~Mbps). When multiple viewers watch different videos simultaneously, each stream consumes upload bandwidth directly, quickly choking the connection and causing buffering for everyone.
-    \item \textbf{No Shared Community Catalog:} Self-hosted servers operate as isolated islands. There is no unified search or global feed to discover public videos hosted across friends' servers.
-\end{enumerate}
+\subsection{Federated Peer-to-Peer Networks (PeerTube Model)}
+Federated systems like PeerTube \cite{lemmet2021peertube} use browser-based WebRTC/WebTorrent so viewers can share segments directly. While effective for viral content, P2P fails for personal and community media: low-concurrency videos have no active peers (the ``cold content'' problem), and mobile browsers restrict background WebRTC uploads.
 
 % ------------------------------------------------------------------------------
-\section{Peer-to-Peer (P2P) Streaming Approaches (PeerTube Model)}
-\label{sec:survey_p2p}
-
-Federated systems like PeerTube \cite{lemmet2021peertube} use WebTorrent (WebRTC in the browser) to let viewers share video chunks with one another while watching.
-
-While effective for viral videos with thousands of simultaneous viewers, P2P streaming collapses for personal and community media:
-\begin{itemize}
-    \item \textbf{The ``Cold Content'' Problem:} Low-concurrency videos (such as lectures or family videos watched by only 1--2 people) have no peers in the swarm. The entire streaming load falls back to the origin server.
-    \item \textbf{Mobile Battery and Data Limits:} Mobile browsers restrict background WebRTC seeding to save battery, making mobile users pure consumers who do not upload back to the network.
-    \item \textbf{Server Storage Overhead:} Each PeerTube instance must still store the full video binaries on a dedicated server, re-introducing hosting costs.
-\end{itemize}
-
-% ------------------------------------------------------------------------------
-\section{Comparative Feature Matrix}
+\section{Comparative Feature Analysis}
 \label{sec:survey_comparison}
+% ------------------------------------------------------------------------------
 
-Table~\ref{tab:literature_comparison} compares the four architectural models across key operational factors.
+Table~\ref{tab:literature_comparison} contrasts existing architectures against CustardFin.
 
 \begin{table}[htbp]
 \centering
 \small
 \caption{Comparison of Video Streaming Paradigms}
 \label{tab:literature_comparison}
-\begin{tabularx}{\textwidth}{p{3.0cm}XXXX}
+\begin{tabularx}{\textwidth}{p{2.8cm}XXXX}
 \toprule
 \textbf{Feature} & \textbf{Centralized Cloud} & \textbf{Self-Hosted Server} & \textbf{Federated P2P} & \textbf{CustardFin (This Work)} \\
 \midrule
-\textbf{Video Storage Location} & 100\% Cloud & 100\% Local Home Disk & 100\% Server Disk & \textbf{100\% Home Disk}; temporary 24h cloud cache \\
+\textbf{Video Storage} & 100\% Cloud & 100\% Home Disk & 100\% Server Disk & \textbf{100\% Home Disk}; temporary 24h cache \\
 \addlinespace
 \textbf{Monthly Cloud Cost} & High (\rupee~84,000+ S3/egress) & Zero & Moderate (\rupee~5,000--\rupee~20,000) & \textbf{Low} (\rupee~4,129/mo control plane) \\
 \addlinespace
@@ -91,50 +57,21 @@ Table~\ref{tab:literature_comparison} compares the four architectural models acr
 \addlinespace
 \textbf{Public Discovery} & Global search feed & None (isolated silos) & Federated search & \textbf{Unified Catalog} via 3~KB manifests \\
 \addlinespace
-\textbf{Viewer Installation} & Web browser & Dedicated app or VPN & Web browser (WebTorrent) & \textbf{Standard Web Browser} (zero install) \\
+\textbf{Viewer Setup} & Web browser & Dedicated app or VPN & Web browser (WebTorrent) & \textbf{Standard Web Browser} (zero install) \\
 \addlinespace
 \textbf{Transcoding Strategy} & Cloud cluster & Live on-the-fly (high CPU) & Server pre-encode & \textbf{Local Pre-encode} (NVENC GPU / CPU fallback) \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\subsection{The Architectural Gap}
-Existing platforms force users to choose between high cloud bills (YouTube/AWS) or difficult remote access (Jellyfin/Plex). CustardFin fills this gap by keeping video files at home, using an outbound reverse tunnel to bypass CGNAT, and protecting home bandwidth with a cloud-side cache.
-
 % ------------------------------------------------------------------------------
 \section{Core Underlying Technologies}
 \label{sec:survey_core_tech}
+% ------------------------------------------------------------------------------
 
-CustardFin combines three established technologies to achieve its goals:
-
-\subsection{Reverse Proxy Tunneling (FRP)}
-Under CGNAT, incoming connection attempts from the internet are dropped by the ISP's firewall because the home router has no public IP address. CustardFin uses Fast Reverse Proxy (FRP) \cite{fatedier2024frp} to reverse the connection direction:
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.98\textwidth]{figures/diag_01_nat_traversal.png}
-\caption{Carrier-Grade NAT (CGNAT) Traversal via Outbound Reverse Tunneling}
-\label{fig:frp_tunnel_mechanics}
-\end{figure}
-
-As shown in Figure~\ref{fig:frp_tunnel_mechanics}:
+CustardFin combines three proven open-source technologies:
 \begin{enumerate}
-    \item The home edge node initiates an \textbf{outbound} TLS 1.3 connection to the cloud relay server on port 7000. Because this is outbound traffic, the ISP firewall allows it.
-    \item This persistent connection is multiplexed using Yamux, keeping the tunnel open with periodic keep-alive pings.
-    \item When an external viewer requests a video chunk, the cloud server forwards the request down the existing open tunnel to the home machine, which streams the chunk back up. Zero open ports are needed on the home router.
+    \item \textbf{Reverse Proxy Tunneling (FRP):} Fast Reverse Proxy (FRP) \cite{fatedier2024frp} establishes an outbound TLS connection from the home PC to the cloud relay. The cloud routes remote viewer requests down this existing tunnel, bypassing CGNAT with zero port forwarding.
+    \item \textbf{Pre-Encoded 4-Second HLS Segmentation:} Videos are pre-sliced into 4-second chunks with aligned keyframes (\texttt{-g 120} at 30~fps) \cite{pantos2017http}, enabling instant startup ($<1.2\text{ s}$) and smooth adaptive bitrate (1080p, 720p, 480p) switching.
+    \item \textbf{Hardware GPU Acceleration (NVIDIA NVENC):} Using dedicated GPU encoding circuits \cite{nvidia2023nvenc}, videos are processed at $320+\text{ fps}$ ($10.7\times$ real-time) with host CPU usage below 5\%, backed by automated fallback to CPU software encoding (\texttt{libx264}).
 \end{enumerate}
-
-\subsection{Pre-Encoded 4-Second HLS Segmentation}
-Rather than transcoding video on-the-fly during playback, CustardFin pre-encodes master files into standard HTTP Live Streaming (HLS) chunks \cite{pantos2017http}:
-\begin{itemize}
-    \item Slicing files into 4-second segments provides fast playback startup ($<1.2\text{ s}$) while maintaining good video compression.
-    \item Enforcing keyframes every 120 frames (4 seconds at 30 fps) allows smooth switching between 1080p, 720p, and 480p bitrates as network conditions change.
-\end{itemize}
-
-\subsection{Hardware GPU Acceleration (NVIDIA NVENC)}
-Software video encoding on the CPU consumes 90\%+ of CPU resources and generates significant heat. CustardFin uses dedicated hardware encoding chips on the GPU (NVIDIA NVENC) \cite{nvidia2023nvenc}:
-\begin{itemize}
-    \item NVENC encodes video over $10\times$ faster than real-time ($320+\text{ fps}$ on an RTX 4060), encoding a 1-hour video in about 5.5 minutes.
-    \item Because encoding runs on dedicated GPU circuits, host CPU usage stays below 5\%, keeping the home PC completely responsive for normal daily use.
-    \item If the GPU is unavailable or busy, the system automatically falls back to CPU encoding (\texttt{libx264}) without failing the job.
-\end{itemize}
