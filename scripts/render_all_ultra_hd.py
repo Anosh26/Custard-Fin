@@ -63,3 +63,4 @@ for name, w, h in diagrams:
         os.remove(html_file)
 
 print("\nAll diagrams successfully re-rendered in Ultra-HD!")
+
