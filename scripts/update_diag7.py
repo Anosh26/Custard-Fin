@@ -1,0 +1,260 @@
+import xml.etree.ElementTree as ET
+import subprocess
+import pathlib
+
+svg_raw = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480" width="1200" height="480" style="background-color: #f8fafc; font-family: system-ui, -apple-system, 'SF Pro Display', 'Inter', Roboto, Helvetica, sans-serif; font-variant-numeric: tabular-nums;">
+  <defs>
+    <!-- Technical Background Dot Pattern -->
+    <pattern id="dotGrid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#e2e8f0" />
+    </pattern>
+
+    <!-- Deep Modern Drop Shadows -->
+    <filter id="shadow-lg" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.06" />
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.04" />
+    </filter>
+    <filter id="shadow-sm" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.05" />
+    </filter>
+    
+    <!-- Neon Glow Effects for Gauges -->
+    <filter id="glow-emerald" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Gradients -->
+    <linearGradient id="grad-nvenc" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="grad-cpu" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#dc2626" />
+    </linearGradient>
+    <linearGradient id="grad-slate" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#64748b" />
+      <stop offset="100%" stop-color="#475569" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Layer with Dot Grid -->
+  <rect width="1200" height="480" fill="#f8fafc" />
+  <rect width="1200" height="480" fill="url(#dotGrid)" />
+
+  <!-- ================= GLOBAL HEADER ================= -->
+  <!-- White Header Backdrop for contrast -->
+  <rect x="0" y="0" width="1200" height="85" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow-sm)" />
+  
+  <text x="600" y="38" text-anchor="middle" font-size="22" font-weight="900" fill="#0f172a" letter-spacing="-0.5">
+    Hardware Transcoding Benchmarks: NVENC GPU Acceleration vs. CPU libx264
+  </text>
+  <text x="600" y="60" text-anchor="middle" font-size="12" font-weight="500" fill="#475569" letter-spacing="0.2">
+    Evaluated on Intel Core i7-10700K + NVIDIA GeForce RTX 4060 (8 GB) on 4K Master Asset Transcoded to 1080p60 HLS
+  </text>
+
+  <!-- ================= POD 1: TRANSCODING THROUGHPUT ================= -->
+  <!-- Total Width: 350px, Gap: 35px -->
+  <g transform="translate(40, 110)">
+    <rect x="0" y="0" width="350" height="280" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#shadow-lg)" />
+    
+    <text x="175" y="32" text-anchor="middle" font-size="11.5" font-weight="800" fill="#0f172a" letter-spacing="0.5">
+      TRANSCODING THROUGHPUT
+    </text>
+    <line x1="20" y1="46" x2="330" y2="46" stroke="#e2e8f0" stroke-width="1.5" />
+
+    <!-- NVENC Gauge -->
+    <text x="25" y="74" font-size="10" font-weight="800" fill="#047857">NVENC Hardware ASIC</text>
+    <text x="325" y="74" text-anchor="end" font-size="11" font-weight="900" fill="#059669">322.3 fps</text>
+    
+    <!-- Track & Fill -->
+    <rect x="25" y="86" width="300" height="14" rx="7" fill="#ecfdf5" />
+    <rect x="25" y="86" width="285" height="14" rx="7" fill="url(#grad-nvenc)" filter="url(#glow-emerald)" />
+    
+    <!-- Detail line -->
+    <circle cx="30" cy="116" r="3" fill="#10b981" />
+    <text x="40" y="120" font-size="9.5" font-weight="600" fill="#334155">1-hour film encoded in <tspan font-weight="800" fill="#047857">5.5 minutes</tspan></text>
+    <text x="325" y="120" text-anchor="end" font-size="10" font-weight="800" fill="#10b981">10.74x</text>
+
+    <line x1="25" y1="140" x2="325" y2="140" stroke="#f1f5f9" stroke-width="2" stroke-dasharray="4,2" />
+
+    <!-- CPU Gauge -->
+    <text x="25" y="166" font-size="10" font-weight="800" fill="#334155">CPU libx264 (Software)</text>
+    <text x="325" y="166" text-anchor="end" font-size="11" font-weight="900" fill="#475569">33.6 fps</text>
+    
+    <!-- Track & Fill -->
+    <rect x="25" y="178" width="300" height="14" rx="7" fill="#f1f5f9" />
+    <rect x="25" y="178" width="35" height="14" rx="7" fill="url(#grad-slate)" />
+    
+    <!-- Detail line -->
+    <circle cx="30" cy="208" r="3" fill="#64748b" />
+    <text x="40" y="212" font-size="9.5" font-weight="600" fill="#334155">1-hour film takes <tspan font-weight="800" fill="#334155">53.6 minutes</tspan></text>
+    <text x="325" y="212" text-anchor="end" font-size="10" font-weight="800" fill="#64748b">1.12x</text>
+
+    <!-- Summary Banner -->
+    <rect x="20" y="235" width="310" height="30" rx="6" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.5" />
+    <text x="175" y="254" text-anchor="middle" font-size="10.5" font-weight="800" fill="#047857">
+      9.59x Transcoding Speedup with NVENC
+    </text>
+  </g>
+
+  <!-- ================= POD 2: HOST CPU UTILIZATION ================= -->
+  <!-- X: 425 (40 + 350 + 35) -->
+  <g transform="translate(425, 110)">
+    <rect x="0" y="0" width="350" height="280" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#shadow-lg)" />
+    
+    <text x="175" y="32" text-anchor="middle" font-size="11.5" font-weight="800" fill="#0f172a" letter-spacing="0.5">
+      HOST CPU UTILIZATION DURING INGEST
+    </text>
+    <line x1="20" y1="46" x2="330" y2="46" stroke="#e2e8f0" stroke-width="1.5" />
+
+    <!-- Donut 1: NVENC (Center X=100, Y=135) -->
+    <!-- Circumference of r=45 is 282.74. 4.8% fill means offset = 282.74 * (1 - 0.048) = 269.17 -->
+    <g transform="translate(95, 135)">
+      <circle cx="0" cy="0" r="45" fill="none" stroke="#ecfdf5" stroke-width="14" />
+      <circle cx="0" cy="0" r="45" fill="none" stroke="url(#grad-nvenc)" stroke-width="14" stroke-dasharray="282.74" stroke-dashoffset="269.17" transform="rotate(-90)" stroke-linecap="round" filter="url(#glow-emerald)" />
+      
+      <text x="0" y="5" text-anchor="middle" font-size="18" font-weight="900" fill="#047857">4.8%</text>
+      
+      <text x="0" y="70" text-anchor="middle" font-size="10" font-weight="800" fill="#0f172a">NVENC Mode</text>
+      <text x="0" y="85" text-anchor="middle" font-size="8.5" font-weight="600" fill="#64748b">PC remains fully responsive</text>
+    </g>
+
+    <!-- Divider Line -->
+    <line x1="175" y1="70" x2="175" y2="210" stroke="#f1f5f9" stroke-width="2" />
+
+    <!-- Donut 2: CPU (Center X=255, Y=135) -->
+    <!-- 96.4% fill means offset = 282.74 * (1 - 0.964) = 10.17 -->
+    <g transform="translate(255, 135)">
+      <circle cx="0" cy="0" r="45" fill="none" stroke="#fef2f2" stroke-width="14" />
+      <circle cx="0" cy="0" r="45" fill="none" stroke="url(#grad-cpu)" stroke-width="14" stroke-dasharray="282.74" stroke-dashoffset="10.17" transform="rotate(-90)" stroke-linecap="round" />
+      
+      <text x="0" y="5" text-anchor="middle" font-size="18" font-weight="900" fill="#dc2626">96.4%</text>
+      
+      <text x="0" y="70" text-anchor="middle" font-size="10" font-weight="800" fill="#0f172a">CPU libx264 Mode</text>
+      <text x="0" y="85" text-anchor="middle" font-size="8.5" font-weight="600" fill="#64748b">System stutter &amp; throttle</text>
+    </g>
+
+    <!-- Summary Banner -->
+    <rect x="20" y="235" width="310" height="30" rx="6" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.5" />
+    <text x="175" y="254" text-anchor="middle" font-size="10.5" font-weight="800" fill="#047857">
+      91.6% Host CPU Workload Reduction
+    </text>
+  </g>
+
+  <!-- ================= POD 3: THERMAL & POWER ================= -->
+  <!-- X: 810 (425 + 350 + 35) -->
+  <g transform="translate(810, 110)">
+    <rect x="0" y="0" width="350" height="280" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#shadow-lg)" />
+    
+    <text x="175" y="32" text-anchor="middle" font-size="11.5" font-weight="800" fill="#0f172a" letter-spacing="0.5">
+      THERMAL EMISSIONS &amp; POWER
+    </text>
+    <line x1="20" y1="46" x2="330" y2="46" stroke="#e2e8f0" stroke-width="1.5" />
+
+    <!-- Tile 1: NVENC -->
+    <g transform="translate(20, 60)">
+      <rect x="0" y="0" width="145" height="155" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" />
+      <rect x="0" y="0" width="145" height="30" rx="8" fill="#e0f2fe" />
+      <!-- Hide bottom radius of header -->
+      <rect x="0" y="20" width="145" height="10" fill="#e0f2fe" />
+      
+      <text x="72.5" y="20" text-anchor="middle" font-size="10" font-weight="800" fill="#0369a1">GPU Package</text>
+      
+      <text x="72.5" y="65" text-anchor="middle" font-size="24" font-weight="900" fill="#0284c7">61°C</text>
+      <text x="72.5" y="80" text-anchor="middle" font-size="9" font-weight="600" fill="#64748b">Stable Temp</text>
+      
+      <line x1="20" y1="95" x2="125" y2="95" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="2,2" />
+      
+      <text x="72.5" y="122" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a">42W</text>
+      <text x="72.5" y="137" text-anchor="middle" font-size="9" font-weight="600" fill="#64748b">Power Draw</text>
+    </g>
+
+    <!-- Tile 2: CPU -->
+    <g transform="translate(185, 60)">
+      <rect x="0" y="0" width="145" height="155" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" />
+      <rect x="0" y="0" width="145" height="30" rx="8" fill="#fee2e2" />
+      <rect x="0" y="20" width="145" height="10" fill="#fee2e2" />
+      
+      <text x="72.5" y="20" text-anchor="middle" font-size="10" font-weight="800" fill="#b91c1c">CPU Package</text>
+      
+      <text x="72.5" y="65" text-anchor="middle" font-size="24" font-weight="900" fill="#dc2626">89°C</text>
+      <text x="72.5" y="80" text-anchor="middle" font-size="9" font-weight="600" fill="#64748b">Near Boiling</text>
+      
+      <line x1="20" y1="95" x2="125" y2="95" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="2,2" />
+      
+      <text x="72.5" y="122" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a">95W</text>
+      <text x="72.5" y="137" text-anchor="middle" font-size="9" font-weight="600" fill="#64748b">Power Draw</text>
+    </g>
+
+    <!-- Summary Banner -->
+    <rect x="20" y="235" width="310" height="30" rx="6" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.5" />
+    <text x="175" y="254" text-anchor="middle" font-size="10.5" font-weight="800" fill="#0369a1">
+      28°C Cooler &amp; 53W Less Power Consumption
+    </text>
+  </g>
+
+  <!-- ================= BOTTOM FALLBACK BADGE ================= -->
+  <!-- Centered horizontally (1200 / 2 = 600). Width = 840, so X = 180 -->
+  <g transform="translate(180, 415)" filter="url(#shadow-sm)">
+    <rect x="0" y="0" width="840" height="40" rx="20" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+    
+    <!-- Shield/Safety Icon -->
+    <path d="M 24 12 L 32 8 L 40 12 L 40 20 C 40 26 36 31 32 34 C 28 31 24 26 24 20 Z" fill="#059669" />
+    <path d="M 29 20 L 31 22 L 35 16" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <text x="50" y="24.5" font-size="11" font-weight="800" fill="#0f172a">Automated Graceful Fallback:</text>
+    <text x="215" y="24.5" font-size="11" font-weight="500" fill="#334155">
+      If NVENC VRAM limits are reached, edged falls back to CPU encoding within 420 ms without failing the ingestion job.
+    </text>
+  </g>
+
+</svg>"""
+
+# Parse to verify XML validity
+try:
+    ET.fromstring(svg_raw)
+    print("XML Validation Passed: Valid SVG!")
+except Exception as e:
+    print("XML Validation Failed:", e)
+    raise
+
+svg_file = pathlib.Path("report/figures/diag_07_nvenc_benchmark.svg")
+html_file = pathlib.Path("report/figures/diag_07_nvenc_benchmark.html")
+png_file = pathlib.Path("report/figures/diag_07_nvenc_benchmark.png")
+
+svg_file.write_text(svg_raw, encoding="utf-8")
+print(f"Saved {svg_file}")
+
+html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+  html, body {{ width: 3600px; height: 1440px; background: #f8fafc; overflow: hidden; }}
+  svg {{ width: 3600px; height: 1440px; display: block; }}
+</style>
+</head>
+<body>
+{svg_raw}
+</body>
+</html>"""
+
+html_file.write_text(html_content, encoding="utf-8")
+print(f"Saved {html_file}")
+
+chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+args = [
+    chrome_path,
+    "--headless=old",
+    "--disable-gpu",
+    "--hide-scrollbars",
+    "--window-size=3600,1440",
+    f"--screenshot={png_file.resolve()}",
+    str(html_file.resolve())
+]
+
+subprocess.run(args, check=True)
+print(f"Rendered {png_file} Ultra-HD -> {png_file.stat().st_size} bytes")
