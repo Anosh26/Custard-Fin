@@ -1,3 +1,31 @@
+## 2026-11-09 - Integration of Polished Figure 3.4 (Dual-Path Stream Routing & Origin Shield)
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Final Academic Report Polish & Vector Quality Verification
+- **Summary:**
+  1. Updated Figure 3.4 (`diag_05_dual_path_shield.svg` / `.png`):
+     - Replaced with polished dual-path stream routing and Origin Shield single-ingest workflow:
+       - Top Tier:
+         - Home Edge Node: 192.168.1.105 (RTX 4060, NVMe, Mini-Jellyfin :8089, FRP client, 20 Mbps residential uplink cap).
+         - Smart Stream Router Decision Gate (`apid`): InSubnet proximity check routing directly or to Origin Shield, with 10-stream admission limiter (`HTTP 429`).
+         - Origin Shield Cache: S3/MinIO 24h LRU ephemeral bucket absorbing 100% of multi-viewer traffic with unlimited cloud uplink.
+       - Zero-Overlap Routing Corridor ($Y = 210\text{--}310$):
+         - Amber Pipe: Tunnel fetch on cache miss (single pull via FRP $\approx 2.5\text{ MB}$).
+         - Green Pipe: Direct local subnet bypass down to Path A.
+         - Blue Pipe: Cloud cache delivery down to Path B.
+       - Bottom Tier Client Paths:
+         - Path A (Direct LAN Bypass): Smart TV in living room, $<3.2\text{ ms}$ TTFB, ₹0.00 cloud egress, 0 Bps WAN bandwidth, 100% offline resilient.
+         - Path B (Cloud Origin Shield Multi-Viewer Fan-Out): Step 1 (Amber) Initial Cache Miss for Viewer 1; Step 2 (Blue) Cache Hit for Viewers 2 to 10; 90% uplink bandwidth saved, Invariant 7 upheld.
+     - Rendered in Ultra-HD 3600x1680 resolution using headless Chrome.
+  2. Master Report Recompilation & Push:
+     - Recompiled `report/main.pdf` (63 pages, 5.44 MB, zero errors).
+     - Committed and pushed to `origin/master` (`commit ebe5b31`).
+- **Files Touched:**
+  - `report/figures/diag_05_dual_path_shield.svg`
+  - `report/figures/diag_05_dual_path_shield.html`
+  - `report/figures/diag_05_dual_path_shield.png`
+  - `report/main.pdf`
+  - `scripts/update_diag5.py`
+
 ## 2026-11-09 - Integration of Polished Figure 3.3 (Ephemeral Heartbeat Liveness Loop)
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Final Academic Report Polish & Vector Quality Verification
