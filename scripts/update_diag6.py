@@ -1,0 +1,240 @@
+import xml.etree.ElementTree as ET
+import subprocess
+import pathlib
+
+svg_raw = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520" style="background-color: #f8fafc; font-family: system-ui, -apple-system, 'SF Pro Display', 'Inter', Roboto, Helvetica, sans-serif; font-variant-numeric: tabular-nums;">
+  <defs>
+    <!-- Technical Background Dot Pattern -->
+    <pattern id="dotGrid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#e2e8f0" />
+    </pattern>
+
+    <!-- Deep Modern Drop Shadows -->
+    <filter id="shadow-lg" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.06" />
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.04" />
+    </filter>
+    <filter id="shadow-sm" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.05" />
+    </filter>
+    
+    <!-- Medallion Glow -->
+    <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Tower Gradients -->
+    <linearGradient id="grad-red-tower" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#dc2626" />
+    </linearGradient>
+    <linearGradient id="grad-red-dark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#dc2626" />
+      <stop offset="100%" stop-color="#991b1b" />
+    </linearGradient>
+    <linearGradient id="grad-green-tower" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Layer with Dot Grid -->
+  <rect width="1200" height="520" fill="#f8fafc" />
+  <rect width="1200" height="520" fill="url(#dotGrid)" />
+
+  <!-- ================= GLOBAL HEADER ================= -->
+  <!-- White Header Backdrop for contrast -->
+  <rect x="0" y="0" width="1200" height="85" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow-sm)" />
+
+  <text x="600" y="38" text-anchor="middle" font-size="20" font-weight="900" fill="#0f172a" letter-spacing="-0.3">
+    Monthly Operational Expenditure Comparison: Traditional Cloud VOD vs. CustardFin (INR ₹)
+  </text>
+  <text x="600" y="60" text-anchor="middle" font-size="12" font-weight="500" fill="#64748b">
+    Baseline Benchmark: $1.00 USD = ₹84.00 INR | Workload: 100-User Community, 5 TB Video Library, 9 TB Monthly Egress
+  </text>
+
+  <!-- ================= BASELINE ANCHOR AXIS ================= -->
+  <line x1="40" y1="410" x2="1160" y2="410" stroke="#cbd5e1" stroke-width="2" />
+  <rect x="40" y="410" width="1120" height="4" fill="#e2e8f0" />
+
+
+  <!-- ================= TOWER 1: TRADITIONAL CLOUD VOD (LEFT) ================= -->
+  <g transform="translate(60, 0)">
+    
+    <text x="160" y="112" text-anchor="middle" font-size="11" font-weight="800" fill="#991b1b" letter-spacing="0.5">
+      TRADITIONAL CLOUD VOD (AWS)
+    </text>
+    
+    <rect x="0" y="120" width="320" height="33" fill="#fca5a5" stroke="#ffffff" stroke-width="1.5" filter="url(#shadow-sm)" />
+    <text x="160" y="140" text-anchor="middle" font-size="10" font-weight="700" fill="#7f1d1d">
+      S3 Storage (5 TB @ ₹1.932/GB): ₹9,660.00
+    </text>
+
+    <rect x="0" y="153" width="320" height="36" fill="#f87171" stroke="#ffffff" stroke-width="1.5" filter="url(#shadow-sm)" />
+    <text x="160" y="175" text-anchor="middle" font-size="10" font-weight="700" fill="#7f1d1d">
+      Managed RDS Database &amp; API: ₹10,920.00
+    </text>
+
+    <rect x="0" y="189" width="320" height="39" fill="url(#grad-red-tower)" stroke="#ffffff" stroke-width="1.5" filter="url(#shadow-sm)" />
+    <text x="160" y="212" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">
+      Transcoding (EC2 / MediaConvert): ₹11,760.00
+    </text>
+
+    <!-- Dominant Egress Block -->
+    <rect x="0" y="228" width="320" height="182" fill="url(#grad-red-dark)" stroke="#ffffff" stroke-width="1.5" filter="url(#shadow-sm)" />
+    <text x="160" y="285" text-anchor="middle" font-size="15" font-weight="800" fill="#ffffff">Data Egress Bandwidth</text>
+    <text x="160" y="305" text-anchor="middle" font-size="11" font-weight="600" fill="#fecdd3">(9 TB @ ₹7.56/GB)</text>
+    <rect x="80" y="318" width="160" height="28" rx="6" fill="#7f1d1d" />
+    <text x="160" y="337" text-anchor="middle" font-size="13" font-weight="900" fill="#ffffff">₹68,040.00 / mo</text>
+    <text x="160" y="375" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fecdd3">Dominant 68% Cost Segment</text>
+
+    <!-- Total Badge -->
+    <g transform="translate(0, 425)" filter="url(#shadow-lg)">
+      <rect x="0" y="0" width="320" height="42" rx="8" fill="#ffffff" stroke="#dc2626" stroke-width="2" />
+      <text x="160" y="18" text-anchor="middle" font-size="13" font-weight="900" fill="#dc2626">₹1,00,380.00 / month</text>
+      <text x="160" y="32" text-anchor="middle" font-size="9" font-weight="600" fill="#64748b">₹12.05 Lakhs / yr | 3-Year TCO: ₹36.14 Lakhs</text>
+    </g>
+
+  </g>
+
+
+  <!-- ================= CENTER MEDALLION ================= -->
+  <g transform="translate(600, 260)" filter="url(#glow-green)">
+    <circle cx="0" cy="0" r="115" fill="#ffffff" stroke="#a7f3d0" stroke-width="2" filter="url(#shadow-lg)" />
+    <circle cx="0" cy="0" r="105" fill="#ecfdf5" stroke="#10b981" stroke-width="3" />
+    
+    <text x="0" y="-38" text-anchor="middle" font-size="32" font-weight="900" fill="#047857" letter-spacing="-1">95.89%</text>
+    <rect x="-60" y="-25" width="120" height="20" rx="6" fill="#059669" />
+    <text x="0" y="-11" text-anchor="middle" font-size="10.5" font-weight="800" fill="#ffffff" letter-spacing="1">NET SAVINGS</text>
+    
+    <line x1="-70" y1="7" x2="70" y2="7" stroke="#a7f3d0" stroke-width="1.5" />
+    
+    <!-- Centered text prevents circle edge clipping -->
+    <text x="0" y="27" text-anchor="middle" font-size="11" font-weight="700" fill="#064e3b">Save ₹96,251.40 / mo</text>
+    <text x="0" y="47" text-anchor="middle" font-size="11" font-weight="700" fill="#064e3b">Save ₹11.55 Lakhs / yr</text>
+    <text x="0" y="67" text-anchor="middle" font-size="11" font-weight="800" fill="#047857">Save ₹34.65 L over 3Y</text>
+  </g>
+
+
+  <!-- ================= TOWER 2: CUSTARDFIN HYBRID (RIGHT) ================= -->
+  <g transform="translate(820, 0)">
+    
+    <text x="160" y="112" text-anchor="middle" font-size="11" font-weight="800" fill="#047857" letter-spacing="0.5">
+      CUSTARDFIN HYBRID ARCHITECTURE
+    </text>
+    
+    <!-- True-Scale Small Stack -->
+    <rect x="0" y="390" width="320" height="20" fill="url(#grad-green-tower)" stroke="#ffffff" stroke-width="1.5" />
+
+    <!-- Magnification Connector Polygon -->
+    <polygon points="0,358 320,358 320,390 0,390" fill="#d1fae5" opacity="0.6" stroke="#34d399" stroke-width="1" stroke-dasharray="4,2" />
+    
+    <!-- Detail Breakdown Card -->
+    <rect x="0" y="120" width="320" height="238" rx="10" fill="#ffffff" stroke="#10b981" stroke-width="2" filter="url(#shadow-lg)" />
+    <path d="M 0 130 C 0 124.48 4.48 120 10 120 L 310 120 C 315.52 120 320 124.48 320 130 L 320 150 L 0 150 Z" fill="#ecfdf5" />
+    <text x="160" y="139" text-anchor="middle" font-size="10.5" font-weight="800" fill="#047857">
+      Detailed Monthly Breakdown (INR)
+    </text>
+
+    <!-- Eliminated Cost Items (Green) -->
+    <text x="15" y="172" font-size="9.5" font-weight="600" fill="#059669">Video Storage (100% Edge Disks):</text>
+    <text x="305" y="172" text-anchor="end" font-size="10" font-weight="800" fill="#10b981">₹0.00</text>
+    
+    <text x="15" y="192" font-size="9.5" font-weight="600" fill="#059669">Transcode Compute (Edge NVENC):</text>
+    <text x="305" y="192" text-anchor="end" font-size="10" font-weight="800" fill="#10b981">₹0.00</text>
+    
+    <text x="15" y="212" font-size="9.5" font-weight="600" fill="#059669">Data Egress (LAN + VPS Bundle):</text>
+    <text x="305" y="212" text-anchor="end" font-size="10" font-weight="800" fill="#10b981">₹0.00</text>
+    
+    <line x1="15" y1="224" x2="305" y2="224" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="3,3" />
+
+    <!-- Actual Cloud Costs (Slate/Dark) -->
+    <text x="15" y="245" font-size="9.5" font-weight="500" fill="#334155">FRP Reverse Tunnel Relay VM:</text>
+    <text x="305" y="245" text-anchor="end" font-size="10" font-weight="600" fill="#0f172a">₹2,045.40</text>
+    
+    <text x="15" y="265" font-size="9.5" font-weight="500" fill="#334155">Lightweight PostgreSQL VPS:</text>
+    <text x="305" y="265" text-anchor="end" font-size="10" font-weight="600" fill="#0f172a">₹1,470.00</text>
+    
+    <text x="15" y="285" font-size="9.5" font-weight="500" fill="#334155">Redis Heartbeat Instance:</text>
+    <text x="305" y="285" text-anchor="end" font-size="10" font-weight="600" fill="#0f172a">₹420.00</text>
+    
+    <text x="15" y="305" font-size="9.5" font-weight="500" fill="#334155">Origin Shield Buffer (100GB S3):</text>
+    <text x="305" y="305" text-anchor="end" font-size="10" font-weight="600" fill="#0f172a">₹193.20</text>
+    
+    <line x1="15" y1="320" x2="305" y2="320" stroke="#cbd5e1" stroke-width="1.5" />
+    
+    <!-- Sub-Total Inside Box -->
+    <text x="15" y="342" font-size="12" font-weight="800" fill="#047857">CustardFin Total:</text>
+    <text x="305" y="342" text-anchor="end" font-size="14" font-weight="900" fill="#059669">₹4,128.60</text>
+
+    <!-- Total Badge -->
+    <g transform="translate(0, 425)" filter="url(#shadow-lg)">
+      <rect x="0" y="0" width="320" height="42" rx="8" fill="#ffffff" stroke="#10b981" stroke-width="2" />
+      <text x="160" y="18" text-anchor="middle" font-size="13" font-weight="900" fill="#059669">₹4,128.60 / month</text>
+      <text x="160" y="32" text-anchor="middle" font-size="9" font-weight="600" fill="#64748b">₹49,543 / yr | 3-Year TCO: ₹1.49 Lakhs</text>
+    </g>
+
+  </g>
+
+
+  <!-- ================= BOTTOM EQUATION CALLOUT ================= -->
+  <g transform="translate(100, 475)" filter="url(#shadow-sm)">
+    <rect x="0" y="0" width="1000" height="34" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+    
+    <text x="500" y="21.5" text-anchor="middle" font-family="monospace" font-size="11" font-weight="600" fill="#0f172a">
+      <tspan fill="#334155" font-family="system-ui, -apple-system, sans-serif" font-weight="800">Asymptotic Storage Proof: </tspan>
+      lim (N → ∞) C_custard(N) = O(1) ≤ ₹193.20/mo 
+      <tspan fill="#94a3b8">  vs.  </tspan> 
+      <tspan fill="#dc2626">Traditional O(N) → ∞</tspan>
+    </text>
+  </g>
+
+</svg>"""
+
+# Parse to verify XML validity
+try:
+    ET.fromstring(svg_raw)
+    print("XML Validation Passed: Valid SVG!")
+except Exception as e:
+    print("XML Validation Failed:", e)
+    raise
+
+svg_file = pathlib.Path("report/figures/diag_06_cost_comparison.svg")
+html_file = pathlib.Path("report/figures/diag_06_cost_comparison.html")
+png_file = pathlib.Path("report/figures/diag_06_cost_comparison.png")
+
+svg_file.write_text(svg_raw, encoding="utf-8")
+print(f"Saved {svg_file}")
+
+html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+  html, body {{ width: 3600px; height: 1560px; background: #f8fafc; overflow: hidden; }}
+  svg {{ width: 3600px; height: 1560px; display: block; }}
+</style>
+</head>
+<body>
+{svg_raw}
+</body>
+</html>"""
+
+html_file.write_text(html_content, encoding="utf-8")
+print(f"Saved {html_file}")
+
+chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+args = [
+    chrome_path,
+    "--headless=old",
+    "--disable-gpu",
+    "--hide-scrollbars",
+    "--window-size=3600,1560",
+    f"--screenshot={png_file.resolve()}",
+    str(html_file.resolve())
+]
+
+subprocess.run(args, check=True)
+print(f"Rendered {png_file} Ultra-HD -> {png_file.stat().st_size} bytes")

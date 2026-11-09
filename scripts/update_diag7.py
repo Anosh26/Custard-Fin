@@ -258,3 +258,4 @@ args = [
 
 subprocess.run(args, check=True)
 print(f"Rendered {png_file} Ultra-HD -> {png_file.stat().st_size} bytes")
+
