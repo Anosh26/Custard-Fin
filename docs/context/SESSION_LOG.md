@@ -1,3 +1,29 @@
+## 2026-11-09 - Integration of Polished Figure 3.3 (Ephemeral Heartbeat Liveness Loop)
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** Final Academic Report Polish & Vector Quality Verification
+- **Summary:**
+  1. Updated Figure 3.3 (`diag_04_heartbeat_liveness.svg` / `.png`):
+     - Replaced with polished dual-track heartbeat liveness state machine:
+       - Scenario A (Normal Online Heartbeat Loop, Emerald theme):
+         - Edge Daemon emits POST to `/v1/nodes/{id}/heartbeat` every 15s with green ECG wave.
+         - Redis TTL Key refreshed with `SET heartbeat EX 20` (never expires while edge is active).
+         - Web UI catalog displays bright green "ONLINE" status badge, allowing instant playback.
+       - Scenario B (Sudden Edge Power Loss / Offline Failover, Crimson theme):
+         - Edge loses power/ISP at t=0s; heartbeat beacons immediately cease (broken plug icon).
+         - t=15s: Expected beacon missed. t=20s: 20-second Redis TTL expires; key evicted from RAM (trash icon).
+         - Web UI gracefully degrades: uncached media displays "Node Offline"; cached chunks play smoothly.
+       - Bottom Invariant 5 Banner: Redis used strictly for 15s heartbeat keys; zero background queue overhead.
+     - Rendered in Ultra-HD 3600x1440 resolution using headless Chrome.
+  2. Master Report Recompilation & Push:
+     - Recompiled `report/main.pdf` (63 pages, 6.22 MB, zero errors).
+     - Committed and pushed to `origin/master` (`commit e2ed679`).
+- **Files Touched:**
+  - `report/figures/diag_04_heartbeat_liveness.svg`
+  - `report/figures/diag_04_heartbeat_liveness.html`
+  - `report/figures/diag_04_heartbeat_liveness.png`
+  - `report/main.pdf`
+  - `scripts/update_diag4.py`
+
 ## 2026-11-09 - Integration of Polished Figure 4.1 (Ingestion & Slicing Pipeline)
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Final Academic Report Polish & Vector Quality Verification
