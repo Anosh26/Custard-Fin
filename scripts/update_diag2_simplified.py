@@ -1,0 +1,385 @@
+import os
+import subprocess
+import pathlib
+
+fig_dir = pathlib.Path(r"C:\Users\Anosh\Documents\Notes\Projects\Cloud_Computing\sem_end\Custard Fin\report\figures")
+fig_dir.mkdir(parents=True, exist_ok=True)
+chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+# ==============================================================================
+# SIMPLIFIED, MINIMALIST ARCHITECTURE DIAGRAM (FIGURE 3.1)
+# ==============================================================================
+# - Just clean icons with clear titles and subtitles directly underneath
+# - Minimalist cards on a subtle technical dot-grid canvas
+# - Few clear, non-crossing directional arrows
+# - Clean separation between Home Edge (Left) and Cloud Control (Right)
+# ==============================================================================
+
+svg_content = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 500" width="1180" height="500" style="background-color: #f8fafc; font-family: system-ui, -apple-system, 'SF Pro Display', 'Inter', Roboto, Helvetica, sans-serif;">
+  <defs>
+    <!-- Technical Background Dot Pattern -->
+    <pattern id="dotGrid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#e2e8f0" />
+    </pattern>
+
+    <!-- Soft Drop Shadows -->
+    <filter id="shadow-icon" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.07" />
+    </filter>
+    <filter id="shadow-zone" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.05" />
+    </filter>
+
+    <!-- Arrow Markers -->
+    <marker id="arr-green" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981" />
+    </marker>
+    <marker id="arr-indigo" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#6366f1" />
+    </marker>
+    <marker id="arr-amber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f59e0b" />
+    </marker>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0284c7" />
+    </marker>
+    <marker id="arr-gray" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b" />
+    </marker>
+
+    <!-- Gradients for Icons -->
+    <linearGradient id="g-storage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#818cf8" /><stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="g-gpu" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#34d399" /><stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="g-hls" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38bdf8" /><stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="g-sqlite" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c084fc" /><stop offset="100%" stop-color="#9333ea" />
+    </linearGradient>
+    <linearGradient id="g-daemon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#64748b" /><stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+    <linearGradient id="g-lan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10b981" /><stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="g-frp" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0284c7" /><stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="g-shield" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbbf24" /><stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="g-api" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#60a5fa" /><stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <linearGradient id="g-db" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#818cf8" /><stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="g-web" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a" /><stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="g-remote" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10b981" /><stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Base & Dot Grid -->
+  <rect width="1180" height="500" fill="#f8fafc" />
+  <rect width="1180" height="500" fill="url(#dotGrid)" />
+
+  <!-- Global Header Bar -->
+  <rect x="0" y="0" width="1180" height="60" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+  <text x="35" y="32" font-size="16" font-weight="800" fill="#0f172a" letter-spacing="-0.3">
+    CustardFin Two-Tier System Architecture
+  </text>
+  <text x="35" y="48" font-size="11" font-weight="500" fill="#64748b">
+    Personal Media Stays at Home (Left) · Outbound-Only Reverse Tunnel (Center) · Coordination &amp; Cache in Cloud (Right)
+  </text>
+  <rect x="990" y="16" width="155" height="26" rx="13" fill="#ede9fe" stroke="#c084fc" />
+  <text x="1067.5" y="33" font-size="9.5" font-weight="800" fill="#6b21a8" text-anchor="middle">MCA Cloud Project</text>
+
+  <!-- ========================================================================= -->
+  <!-- LEFT ZONE: HOME EDGE TIER (LAN) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(35, 75)">
+    <!-- Zone Container Box -->
+    <rect width="450" height="400" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" filter="url(#shadow-zone)" />
+    
+    <!-- Zone Label Pill -->
+    <rect x="18" y="14" width="200" height="24" rx="12" fill="#7c3aed" />
+    <text x="118" y="30" font-size="10" font-weight="800" fill="#ffffff" text-anchor="middle">🏠 HOME EDGE DOMAIN (LAN)</text>
+    <text x="230" y="30" font-size="9.5" font-weight="600" fill="#6b21a8">192.168.1.0/24</text>
+    <text x="432" y="30" font-size="9" font-weight="800" fill="#059669" text-anchor="end">● Online</text>
+
+    <!-- NODE 1: Storage (X=75, Y=120) -->
+    <g transform="translate(45, 80)">
+      <rect width="60" height="60" rx="12" fill="url(#g-storage)" filter="url(#shadow-icon)" />
+      <!-- Hard Drive Icon -->
+      <rect x="15" y="16" width="30" height="28" rx="4" fill="#ffffff" opacity="0.9" />
+      <circle cx="24" cy="30" r="5" fill="#4f46e5" />
+      <circle cx="36" cy="30" r="2" fill="#818cf8" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">Local Storage</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#64748b" text-anchor="middle">Raw Master Files</text>
+    </g>
+
+    <!-- Arrow 1: Storage -> GPU -->
+    <path d="M 115 110 L 165 110" stroke="#64748b" stroke-width="2" marker-end="url(#arr-gray)" fill="none" />
+
+    <!-- NODE 2: GPU Transcoder (X=195, Y=120) -->
+    <g transform="translate(175, 80)">
+      <rect width="60" height="60" rx="12" fill="url(#g-gpu)" filter="url(#shadow-icon)" />
+      <!-- GPU Chip Icon -->
+      <rect x="15" y="15" width="30" height="30" rx="4" fill="#064e3b" />
+      <text x="30" y="33" font-size="8" font-weight="900" fill="#34d399" text-anchor="middle">GPU</text>
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">Transcoder</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#64748b" text-anchor="middle">NVENC / CPU Fallback</text>
+    </g>
+
+    <!-- Arrow 2: GPU -> HLS -->
+    <path d="M 245 110 L 295 110" stroke="#10b981" stroke-width="2" marker-end="url(#arr-green)" fill="none" />
+
+    <!-- NODE 3: HLS Packager (X=325, Y=120) -->
+    <g transform="translate(305, 80)">
+      <rect width="60" height="60" rx="12" fill="url(#g-hls)" filter="url(#shadow-icon)" />
+      <!-- Film / Segments Icon -->
+      <rect x="14" y="18" width="32" height="24" rx="3" fill="#ffffff" opacity="0.9" />
+      <polygon points="27,24 27,36 37,30" fill="#0284c7" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">HLS Segments</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#64748b" text-anchor="middle">4-Second Chunks</text>
+    </g>
+
+    <!-- Arrow down from HLS to Daemon -->
+    <path d="M 335 180 C 335 220, 245 200, 205 235" stroke="#0284c7" stroke-width="1.8" marker-end="url(#arr-blue)" fill="none" stroke-dasharray="4,3" />
+
+    <!-- NODE 4: SQLite Database (X=75, Y=265) -->
+    <g transform="translate(45, 235)">
+      <rect width="60" height="60" rx="12" fill="url(#g-sqlite)" filter="url(#shadow-icon)" />
+      <!-- Database Icon -->
+      <ellipse cx="30" cy="20" rx="16" ry="6" fill="#ffffff" opacity="0.9" />
+      <path d="M 14 20 L 14 36 A 16 6 0 0 0 46 36 L 46 20 Z" fill="#ffffff" opacity="0.8" />
+      <ellipse cx="30" cy="36" rx="16" ry="6" fill="#7e22ce" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">Edge SQLite</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#64748b" text-anchor="middle">Watch Progress (Private)</text>
+    </g>
+
+    <!-- Arrow 3: SQLite -> Daemon -->
+    <path d="M 115 265 L 165 265" stroke="#9333ea" stroke-width="2" marker-end="url(#arr-indigo)" fill="none" />
+
+    <!-- NODE 5: Edge Daemon (X=195, Y=265) -->
+    <g transform="translate(175, 235)">
+      <rect width="60" height="60" rx="12" fill="url(#g-daemon)" filter="url(#shadow-icon)" />
+      <!-- Server Box Icon -->
+      <rect x="14" y="16" width="32" height="28" rx="3" fill="#ffffff" opacity="0.9" />
+      <rect x="18" y="21" width="16" height="3" fill="#334155" />
+      <rect x="18" y="27" width="16" height="3" fill="#334155" />
+      <circle cx="38" cy="24" r="2" fill="#10b981" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">Edge Daemon</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#64748b" text-anchor="middle">Go Service (:8089)</text>
+    </g>
+
+    <!-- Arrow 4: Daemon -> LAN Viewers -->
+    <path d="M 245 265 L 295 265" stroke="#10b981" stroke-width="2.5" marker-end="url(#arr-green)" fill="none" />
+
+    <!-- NODE 6: Local LAN Viewers (X=325, Y=265) -->
+    <g transform="translate(305, 235)">
+      <rect width="60" height="60" rx="12" fill="url(#g-lan)" filter="url(#shadow-icon)" />
+      <!-- TV / Monitor Icon -->
+      <rect x="14" y="18" width="32" height="22" rx="3" fill="#ffffff" opacity="0.9" />
+      <polygon points="26,24 26,34 35,29" fill="#047857" />
+      <line x1="24" y1="42" x2="36" y2="42" stroke="#ffffff" stroke-width="2" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">LAN Viewers</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#059669" text-anchor="middle">Wi-Fi Playback (&lt;4ms)</text>
+    </g>
+
+    <!-- Bottom summary tag -->
+    <text x="225" y="380" font-size="9" font-weight="600" fill="#94a3b8" text-anchor="middle">
+      Videos stay 100% at home · Zero open ports · Direct LAN streaming works offline
+    </text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- CENTER BARRIER: ISP CGNAT (FIREWALL) & 3 ARROWS -->
+  <!-- ========================================================================= -->
+  <g transform="translate(505, 75)">
+    <!-- Vertical Firewall Barrier Line -->
+    <line x1="75" y1="20" x2="75" y2="390" stroke="#f43f5e" stroke-width="1.8" stroke-dasharray="6,4" />
+    
+    <!-- Firewall Badge Icon -->
+    <circle cx="75" cy="50" r="18" fill="#ffe4e6" stroke="#f43f5e" stroke-width="1.5" />
+    <path d="M 68 53 L 82 53 M 75 42 L 75 56" stroke="#e11d48" stroke-width="2" fill="none" transform="rotate(45 75 50)" />
+    <text x="75" y="80" font-size="9.5" font-weight="800" fill="#be123c" text-anchor="middle">ISP CGNAT</text>
+    <text x="75" y="92" font-size="8" font-weight="600" fill="#e11d48" text-anchor="middle">Inbound Blocked</text>
+
+    <!-- 3 OUTBOUND ARROWS (Green, Indigo, Amber) -->
+    <!-- Arrow 1: Reverse Tunnel -->
+    <text x="75" y="160" font-size="8.5" font-weight="800" fill="#059669" text-anchor="middle">① Outbound Tunnel</text>
+    <text x="75" y="172" font-size="7.5" font-weight="600" fill="#047857" text-anchor="middle">TLS 1.3 / Yamux</text>
+
+    <!-- Arrow 2: Manifest Sync -->
+    <text x="75" y="240" font-size="8.5" font-weight="800" fill="#4338ca" text-anchor="middle">② Manifest Sync</text>
+    <text x="75" y="252" font-size="7.5" font-weight="600" fill="#312e81" text-anchor="middle">~650 Byte JSON</text>
+
+    <!-- Arrow 3: Heartbeat -->
+    <text x="75" y="320" font-size="8.5" font-weight="800" fill="#b45309" text-anchor="middle">③ 15s Heartbeat</text>
+    <text x="75" y="332" font-size="7.5" font-weight="600" fill="#78350f" text-anchor="middle">20s Redis TTL</text>
+  </g>
+
+  <!-- Connectors from Home Daemon across CGNAT into Cloud Tier -->
+  <!-- Line 1: Reverse Tunnel -> FRP Server -->
+  <path d="M 270 340 C 380 340, 480 255, 695 185" fill="none" stroke="#10b981" stroke-width="2.5" marker-end="url(#arr-green)" stroke-dasharray="6,3" />
+
+  <!-- Line 2: Manifest Sync -> Cloud API -->
+  <path d="M 270 340 C 380 340, 480 315, 695 330" fill="none" stroke="#6366f1" stroke-width="2.5" marker-end="url(#arr-indigo)" />
+
+  <!-- Line 3: Heartbeat -> Cloud Databases -->
+  <path d="M 270 340 C 380 340, 480 395, 845 340" fill="none" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#arr-amber)" />
+
+  <!-- ========================================================================= -->
+  <!-- RIGHT ZONE: PUBLIC CLOUD CONTROL PLANE -->
+  <!-- ========================================================================= -->
+  <g transform="translate(680, 75)">
+    <!-- Zone Container Box -->
+    <rect width="465" height="400" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" filter="url(#shadow-zone)" />
+    
+    <!-- Zone Label Pill -->
+    <rect x="18" y="14" width="225" height="24" rx="12" fill="#0284c7" />
+    <text x="130" y="30" font-size="10" font-weight="800" fill="#ffffff" text-anchor="middle">☁️ CLOUD CONTROL TIER</text>
+    <text x="255" y="30" font-size="9.5" font-weight="600" fill="#0369a1">₹4,129/mo VPS Stack</text>
+    <text x="445" y="30" font-size="9" font-weight="800" fill="#0284c7" text-anchor="end">GCP VM</text>
+
+    <!-- NODE 7: FRP Server Relay (X=50, Y=120) -->
+    <g transform="translate(20, 80)">
+      <rect width="60" height="60" rx="12" fill="url(#g-frp)" filter="url(#shadow-icon)" />
+      <!-- Relay Antenna Icon -->
+      <polygon points="30,16 20,38 40,38" fill="#ffffff" opacity="0.9" />
+      <circle cx="30" cy="26" r="3" fill="#0284c7" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">FRP Relay</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#64748b" text-anchor="middle">Tunnel Port :7000</text>
+    </g>
+
+    <!-- Arrow 5: FRP -> Origin Shield -->
+    <path d="M 90 110 L 160 110" stroke="#0284c7" stroke-width="2" marker-end="url(#arr-blue)" fill="none" />
+
+    <!-- NODE 8: Origin Shield S3 Cache (X=195, Y=120) -->
+    <g transform="translate(170, 80)">
+      <rect width="60" height="60" rx="12" fill="url(#g-shield)" filter="url(#shadow-icon)" />
+      <!-- Shield Icon -->
+      <path d="M 30 16 L 42 22 L 42 32 C 42 39 30 44 30 44 C 30 44 18 39 18 32 L 18 22 Z" fill="#ffffff" opacity="0.9" />
+      <path d="M 24 30 L 28 34 L 36 24" fill="none" stroke="#d97706" stroke-width="2.2" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">Origin Shield</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#b45309" text-anchor="middle">S3 Cache (24h LRU)</text>
+    </g>
+
+    <!-- Arrow 6: Shield -> Next.js Web -->
+    <path d="M 240 110 L 310 110" stroke="#f59e0b" stroke-width="2" marker-end="url(#arr-amber)" fill="none" />
+
+    <!-- NODE 9: Next.js Web Player (X=340, Y=120) -->
+    <g transform="translate(320, 80)">
+      <rect width="60" height="60" rx="12" fill="url(#g-web)" filter="url(#shadow-icon)" />
+      <!-- Browser Icon -->
+      <rect x="14" y="16" width="32" height="26" rx="3" fill="#ffffff" opacity="0.9" />
+      <circle cx="20" cy="22" r="1.5" fill="#ef4444" />
+      <circle cx="25" cy="22" r="1.5" fill="#f59e0b" />
+      <circle cx="30" cy="22" r="1.5" fill="#10b981" />
+      <polygon points="26,27 26,35 34,31" fill="#0f172a" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">Next.js Web</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#64748b" text-anchor="middle">Player &amp; Catalog</text>
+    </g>
+
+    <!-- Arrow down from Next.js to Remote Viewers -->
+    <path d="M 350 180 L 350 225" stroke="#10b981" stroke-width="2.5" marker-end="url(#arr-green)" fill="none" />
+
+    <!-- NODE 10: Cloud Control API (X=50, Y=265) -->
+    <g transform="translate(20, 235)">
+      <rect width="60" height="60" rx="12" fill="url(#g-api)" filter="url(#shadow-icon)" />
+      <!-- API Router Icon -->
+      <circle cx="30" cy="30" r="16" fill="#ffffff" opacity="0.9" />
+      <path d="M 22 30 L 38 30 M 30 22 L 30 38" stroke="#2563eb" stroke-width="2.5" />
+      <circle cx="30" cy="30" r="4" fill="#2563eb" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">Cloud API</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#2563eb" text-anchor="middle">Router &amp; 10-Cap</text>
+    </g>
+
+    <!-- Arrow 7: API -> Databases -->
+    <path d="M 90 265 L 160 265" stroke="#2563eb" stroke-width="2" marker-end="url(#arr-blue)" fill="none" />
+
+    <!-- NODE 11: Postgres & Redis (X=195, Y=265) -->
+    <g transform="translate(170, 235)">
+      <rect width="60" height="60" rx="12" fill="url(#g-db)" filter="url(#shadow-icon)" />
+      <!-- Dual DBs Icon -->
+      <ellipse cx="23" cy="22" rx="10" ry="4" fill="#ffffff" opacity="0.9" />
+      <path d="M 13 22 L 13 34 A 10 4 0 0 0 33 34 L 33 22 Z" fill="#ffffff" opacity="0.8" />
+      <ellipse cx="37" cy="26" rx="10" ry="4" fill="#ef4444" />
+      <path d="M 27 26 L 27 38 A 10 4 0 0 0 47 38 L 47 26 Z" fill="#ef4444" opacity="0.9" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">Postgres &amp; Redis</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#64748b" text-anchor="middle">Catalog &amp; Heartbeats</text>
+    </g>
+
+    <!-- Arrow up from API to FRP -->
+    <path d="M 50 225 L 50 180" stroke="#0284c7" stroke-width="1.8" marker-end="url(#arr-blue)" fill="none" />
+
+    <!-- NODE 12: Remote Public Viewers (X=340, Y=265) -->
+    <g transform="translate(320, 235)">
+      <rect width="60" height="60" rx="12" fill="url(#g-remote)" filter="url(#shadow-icon)" />
+      <!-- Devices Icon -->
+      <rect x="14" y="20" width="22" height="15" rx="2" fill="#ffffff" opacity="0.9" />
+      <rect x="12" y="35" width="26" height="2" fill="#ffffff" opacity="0.7" />
+      <rect x="34" y="23" width="12" height="17" rx="2" fill="#ffffff" opacity="0.9" />
+      <text x="30" y="78" font-size="11" font-weight="800" fill="#0f172a" text-anchor="middle">Public Viewers</text>
+      <text x="30" y="92" font-size="9" font-weight="500" fill="#15803d" text-anchor="middle">90% Uplink Saved</text>
+    </g>
+
+    <!-- Bottom summary tag -->
+    <text x="232" y="380" font-size="9" font-weight="600" fill="#94a3b8" text-anchor="middle">
+      Zero permanent video storage · 95.89% cloud savings · Short-lived signed URLs
+    </text>
+  </g>
+</svg>
+"""
+
+# Save SVG
+svg_path = fig_dir / "diag_02_architecture_overview.svg"
+with open(svg_path, "w", encoding="utf-8") as f:
+    f.write(svg_content)
+print(f"Saved simplified SVG to {svg_path}")
+
+# Save HTML wrapper for headless Chrome screenshot (3540 x 1500)
+html_path = fig_dir / "diag_02_architecture_overview.html"
+html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    html, body {{ width: 3540px; height: 1500px; background: #f8fafc; overflow: hidden; }}
+    svg {{ width: 3540px; height: 1500px; display: block; }}
+  </style>
+</head>
+<body>
+  {svg_content}
+</body>
+</html>
+"""
+
+with open(html_path, "w", encoding="utf-8") as f:
+    f.write(html_content)
+print(f"Saved HTML wrapper to {html_path}")
+
+# Render to Ultra-HD PNG using Chrome
+png_path = fig_dir / "diag_02_architecture_overview.png"
+cmd = [
+    chrome_path,
+    "--headless=old",
+    "--disable-gpu",
+    "--hide-scrollbars",
+    "--window-size=3540,1500",
+    f"--screenshot={png_path}",
+    str(html_path)
+]
+
+print("Rendering Ultra-HD PNG via headless Chrome...")
+subprocess.run(cmd, check=True)
+print(f"Successfully generated {png_path} ({os.path.getsize(png_path)} bytes)")
