@@ -20,7 +20,7 @@ CustardFin was built collaboratively by two Master of Computer Applications (MCA
 Anish Ghadi served as the lead developer for the \textbf{Home Edge Subsystem (\texttt{apps/edge})}, hardware acceleration, and local data persistence:
 \begin{itemize}
     \item \textbf{Recursive Scanner and Media Hasher (\texttt{internal/adapters/fs}):} Designed the directory scanner for video indexing and developed the file header hashing algorithm for unique media IDs.
-    \item \textbf{Hardware Transcoder (\texttt{internal/adapters/ffmpeg}):} Built the managed Go subprocess controller with dynamic NVENC GPU probing, automatic CPU fallback (\texttt{libx264}), and strict 4-second HLS segmenting.
+    \item \textbf{Hardware Transcoder (\texttt{ffmpeg}):} Built the managed Go controller with dynamic NVENC GPU probing, automatic CPU fallback (\texttt{libx264}), and strict 4-second HLS segmenting.
     \item \textbf{Embedded SQLite Engine (\texttt{internal/adapters/sqlite}):} Integrated pure-Go SQLite with Write-Ahead Logging (WAL) and migrations to record transcode status and private watch history.
     \item \textbf{Reverse Tunnel Client (\texttt{internal/adapters/frp}):} Implemented the \texttt{frpc} client daemon for outbound TLS connections to bypass residential CGNAT.
     \item \textbf{Mini-Jellyfin Offline Web Hub:} Developed the standalone embedded web UI on port 8089 for offline direct LAN playback.
@@ -32,7 +32,7 @@ Anosh Chodankar served as lead developer for the \textbf{Cloud Control Tier} (\t
 \begin{itemize}
     \item \textbf{Cloud Control API (\texttt{apps/api}):} Developed the Go REST API using standard packages (\texttt{net/http}, \texttt{log/slog}) with hexagonal architecture and input validation.
     \item \textbf{PostgreSQL Schemas and Manifest Sync:} Designed multi-tenant user and node tables with \texttt{sqlc} queries, and built the manifest sync worker ingesting $\le 3\text{ KB}$ JSON metadata.
-    \item \textbf{Redis Liveness Engine (\texttt{internal/adapters/redis}):} Implemented ephemeral heartbeat tracking with 20-second TTLs for automatic, zero-polling node offline detection.
+    \item \textbf{Redis Liveness Engine (\texttt{redis}):} Implemented ephemeral heartbeat tracking with 20-second TTLs for automatic, zero-polling node offline detection.
     \item \textbf{Origin Shield Cache and Token Signer (\texttt{internal/adapters/s3}):} Built the S3 pull-through cache with 24-hour LRU auto-purge and HMAC-SHA256 signed playback URLs.
     \item \textbf{Next.js 15 Web Frontend (\texttt{apps/web}):} Created the responsive App Router web interface, custom HLS player with real-time ``Stats for Nerds'' HUD, and edge management modals.
     \item \textbf{Cloud Deployment and Lab Setup:} Deployed the cloud tier on a Google Cloud Platform VM with Caddy automated TLS, and configured Floci for offline lab testing.

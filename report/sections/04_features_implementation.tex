@@ -103,7 +103,7 @@ Links expire after 5 minutes ($T_{\text{exp}}$). Requests with invalid or expire
 
 To handle home PC power-downs and network drops without polling the database:
 \begin{itemize}
-    \item Every 15 seconds, the edge daemon sends a heartbeat: \texttt{POST /v1/nodes/\{id\}/heartbeat}.
+    \item Every 15 seconds, the edge daemon posts a heartbeat beacon: \nolinkurl{POST /v1/nodes/{id}/heartbeat}.
     \item The cloud API sets a key in Redis: \texttt{SETEX heartbeat:\{id\} 20 "alive"}.
     \item When viewers browse the catalog, the API checks if this key exists.
     \item If the home PC goes offline, Redis evicts the key after 20 seconds, and the catalog displays an amber ``Node Offline'' badge, preventing broken playback attempts.
