@@ -169,6 +169,9 @@ func main() {
 			slog.Warn("failed to initialize s3 chunk cache, falling back to memory cache", "err", err)
 			chunkCache = memory.NewMemoryChunkCache(24 * time.Hour)
 		} else {
+			if err := s3Adapter.EnsureBucket(ctx); err != nil {
+				slog.Warn("failed ensuring s3 bucket exists", "bucket", s3Bucket, "err", err)
+			}
 			slog.Info("connected to s3-compatible origin shield cache", "bucket", s3Bucket, "endpoint", s3Endpoint)
 			chunkCache = s3Adapter
 		}

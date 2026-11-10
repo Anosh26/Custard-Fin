@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # CustardFin Home Edge Node Launcher (Interactive Cloud IP Selector - PowerShell)
 # Prompts for the GCP / Cloud VM External IP on every run, with smart default
 # caching so you can simply press Enter if the IP hasn't changed.
@@ -52,6 +52,9 @@ Write-Host "   • Local Stream Port : 8090"
 Write-Host ""
 
 # Environment variables
+$BinDir = Join-Path $RootDir "bin"
+$env:PATH = "$BinDir;$env:PATH"
+$env:EDGE_FRP_BIN = Join-Path $BinDir "frpc.exe"
 $env:EDGE_CLOUD_URL = "http://${CloudIP}:8080"
 $env:EDGE_FRP_ENABLED = "true"
 $env:EDGE_FRP_SERVER_ADDR = "$CloudIP"

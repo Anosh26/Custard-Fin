@@ -22,6 +22,7 @@ type S3API interface {
 	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
 	HeadObject(ctx context.Context, params *s3.HeadObjectInput, optFns ...func(*s3.Options)) (*s3.HeadObjectOutput, error)
 	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
+	CreateBucket(ctx context.Context, params *s3.CreateBucketInput, optFns ...func(*s3.Options)) (*s3.CreateBucketOutput, error)
 }
 
 // Config defines connection and bucket settings for S3-compatible chunk storage.
@@ -79,6 +80,23 @@ func NewS3ChunkCacheWithClient(client S3API, bucket string) *S3ChunkCache {
 		client: client,
 		bucket: bucket,
 	}
+}
+
+// EnsureBucket verifies or creates the S3 bucket if it does not already exist.
+func (s *S3ChunkCache) EnsureBucket(ctx context.Context) error {
+	_, err := s.client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String(s.bucket),
+	})
+	if err != nil {
+		var bAlreadyExists *types.BucketAlreadyExists
+		var bAlreadyOwned *types.BucketAlreadyOwnedByYou
+		if errors.As(err, &bAlreadyExists) || errors.As(err, &bAlreadyOwned) ||
+			strings.Contains(err.Error(), "BucketAlreadyExists") || strings.Contains(err.Error(), "BucketAlreadyOwnedByYou") {
+			return nil
+		}
+		return fmt.Errorf("failed to ensure s3 bucket %q: %w", s.bucket, err)
+	}
+	return nil
 }
 
 // Get retrieves an object from the S3 cache.

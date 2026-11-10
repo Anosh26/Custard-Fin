@@ -34,6 +34,16 @@ func newMockS3API() *mockS3API {
 	}
 }
 
+func (m *mockS3API) CreateBucket(ctx context.Context, params *s3.CreateBucketInput, optFns ...func(*s3.Options)) (*s3.CreateBucketOutput, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.simulatedErr != nil {
+		return nil, m.simulatedErr
+	}
+	return &s3.CreateBucketOutput{}, nil
+}
+
 func (m *mockS3API) GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
