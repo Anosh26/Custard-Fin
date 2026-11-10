@@ -20,10 +20,12 @@
   - Authored comprehensive GCP deployment guide (`docs/runbooks/deploy.md`), viva presentation script (`docs/runbooks/demo.md`), troubleshooting guide (`docs/runbooks/troubleshooting.md`), and universal running guide (`RUNNING.md`).
   - Created Floci local cloud emulator deployment profile (`deploy/floci/compose.floci.yml`, `deploy/floci/README.md`) with `make floci-up`/`make floci-down`.
 - **Live Cloud Deployment & Mobile Verification (GCP)**:
-  - Deployed full cloud stack on GCP VM (`34.132.188.14`) with Caddy, Next.js, Go API, PostgreSQL, Redis, MinIO (Origin Shield), and FRPS.
-  - Connected Fedora edge daemon (`edged`) via outbound FRP reverse tunnel (`frpc`) with NVIDIA NVENC acceleration.
-  - Verified end-to-end HLS playback, buffering recovery, seeking, video uploading, and 1-click Public/Private catalog sync.
-  - Verified remote streaming on mobile (Brave browser on Android) with Origin Shield cache hits and live HUD stats.
+  - Deployed full cloud stack on GCP VM `custardfin-cloud` in `asia-south1-a` (`8.234.112.169`, Mumbai) with Caddy, Next.js, Go API, PostgreSQL, Redis, MinIO (Origin Shield), and FRPS.
+  - Connected local home edge daemon (`edged`) via outbound FRP reverse tunnel (`frpc`) with NVIDIA NVENC acceleration.
+  - Verified end-to-end HLS playback, direct LAN sub-5ms detection, remote Origin Shield signed URLs, and verified Origin Shield cache MISS -> HIT transitions in MinIO.
+  - Added automatic S3 bucket creation on startup in `apps/api/internal/adapters/s3/chunk_cache.go` (`EnsureBucket`).
+  - Captured actual live screenshots from the running GCP cloud deployment and local edge daemon using Playwright (`ui_catalog_feed.png`, `ui_player_stats.png`, `ui_edge_library.png`, `ui_dev_settings.png`, `ui_mini_jellyfin.png`) at Retina 2x resolution.
+  - Updated Chapter 4 of the Academic Project Report (`report/sections/04_features_implementation.tex`) with Figure 4.1 (Presentation Tier: Catalog Feed and Player HUD) and Figure 4.2 (Edge Tier: Edge Node Library Modal and Standalone Mini-Jellyfin Player), compiling cleanly to `report/main.pdf`.
 - **Interactive Video Management, Dev Console & Presentation Deck**:
   - Edge ingestion API (`/api/media/upload`, `/api/media/scan`, `/api/media/generate-sample`).
   - Next.js UI Modals: `AddVideoModal`, `EdgeLibraryModal`, `DevSettingsModal`, and Player "Stats for Nerds" HUD.

@@ -1,3 +1,45 @@
+## 2026-11-11 - Google Cloud VM Deployment, Live Streaming Verification & Real Screenshots in Report
+- **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
+- **Milestone:** GCP Cloud Deployment & Real Screenshots in Report
+- **Summary:**
+  1. Google Cloud Platform Provisioning & Stack Launch:
+     - Provisioned GCP Compute Engine VM `custardfin-cloud` (`e2-medium`, 2 vCPU, 4GB RAM, 25GB disk, Ubuntu 24.04 LTS) in region `asia-south1-a` (Mumbai, public IP `8.234.112.169`).
+     - Created VPC ingress firewall rule `custardfin-allow-ports` permitting `tcp:80,tcp:443,tcp:7000,tcp:7500,tcp:8000-8020,tcp:8080,tcp:9001`.
+     - Automated startup script launched complete Docker Compose stack (`caddy`, `web`, `api`, `s3-cache` MinIO, `frps`, `postgres`, `redis`).
+     - Verified `/healthz` (200 OK) from Caddy reverse proxy and Next.js SSR frontend.
+  2. Edge Node Outbound Reverse Tunnel & Playback Verification:
+     - Updated `.last_cloud_ip` and `scripts/run-edge.ps1` to target `8.234.112.169:8080` (API) and `8.234.112.169:7000` (FRP relay).
+     - Downloaded official `frpc` v0.72.0 client binary for Windows into `bin/frpc.exe`.
+     - Launched `apps/edge` daemon on user's RTX machine: probed NVENC (`nvenc: true`), scanned `./media/` directory, established outbound TLS reverse tunnel, synced 3 lightweight JSON manifests, and registered periodic 15s heartbeats in Redis.
+     - Registered primary user `anosh` in PostgreSQL and claimed default edge node `898ea0c7...` (`home-rtx-4060`).
+     - Verified Stream Decision Router: direct LAN detection routes local subnet to `192.168.1.34:8090/stream/...` (< 5ms); remote requests generate HMAC-SHA256 signed URLs via Origin Shield.
+     - Verified Origin Shield: initial chunk fetch returns `X-Cache: MISS` (retrieving segment over FRP tunnel); subsequent request returns `X-Cache: HIT` served from MinIO S3 bucket `custardfin-origin-cache`.
+     - Added automatic S3 bucket creation on startup in `apps/api/internal/adapters/s3/chunk_cache.go` (`EnsureBucket`).
+  3. Real Screenshots Captured & Report Updated:
+     - Developed `scripts/capture_real_screenshots.py` using Playwright with host mapping to capture 5 live high-DPI (2880x1800 Retina) screenshots from the running GCP VM and local edge daemon:
+       - `ui_catalog_feed.png`: Live Community Catalog Feed on GCP showing synced titles and online node badge.
+       - `ui_player_stats.png`: Live HLS Video Player with "Stats for Nerds" telemetry overlay showing RFC 8216 HLS, 4.0s chunks, Origin Shield HIT, and NVENC transcode attributes.
+       - `ui_edge_library.png`: Edge Node Library modal showing local SQLite records, node ownership (@anosh), and 1-click Public sync switches.
+       - `ui_dev_settings.png`: Dev Console & Architecture Settings displaying the 4 topology presets and invariant health checks.
+       - `ui_mini_jellyfin.png`: Embedded Standalone Mini-Jellyfin direct LAN player running on port 8090.
+     - Updated `report/sections/04_features_implementation.tex` to showcase both Figure 4.1 (Presentation Tier: Catalog Feed and Player HUD) and Figure 4.2 (Edge Tier: Edge Node Library Modal and Standalone Mini-Jellyfin Player).
+     - Successfully recompiled `report/main.pdf` via `pdflatex` with 0 errors.
+- **Files Touched:**
+  - `apps/api/cmd/apid/main.go`
+  - `apps/api/internal/adapters/s3/chunk_cache.go`
+  - `apps/api/internal/adapters/s3/chunk_cache_test.go`
+  - `scripts/run-edge.ps1`
+  - `scripts/capture_real_screenshots.py`
+  - `report/figures/ui_catalog_feed.png`
+  - `report/figures/ui_player_stats.png`
+  - `report/figures/ui_edge_library.png`
+  - `report/figures/ui_dev_settings.png`
+  - `report/figures/ui_mini_jellyfin.png`
+  - `report/sections/04_features_implementation.tex`
+  - `report/main.pdf`
+  - `docs/context/STATE.md`
+  - `docs/context/SESSION_LOG.md`
+
 ## 2026-11-10 - Condense Contributions Chapter to Exactly 1 Page on A4 Paper
 - **Author/Agents:** CustardFin Pair Programming Agent (Anish Ghadi, Anosh Chodankar & Agent)
 - **Milestone:** Report Page Layout & 1-Page Contributions Chapter
