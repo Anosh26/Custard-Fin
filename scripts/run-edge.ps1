@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 # CustardFin Home Edge Node Launcher (Interactive Cloud IP Selector - PowerShell)
 # Prompts for the GCP / Cloud VM External IP on every run, with smart default
 # caching so you can simply press Enter if the IP hasn't changed.
