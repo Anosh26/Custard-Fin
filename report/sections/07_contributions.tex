@@ -24,11 +24,11 @@ Anish Ghadi served as the lead developer for the \textbf{Home Edge Subsystem (\t
     \item \textbf{Embedded SQLite Engine (\texttt{internal/adapters/sqlite}):} Integrated pure-Go SQLite with Write-Ahead Logging (WAL) and migrations to record transcode status and private watch history.
     \item \textbf{Reverse Tunnel Client (\texttt{internal/adapters/frp}):} Implemented the \texttt{frpc} client daemon for outbound TLS connections to bypass residential CGNAT.
     \item \textbf{Mini-Jellyfin Offline Web Hub:} Developed the standalone embedded web UI on port 8089 for offline direct LAN playback.
-    \item \textbf{GPU Benchmarking:} Created the automated benchmark script (\texttt{scripts/bench-gpu}) evaluating NVENC throughput ($322.3\text{ fps}$) versus CPU software ($33.6\text{ fps}$).
+    \item \textbf{GPU Benchmarking:} Created the benchmark harness evaluating hardware NVENC throughput ($322.3\text{ fps}$) versus software CPU encoding ($33.6\text{ fps}$).
 \end{itemize}
 
 \subsection{Anosh Chodankar (Seat No.: 25P0320010)}
-Anosh Chodankar served as the lead developer for the \textbf{Cloud Control Plane (\texttt{apps/api})}, presentation frontend (\texttt{apps/web}), and cloud infrastructure:
+Anosh Chodankar served as lead developer for the \textbf{Cloud Control Tier} (\texttt{apps/api}), web frontend, and cloud infrastructure:
 \begin{itemize}
     \item \textbf{Cloud Control API (\texttt{apps/api}):} Developed the Go REST API using standard packages (\texttt{net/http}, \texttt{log/slog}) with hexagonal architecture and input validation.
     \item \textbf{PostgreSQL Schemas and Manifest Sync:} Designed multi-tenant user and node tables with \texttt{sqlc} queries, and built the manifest sync worker ingesting $\le 3\text{ KB}$ JSON metadata.
@@ -63,7 +63,7 @@ Table~\ref{tab:contribution_matrix} details the relative workload distribution a
 \small
 \caption{Subsystem Responsibility and Workload Contribution Matrix}
 \label{tab:contribution_matrix}
-\begin{tabularx}{\textwidth}{p{3.2cm}XXcc}
+\begin{tabularx}{\textwidth}{P{3.4cm}LLcc}
 \toprule
 \textbf{Subsystem / Component} & \textbf{Primary Deliverables} & \textbf{Primary Owner} & \textbf{Anish} & \textbf{Anosh} \\
 \midrule

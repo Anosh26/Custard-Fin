@@ -18,7 +18,7 @@ To ensure a fair comparison, both models are evaluated on a realistic community 
     \item \textbf{Total Video Catalog:} $100 \times 50\text{ GB} = \mathbf{5{,}000\text{ GB (5.0 TB)}}$.
     \item \textbf{Streaming Quality:} 1080p HLS at an average bitrate of $5.0\text{ Mbps}$ ($2.25\text{ GB}$ per hour of video).
     \item \textbf{Monthly Playback Demand:} $4{,}000\text{ hours}$ of total playback per month across the community.
-    \item \textbf{Monthly Egress Bandwidth:} 4{,}000 hours at 2.25~GB/hour = \textbf{9{,}000~GB (9.0~TB/month)}.
+    \item \textbf{Monthly Egress:} $4{,}000\text{ hours} \times 2.25\text{ GB/hour} = \mathbf{9{,}000\text{ GB (9.0 TB/month)}}$.
     \item \textbf{Exchange Rate Benchmark:} \textbf{\$1.00 USD = \rupee~84.00 INR}.
     \item \textbf{Standard Cloud Unit Rates (AWS US-East):}
     \begin{itemize}
@@ -51,13 +51,11 @@ In a standard cloud setup (like YouTube or an enterprise AWS video service), all
 \end{enumerate}
 
 \subsubsection{Total Traditional Cloud Cost}
-\begin{align}
-    \text{Monthly Cost} &= \text{\rupee~9,660} + \text{\rupee~11,760} + \text{\rupee~68,040} + \text{\rupee~10,920} \nonumber \\
-    &= \mathbf{\text{\rupee~1{,}00{,}380.00 / month}} \quad (\$1{,}195.00) \\
-    \text{Annual Cost} &= \text{\rupee~1,00,380.00} \times 12 = \mathbf{\text{\rupee~12{,}04{,}560.00 / year}} \quad (\$14{,}340.00) \\
-    \text{3-Year Total} &= \mathbf{\text{\rupee~36{,}13{,}680.00}} \quad (\$43{,}020.00)
-\end{align}
-A recurring bill exceeding \textbf{\rupee~1.00 Lakh per month} (\rupee~12.05 Lakhs/year) is far too expensive for student groups, hobbyists, or non-profit collectives.
+Summing these expenses, the total recurring cost for traditional cloud streaming is:
+\begin{equation}
+    \text{Cost}_{\text{cloud}} = \text{\rupee~9,660} + \text{\rupee~11,760} + \text{\rupee~68,040} + \text{\rupee~10,920} = \mathbf{\text{\rupee~1{,}00{,}380.00 / month}} \quad (\$1{,}195.00)
+\end{equation}
+Over a full year, this amounts to \textbf{\rupee~12{,}04{,}560.00} (\$14,340.00), and over three years exceeds \textbf{\rupee~36.13 Lakhs}. A monthly bill exceeding \rupee~1.00 Lakh is prohibitive for student teams, hobbyist communities, and educational collectives.
 
 % ------------------------------------------------------------------------------
 \section{CustardFin Hybrid Architecture Cost Model}
@@ -75,12 +73,11 @@ CustardFin eliminates the three biggest cost drivers:
 \end{enumerate}
 
 \subsubsection{Total CustardFin Hybrid Cost}
-\begin{align}
-    \text{Monthly Cost} &= \text{\rupee~2,045.40} + \text{\rupee~1,470.00} + \text{\rupee~420.00} + \text{\rupee~193.20} \nonumber \\
-    &= \mathbf{\text{\rupee~4{,}128.60 / month}} \quad (\$49.15) \\
-    \text{Annual Cost} &= \text{\rupee~4,128.60} \times 12 = \mathbf{\text{\rupee~49{,}543.20 / year}} \quad (\$589.80) \\
-    \text{3-Year Total} &= \mathbf{\text{\rupee~1{,}48{,}629.60}} \quad (\$1{,}769.40)
-\end{align}
+Summing these lightweight cloud components, the total recurring cost for CustardFin is:
+\begin{equation}
+    \text{Cost}_{\text{CustardFin}} = \text{\rupee~2,045.40} + \text{\rupee~1,470.00} + \text{\rupee~420.00} + \text{\rupee~193.20} = \mathbf{\text{\rupee~4{,}128.60 / month}} \quad (\$49.15)
+\end{equation}
+Over a full year, this amounts to \textbf{\rupee~49{,}543.20} (\$589.80), and over three years totals \textbf{\rupee~1{,}48{,}629.60} (\$1,769.40), delivering immediate financial sustainability.
 
 % ------------------------------------------------------------------------------
 \section{Side-by-Side Cost Comparison}
@@ -93,7 +90,7 @@ Table~\ref{tab:cost_comparison_matrix} presents an itemized side-by-side compari
 \small
 \caption{Cost Comparison: Centralized Cloud VOD vs. CustardFin (100 Users, 5 TB Library)}
 \label{tab:cost_comparison_matrix}
-\begin{tabularx}{\textwidth}{p{2.6cm}p{2.6cm}p{2.6cm}p{2.7cm}r}
+\begin{tabularx}{\textwidth}{P{3.4cm} P{3.0cm} P{3.0cm} P{3.0cm} r}
 \toprule
 \textbf{Expense Category} & \textbf{Traditional Cloud VOD} & \textbf{CustardFin Hybrid} & \textbf{Monthly Savings} & \textbf{Reduction} \\
 \midrule

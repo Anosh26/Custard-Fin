@@ -53,7 +53,7 @@ To evaluate CustardFin, clear performance targets were set based on the project 
 \centering
 \caption{CustardFin Core Objectives and Quantitative Targets}
 \label{tab:brd_objectives}
-\begin{tabularx}{\textwidth}{l p{5.5cm} X}
+\begin{tabularx}{\textwidth}{l P{5.5cm} L}
 \toprule
 \textbf{Objective} & \textbf{Operational Requirement} & \textbf{Target Metric} \\
 \midrule
@@ -92,19 +92,19 @@ Instant local network playback with \textbf{$<$ 4 ms} Time-To-First-Byte (TTFB).
 \section{System Invariants (Design Rules)}
 \label{sec:invariants}
 
-CustardFin is built around ten strict engineering rules to ensure it remains reliable, low-cost, and secure:
+CustardFin is built around ten strict, non-negotiable architectural invariants:
 
 \begin{enumerate}
-    \item \textbf{No Permanent Cloud Video:} Video files reside exclusively on the owner's home storage. The cloud only holds a temporary 24-hour cache for actively viewed chunks.
-    \item \textbf{Outbound-Only Home Connections:} Home edge daemons only make outbound connections. No open router ports, port forwarding, or Dynamic DNS are ever required.
-    \item \textbf{100\% Free and Open-Source Software:} Built entirely with free and open-source tools. No paid licenses or proprietary SDKs are needed.
-    \item \textbf{Clear Technology Stack:} Backend services are written in Go (\texttt{net/http}). The frontend uses Next.js with TypeScript and \texttt{hls.js}.
-    \item \textbf{Minimal Redis Usage:} Redis is used only for 15-second node heartbeat keys. All background tasks run as Go goroutines with state in PostgreSQL or SQLite.
-    \item \textbf{Pre-Encoded 4-Second HLS Chunks:} Videos are pre-encoded into 4-second HLS segments using GPU hardware acceleration (NVIDIA NVENC) with automatic CPU fallback (\texttt{libx264}).
-    \item \textbf{Origin Shield Upload Protection:} When multiple remote viewers watch the same title, the home node uploads each chunk only once. The cloud cache serves all other viewers, saving 90\% of home upload bandwidth.
-    \item \textbf{Private Data Stays Home:} Watch history, resume points, and private video metadata are stored exclusively in the local SQLite database and are never sent to the cloud.
-    \item \textbf{Signed Chunk URLs:} All video chunk links use short-lived HMAC-SHA256 signatures (15-minute expiry) to prevent hotlinking and unauthorized access.
-    \item \textbf{10-Stream Limit per Node:} Each node allows at most 10 concurrent remote streams. Beyond that, the router returns HTTP 429 (``Node Busy'') with a retry timer, protecting home bandwidth.
+    \item \textbf{No Permanent Cloud Video:} Video binaries reside exclusively on the owner's home disks; the cloud retains only an ephemeral 24-hour cache for active chunks.
+    \item \textbf{Outbound-Only Connections:} Home edge daemons initiate only outbound TLS connections; no open router ports or DDNS are ever required.
+    \item \textbf{100\% Free and Open-Source:} Built entirely with open-source tools; zero proprietary licensing fees or closed SDK dependencies.
+    \item \textbf{Clean Technology Separation:} Go backend services (\texttt{net/http}) handle all API and edge daemon logic; Next.js with \texttt{hls.js} serves strictly as the presentation layer.
+    \item \textbf{Minimal Redis Footprint:} Redis is used strictly for 15-second node heartbeat TTL keys; all background jobs run as Go goroutines.
+    \item \textbf{Pre-Encoded 4-Second HLS:} Videos are pre-encoded into 4-second HLS segments using GPU acceleration (NVENC) with automatic CPU fallback (\texttt{libx264}).
+    \item \textbf{Origin Shield Protection:} The cloud cache pulls each requested chunk once, shielding home upload bandwidth from viewer fan-out.
+    \item \textbf{Private Data Stays Home:} Watch progress, resume bookmarks, and unshared metadata reside exclusively in edge SQLite and never touch the cloud.
+    \item \textbf{Signed Chunk URLs:} Short-lived HMAC-SHA256 tokens protect all video segments against link scraping and unauthorized hotlinking.
+    \item \textbf{10-Stream Concurrency Cap:} Each node enforces an admission limit of 10 concurrent remote streams, returning HTTP 429 (``Node Busy'') when saturated.
 \end{enumerate}
 
 % ------------------------------------------------------------------------------
@@ -121,4 +121,4 @@ The project delivers a fully working hybrid streaming platform comprising:
 \section{Organization of the Report}
 \label{sec:organization}
 
-The remainder of this report is organized as follows: Chapter~\ref{chap:literature_survey} surveys existing streaming architectures; Chapter~\ref{chap:architecture} details the two-tier edge-cloud architecture; Chapter~\ref{chap:features_implementation} covers the implementation of key features; Chapter~\ref{chap:cost_analysis} provides an itemized cost analysis in Indian Rupees (\rupee); Chapter~\ref{chap:evaluation_testing} evaluates transcoding throughput and load resilience; Chapter~\ref{chap:contributions} outlines individual student responsibilities; and Chapter~\ref{chap:conclusion} concludes with system limitations and future directions.
+The remainder of this report is organized as follows: Chapter~\ref{chap:literature_survey} surveys existing video delivery paradigms; Chapter~\ref{chap:architecture} details the two-tier edge-cloud architecture; Chapter~\ref{chap:features_implementation} covers technical feature implementation; Chapter~\ref{chap:cost_analysis} presents a comprehensive cost analysis in Indian Rupees (\rupee); Chapter~\ref{chap:evaluation_testing} evaluates experimental benchmarks and load resilience; Chapter~\ref{chap:contributions} outlines individual student responsibilities; and Chapter~\ref{chap:conclusion} concludes with limitations and future directions.

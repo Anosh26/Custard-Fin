@@ -4,7 +4,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
-\usepackage[margin=1in,headheight=15pt]{geometry}
+\usepackage[margin=0.75in,headheight=15pt]{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
@@ -24,6 +24,11 @@
 \DeclareUnicodeCharacter{20B9}{\rupee}
 \usepackage[hyphens]{url}
 \usepackage[hidelinks,colorlinks=true,linkcolor=blue!80!black,citecolor=green!60!black,urlcolor=blue]{hyperref}
+
+% --- Custom Table Column Types ---
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
 
 % --- Color Palette ---
 \definecolor{custardgold}{RGB}{234, 179, 8}

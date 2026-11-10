@@ -12,19 +12,14 @@ Traditional video streaming platforms store massive video libraries in centraliz
 \label{sec:conclusion_achievements}
 % ------------------------------------------------------------------------------
 
-CustardFin successfully satisfies all core functional requirements (FR-1 through FR-10) and fulfills all ten non-negotiable architectural invariants:
+CustardFin demonstrates that personal media sovereignty and public community sharing can be unified without prohibitive cloud infrastructure expenses. The project successfully achieved all core objectives:
 
 \begin{itemize}
-    \item \textbf{Zero Cloud Video Storage (Invariant~1):} Original video files remain permanently on home drives. The cloud stores only 650-byte JSON metadata manifests, eliminating perpetual cloud storage bills.
-    \item \textbf{Home CGNAT Traversal (Invariant~2):} Home nodes connect to the cloud using outbound-only TLS reverse tunnels (FRP). Users never need to open router ports, configure port forwarding, or pay for static public IP addresses.
-    \item \textbf{100\% Free and Open-Source Stack (Invariant~3):} The system is built entirely on open-source technologies (Go, PostgreSQL, Redis, MinIO/Floci, FRP, Next.js, and SQLite) without proprietary software or licensing fees.
-    \item \textbf{High-Speed Hardware Transcoding (Invariant~6):} Pre-encoded HLS with NVIDIA NVENC delivers $10.74\times$ real-time encoding speed ($322+\text{ fps}$) while keeping CPU usage under $5\%$, supported by automatic fallback to CPU software encoding.
-    \item \textbf{Origin Shield Bandwidth Protection (Invariant~7):} The 24-hour pull-through cache uploads hot segments once and serves all subsequent viewers from the cache. In a 10-viewer test, the cache offloaded $90\%$ of traffic, allowing a modest $20\text{ Mbps}$ home connection to serve 10 viewers smoothly.
-    \item \textbf{Data Privacy and Sovereignty (Invariant~8):} Private watch history, resume bookmarks, and unshared home videos remain strictly on the local edge computer in its SQLite database.
-    \item \textbf{Secure Signed URLs (Invariant~9):} Video chunks are protected by short-lived HMAC-SHA256 signed tokens, preventing hotlinking and unauthorized access.
-    \item \textbf{Admission Control and Capacity Limits (Invariant~10):} A limit of 10 concurrent remote streams per node protects home bandwidth from overload, returning clear \texttt{HTTP 429 Too Many Requests} responses when full.
-    \item \textbf{Fast LAN and Offline Streaming:} Local streaming operates with sub-4ms latency, and the embedded Mini-Jellyfin player provides full playback even during internet or cloud outages.
-    \item \textbf{Verified 95.89\% Cloud Cost Reduction:} Monthly cloud operating costs drop from \rupee~1{,}00{,}380.00 (\$1{,}195.00) in traditional architectures to \rupee~4{,}128.60 (\$49.15) with CustardFin, saving over \rupee~34.65 Lakhs (\$41,250) over three years for a 100-user community.
+    \item \textbf{Zero Cloud Video Storage:} Master video binaries remain permanently on home storage. The cloud maintains only 650-byte JSON manifests, eliminating recurring cloud storage fees (Invariant~1, 8).
+    \item \textbf{Residential CGNAT Traversal:} Outbound-only TLS reverse tunnels (FRP) allow home nodes behind residential broadband firewalls to serve streams globally without open router ports or static IPs (Invariant~2).
+    \item \textbf{Hardware-Accelerated Transcoding:} Local NVENC pre-encoding achieves $10.74\times$ real-time throughput ($322.3\text{ fps}$) with host CPU utilization below $5\%$, supported by seamless CPU software fallback (Invariant~6).
+    \item \textbf{Origin Shield Bandwidth Offloading:} The 24-hour cloud cache offloads $90\%$ of traffic during multi-viewer streaming, allowing a modest $20\text{ Mbps}$ residential uplink to support 10 concurrent viewers smoothly (Invariant~7, 10).
+    \item \textbf{Empirically Verified Cost Reduction:} Monthly operating costs drop by \textbf{95.89\%} from \rupee~1{,}00{,}380.00 in centralized cloud VOD to \rupee~4{,}128.60 with CustardFin, saving \rupee~11.55 Lakhs annually for a 100-user community.
 \end{itemize}
 
 % ------------------------------------------------------------------------------

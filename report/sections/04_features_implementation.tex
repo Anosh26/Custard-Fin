@@ -116,7 +116,7 @@ To handle home PC power-downs and network drops without polling the database:
 \subsection{Stream Router Proximity Check}
 When a viewer clicks play, the stream router checks the viewer's IP address:
 \begin{itemize}
-    \item \textbf{Same Local Network:} If the viewer is on the same home Wi-Fi as the edge node (matching subnet \texttt{192.168.1.0/24}), the API returns a direct LAN URL (\texttt{http://192.168.1.105:8089/...}). Video streams locally at full speed with $< 4\text{ ms}$ latency and zero cloud data usage.
+    \item \textbf{Same Local Network:} If the viewer shares the edge node's local network (subnet \texttt{192.168.1.0/24}), the API returns a direct LAN endpoint (\nolinkurl{http://192.168.1.105:8089/stream}). Video streams locally at full speed with $< 4\text{ ms}$ latency and zero cloud data usage.
     \item \textbf{Remote Viewer:} If the viewer is outside, the request routes through the Origin Shield cloud cache.
 \end{itemize}
 
@@ -158,9 +158,4 @@ Figure~\ref{fig:ui_showcase} presents the primary user-facing interfaces of Cust
 \label{fig:ui_showcase}
 \end{figure}
 
-In addition to the public catalog and streaming player, the frontend includes specialized management views:
-\begin{itemize}
-    \item \textbf{My Edge Library Manager:} A management modal for node owners to inspect local hard drive capacity, monitor real-time GPU/NVENC transcoding status, and toggle individual media files between \textit{Public} (manifest synced to cloud) and \textit{Private} (edge-only).
-    \item \textbf{Embedded Mini-Jellyfin Offline Hub:} A zero-dependency web player served directly by the Go edge daemon on port \texttt{8089}, enabling instant LAN streaming to smart TVs and mobile phones during complete cloud or internet outages.
-    \item \textbf{Developer Diagnostics and Settings:} An administrative modal to switch operational topologies (Local Dev, Docker Compose, Floci, and Live GCP) and observe real-time stream counters.
-\end{itemize}
+The presentation tier also provides dedicated modal interfaces for edge library management (local storage inspection, GPU transcode progress, and Public/Private toggles) and developer diagnostics (live topology switching across Local, Floci, and GCP environments).
