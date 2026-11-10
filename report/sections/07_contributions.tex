@@ -1,0 +1,49 @@
+% ==============================================================================
+% MODULE 07: TEAM CONTRIBUTIONS AND DIVISION OF WORK
+% ==============================================================================
+
+\chapter{Team Contributions and Division of Work}
+\label{chap:contributions}
+
+\vspace{-0.4cm}
+CustardFin was collaboratively designed, implemented, and validated by two MCA students: \textbf{Anish Ghadi} (Seat No.: \textbf{25P0320009}, Edge Lead) and \textbf{Anosh Chodankar} (Seat No.: \textbf{25P0320010}, Cloud Lead).
+
+\vspace{0.15cm}
+\noindent\textbf{Summary of Individual Deliverables:}
+\begin{itemize}
+    \setlength{\itemsep}{0pt}
+    \setlength{\parskip}{0pt}
+    \item \textbf{Anish Ghadi (Edge Tier Lead):} Home Edge subsystem (\texttt{apps/edge}), recursive scanning, SHA-256 hashing, managed FFmpeg (NVENC GPU probe with CPU fallback), embedded SQLite WAL, outbound FRP reverse tunnel daemon, and Mini-Jellyfin offline web UI.
+    \item \textbf{Anosh Chodankar (Cloud Tier Lead):} Cloud Control Plane (\texttt{apps/api}) and Web Tier (\texttt{apps/web}), hexagonal Go REST API, PostgreSQL catalog schemas, Redis heartbeat tracking, Origin Shield S3 cache with HMAC-SHA256 signing, and Next.js 15 web player.
+\end{itemize}
+
+\vspace{0.15cm}
+\noindent\textbf{Subsystem Workload Distribution:}
+Both authors jointly formulated the 10 System Invariants, designed the admission limiter, executed the 10-viewer load simulation, and co-authored documentation (Table~\ref{tab:contribution_matrix}).
+
+\vspace{-0.1cm}
+\begin{center}
+\captionsetup{type=table}
+\caption{Subsystem Responsibility and Workload Contribution Matrix}
+\label{tab:contribution_matrix}
+\vspace{0.1cm}
+\footnotesize
+\renewcommand{\arraystretch}{0.92}
+\begin{tabularx}{\textwidth}{P{3.4cm}LLcc}
+\toprule
+\textbf{Subsystem} & \textbf{Primary Deliverables} & \textbf{Primary Owner} & \textbf{Anish} & \textbf{Anosh} \\
+\midrule
+Edge Ingestion & Scanner, SHA-256 Hasher, SQLite WAL & Anish Ghadi & \textbf{85\%} & 15\% \\
+Transcoding Engine & Managed FFmpeg, NVENC GPU, CPU Fallback & Anish Ghadi & \textbf{85\%} & 15\% \\
+Reverse Tunnel & Outbound FRP Client Daemon, Auto-Reconnect & Anish Ghadi & \textbf{80\%} & 20\% \\
+Mini-Jellyfin Hub & Embedded Offline HTML5/JS Web Player & Anish Ghadi & \textbf{80\%} & 20\% \\
+Cloud Control API & Go REST API, Hexagonal Architecture, Slog & Anosh Chodankar & 20\% & \textbf{80\%} \\
+Database \& Cache & PostgreSQL Schemas, Pgxpool, Redis TTL & Anosh Chodankar & 15\% & \textbf{85\%} \\
+Origin Shield Cache & S3 Pull-Through Cache, 24h LRU, HMAC Signer & Anosh Chodankar & 20\% & \textbf{80\%} \\
+Web Presentation & Next.js 15 App Router, HLS Player, HUD & Anosh Chodankar & 15\% & \textbf{85\%} \\
+Architecture \& Tests & 10 Invariants, Admission Router, Load Tests & Joint Collaboration & \textbf{50\%} & \textbf{50\%} \\
+\midrule
+\textbf{Overall Workload} & \textbf{Full Distributed System Delivery} & \textbf{Equal Effort} & \textbf{50\%} & \textbf{50\%} \\
+\bottomrule
+\end{tabularx}
+\end{center}
