@@ -45,9 +45,10 @@
   - Authored a publication-grade LaTeX project report explicitly titled "Cloud Computing Project Report" formatted with IEEEtran bibliography and standard academic front matter.
   - Strictly specified student identification by Seat Numbers: Anish Ghadi (Seat No.: 25P0320009) and Anosh Chodankar (Seat No.: 25P0320010).
   - Fully converted all economic figures, mathematical proofs, and comparison tables to Indian Rupees (₹) with baseline benchmark $1.00 USD = ₹84.00 INR (e.g. Traditional Cloud: ₹1,00,380.00/mo vs CustardFin: ₹4,128.60/mo; 95.89% savings; ₹11.55 Lakhs/yr saved).
-  - Reduced document margins from 1.0in to 0.75in (`geometry`), maximizing printable text area and eliminating wasted white borders. Trimmed redundant descriptions and arithmetic breakdowns across Chapters 1--8.
+  - Enforced strict ISO 216 A4 paper geometry (`a4paper, top=22mm, bottom=22mm, left=25mm, right=20mm`) with optimized printable canvas.
+  - Removed redundant Chapter 7 ("Team Contributions and Division of Work"), as student ownership is already formally declared in the Candidate Declaration and Title Page front matter. Chapter 8 ("Conclusion and Future Scope") cleanly re-indexed as Chapter 7.
   - Refactored Figure 3.1 (`diag_02_architecture_overview`) into an ultra-clean, symmetrical 3x2 grid layout (6 nodes Home Edge, 6 nodes Cloud Tier). Eliminated multi-line arrow clutter and overlapping lines, perfectly center-aligned all icon boxes and titles, and unified cross-firewall traffic into a single horizontal outbound reverse tunnel (Yamux multiplex). Rendered at 3x Ultra-HD Retina quality (`diag_02_architecture_overview.png`, 399 KB).
-  - Zero LaTeX compilation errors, clean typography, perfectly calibrated for MCA semester-end lab evaluation (`report/main.pdf`, 2.72 MB, exactly 36 pages total / 30 core pages).
+  - Zero LaTeX compilation errors, clean typography, perfectly calibrated for MCA semester-end lab evaluation (`report/main.pdf`, 2.70 MB, exactly 33 pages total / 26 core pages).
 
 ## In Progress
 - Final rehearsal and submission of `report/main.pdf`.
