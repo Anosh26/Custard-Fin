@@ -20,6 +20,10 @@
   - Authored comprehensive GCP deployment guide (`docs/runbooks/deploy.md`), viva presentation script (`docs/runbooks/demo.md`), troubleshooting guide (`docs/runbooks/troubleshooting.md`), and universal running guide (`RUNNING.md`).
   - Created Floci local cloud emulator deployment profile (`deploy/floci/compose.floci.yml`, `deploy/floci/README.md`) with `make floci-up`/`make floci-down`.
 - **Live Cloud Deployment & Mobile Verification (GCP)**:
+  - Deployed full cloud stack on GCP VM (`34.132.188.14`) with Caddy, Next.js, Go API, PostgreSQL, Redis, MinIO (Origin Shield), and FRPS.
+  - Connected Fedora edge daemon (`edged`) via outbound FRP reverse tunnel (`frpc`) with NVIDIA NVENC acceleration.
+  - Verified end-to-end HLS playback, buffering recovery, seeking, video uploading, and 1-click Public/Private catalog sync.
+  - Verified remote streaming on mobile (Brave browser on Android) with Origin Shield cache hits and live HUD stats.
   - Deployed full cloud stack on GCP VM `custardfin-cloud` in `asia-south1-a` (`8.234.112.169`, Mumbai) with Caddy, Next.js, Go API, PostgreSQL, Redis, MinIO (Origin Shield), and FRPS.
   - Connected local home edge daemon (`edged`) via outbound FRP reverse tunnel (`frpc`) with NVIDIA NVENC acceleration.
   - Verified end-to-end HLS playback, direct LAN sub-5ms detection, remote Origin Shield signed URLs, and verified Origin Shield cache MISS -> HIT transitions in MinIO.
